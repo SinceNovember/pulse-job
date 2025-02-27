@@ -1,4 +1,4 @@
-package com.simple.pulsejob.timer;
+package com.simple.pulsejob.common.util.timer;
 
 import java.util.concurrent.TimeUnit;
 

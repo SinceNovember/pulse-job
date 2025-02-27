@@ -1,4 +1,4 @@
-package com.simple.pulsejob.timer;
+package com.simple.pulsejob.common.util.timer;
 
 public interface Timeout {
 
