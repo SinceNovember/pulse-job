@@ -17,10 +17,6 @@ public class HashedWheelTimer implements Timer {
     private static final AtomicIntegerFieldUpdater<HashedWheelTimer> workerStateUpdater =
             AtomicIntegerFieldUpdater.newUpdater(HashedWheelTimer.class, "workerState");
 
-
-    private final static int cpuCores = Runtime.getRuntime().availableProcessors();
-
-    private final static int
     private final Thread workerThread;
 
     public static final int WORKER_STATE_INIT = 0;
