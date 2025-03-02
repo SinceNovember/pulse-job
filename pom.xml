@@ -23,6 +23,7 @@
         <module>pulse-job-storage</module>
         <module>pulse-job-test</module>
         <module>pulse-job-transport</module>
+        <module>pulse-job-serialization</module>
     </modules>
 
     <properties>
@@ -48,6 +49,12 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>pulse-job-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>pulse-job-serialization-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- # pulse-job module dependency: end -->
