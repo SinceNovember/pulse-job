@@ -31,6 +31,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.4.2</spring-boot.version>
+        <hessian.version>4.0.38</hessian.version>
 <!--        <pagehelper.version>1.4.1</pagehelper.version>-->
 <!--        <mapstruct.version>1.4.2.Final</mapstruct.version>-->
 <!--        <lombok.version>1.18.22</lombok.version>-->
@@ -65,6 +66,12 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.caucho</groupId>
+                <artifactId>hessian</artifactId>
+                <version>${hessian.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
