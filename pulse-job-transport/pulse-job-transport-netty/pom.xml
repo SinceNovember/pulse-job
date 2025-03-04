@@ -5,16 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.simple</groupId>
-        <artifactId>pulse-job</artifactId>
+        <artifactId>pulse-job-transport</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>pulse-job-transport</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>pulse-job-transport-api</module>
-        <module>pulse-job-transport-netty</module>
-    </modules>
+    <artifactId>pulse-job-transport-netty</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
