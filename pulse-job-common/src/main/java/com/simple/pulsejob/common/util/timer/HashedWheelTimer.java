@@ -1,7 +1,7 @@
 package com.simple.pulsejob.common.util.timer;
 
-import com.simple.pulsejob.common.Consts;
-import com.simple.pulsejob.common.concurrent.PulseJobNamedThreadFactory;
+import com.simple.pulsejob.common.JConstants;
+import com.simple.pulsejob.common.concurrent.JNamedThreadFactory;
 import com.simple.pulsejob.common.util.internal.Platform;
 
 import java.util.Collections;
@@ -38,7 +38,7 @@ public class HashedWheelTimer implements Timer {
     private final Executor executor;
 
     public HashedWheelTimer() {
-        this(new PulseJobNamedThreadFactory());
+        this(new JNamedThreadFactory());
     }
 
     public HashedWheelTimer(long tickDuration, TimeUnit unit) {
@@ -88,7 +88,7 @@ public class HashedWheelTimer implements Timer {
         wheel = createWheel(ticksPerWheel);
         mask = wheel.length - 1;
 
-        this.executor = executor != null ? executor : Consts.createDefaultExecutor();
+        this.executor = executor != null ? executor : JConstants.createDefaultExecutor();
 
         //将调度时间转换为纳秒
         this.tickDuration = unit.toNanos(tickDuration);

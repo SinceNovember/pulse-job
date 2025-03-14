@@ -15,9 +15,9 @@
  */
 package com.simple.pulsejob.common.util;
 
-import com.simple.pulsejob.common.internal.ReferenceFieldUpdater;
-import com.simple.pulsejob.common.internal.UnsafeUtil;
-import com.simple.pulsejob.common.internal.Updaters;
+import com.simple.pulsejob.common.util.internal.ReferenceFieldUpdater;
+import com.simple.pulsejob.common.util.internal.UnsafeUtil;
+import com.simple.pulsejob.common.util.internal.Updaters;
 
 /**
  * jupiter

@@ -16,10 +16,9 @@
 package com.simple.plusejob.serialization.io;
 
 
-import com.simple.plusejob.serialization.Serializer;
-import com.simple.pulsejob.common.internal.InternalThreadLocal;
-import com.simple.pulsejob.common.internal.ReferenceFieldUpdater;
-import com.simple.pulsejob.common.internal.Updaters;
+import com.simple.pulsejob.common.util.internal.InternalThreadLocal;
+import com.simple.pulsejob.common.util.internal.ReferenceFieldUpdater;
+import com.simple.pulsejob.common.util.internal.Updaters;
 
 import java.io.ByteArrayOutputStream;
 
