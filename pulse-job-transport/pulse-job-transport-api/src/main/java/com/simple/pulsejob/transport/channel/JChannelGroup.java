@@ -101,20 +101,6 @@ public interface JChannelGroup {
      */
     void onAvailable(Runnable listener);
 
-    /**
-     * Warm-up time.
-     */
-    int getWarmUp();
-
-    /**
-     * Sets warm-up time.
-     */
-    void setWarmUp(int warmUp);
-
-    /**
-     * Returns {@code true} if warm up to complete.
-     */
-    boolean isWarmUpComplete();
 
     /**
      * Time of birth.
