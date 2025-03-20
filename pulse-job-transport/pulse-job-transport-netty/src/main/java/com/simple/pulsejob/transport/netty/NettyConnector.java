@@ -17,6 +17,7 @@ import com.simple.pulsejob.transport.processor.ConsumerProcessor;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.HashedWheelTimer;
 
 public abstract class NettyConnector implements JConnector<JConnection> {
@@ -106,8 +107,19 @@ public abstract class NettyConnector implements JConnector<JConnection> {
         return addressGroups.values();
     }
 
-    public boolean addChannelGroup(Directory directory, JChannelGroup group) {
+    @Override
+    public JConnectionManager connectionManager() {
+        return connectionManager;
+    }
 
+    @Override
+    public void shutdownGracefully() {
+        connectionManager.cancelAllAutoReconnect();
+        worker.shutdownGracefully().syncUninterruptibly();
+        timer.stop();
+        if (processor != null) {
+            processor.shutdown();
+        }
     }
 
     protected void setOptions() {
@@ -149,13 +161,22 @@ public abstract class NettyConnector implements JConnector<JConnection> {
         // the default implementation does nothing
     }
 
+    protected WriteBufferWaterMark createWriteBufferWaterMark(int bufLowWaterMark, int bufHighWaterMark) {
+        WriteBufferWaterMark waterMark;
+        if (bufLowWaterMark >= 0 && bufHighWaterMark > 0) {
+            waterMark = new WriteBufferWaterMark(bufLowWaterMark, bufHighWaterMark);
+        } else {
+            waterMark = new WriteBufferWaterMark(512 * 1024, 1024 * 1024);
+        }
+        return waterMark;
+    }
+
     /**
      * Sets the percentage of the desired amount of time spent for I/O in the child event loops.
      * The default value is {@code 50}, which means the event loop will try to spend the same
      * amount of time for I/O as for non-I/O tasks.
      */
     public abstract void setIoRatio(int workerIoRatio);
-
 
     protected abstract EventLoopGroup initEventLoopGroup(int nThreads, ThreadFactory tFactory);
 

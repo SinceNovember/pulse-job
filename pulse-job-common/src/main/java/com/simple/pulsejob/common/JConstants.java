@@ -3,6 +3,7 @@ package com.simple.pulsejob.common;
 import com.simple.pulsejob.common.concurrent.JNamedThreadFactory;
 import com.simple.pulsejob.common.util.SystemPropertyUtil;
 
+import java.util.Formatter;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,14 @@ public interface JConstants {
     int AVAILABLE_PROCESSORS =
         SystemPropertyUtil.getInt("jupiter.available_processors", Runtime.getRuntime().availableProcessors());
 
+    int EXPLICIT_FLUSH_AFTER_FLUSHES =
+        SystemPropertyUtil.getInt("jupiter.io.explicit.flush.after.flushes", 1024);
+
+    int READER_IDLE_TIME_SECONDS =
+        SystemPropertyUtil.getInt("jupiter.io.reader.idle.time.seconds", 60);
+
+    int WRITER_IDLE_TIME_SECONDS =
+        SystemPropertyUtil.getInt("jupiter.io.writer.idle.time.seconds", 30);
 
     static ThreadPoolExecutor createDefaultExecutor() {
         return new ThreadPoolExecutor(

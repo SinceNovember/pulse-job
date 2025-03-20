@@ -33,6 +33,7 @@
         <spring-boot.version>3.4.2</spring-boot.version>
         <hessian.version>4.0.38</hessian.version>
         <netty.version>4.1.68.Final</netty.version>
+        <asm.version>6.0</asm.version>
         <!--        <pagehelper.version>1.4.1</pagehelper.version>-->
 <!--        <mapstruct.version>1.4.2.Final</mapstruct.version>-->
 <!--        <lombok.version>1.18.22</lombok.version>-->
@@ -64,7 +65,6 @@
                 <artifactId>pulse-job-transport-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <!-- # pulse-job module dependency: end -->
 
             <dependency>
@@ -120,6 +120,13 @@
                 <artifactId>hessian</artifactId>
                 <version>${hessian.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

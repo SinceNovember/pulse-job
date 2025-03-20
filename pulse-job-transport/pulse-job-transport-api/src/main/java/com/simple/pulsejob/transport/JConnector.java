@@ -67,32 +67,6 @@ public interface JConnector<C> extends Transporter {
     Collection<JChannelGroup> groups();
 
     /**
-     * Adds a {@link JChannelGroup} by {@link Directory}.
-     */
-    boolean addChannelGroup(Directory directory, JChannelGroup group);
-
-    /**
-     * Removes a {@link JChannelGroup} by {@link Directory}.
-     */
-    boolean removeChannelGroup(Directory directory, JChannelGroup group);
-
-    /**
-     * Returns list of {@link JChannelGroup}s by the same {@link Directory}.
-     */
-    CopyOnWriteGroupList directory(Directory directory);
-
-    /**
-     * Returns {@code true} if has available {@link JChannelGroup}s
-     * on this {@link Directory}.
-     */
-    boolean isDirectoryAvailable(Directory directory);
-
-    /**
-     * Returns the {@link DirectoryJChannelGroup}.
-     */
-    DirectoryJChannelGroup directoryGroup();
-
-    /**
      * Returns the {@link JConnectionManager}.
      */
     JConnectionManager connectionManager();

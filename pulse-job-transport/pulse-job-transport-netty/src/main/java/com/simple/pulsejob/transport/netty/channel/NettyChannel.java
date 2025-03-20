@@ -239,9 +239,20 @@ public class NettyChannel implements JChannel {
             return byteBuf.hasMemoryAddress();
         }
 
+        /**
+         * 记录和更新 ByteBuf 的实际写入字节数，确保 ByteBuf 反映 ByteBuffer 中的数据，以便后续正确读取
+         */
         @Override
         public Object backingObject() {
-            return null;
+            int actualWroteBytes = byteBuf.writerIndex();
+            //ByteBuf跟NioByteBuffer写索引相互独立，需要累计起来
+            if (nioByteBuffer != null) {
+                actualWroteBytes += nioByteBuffer.position();
+            }
+
+            allocHandle.record(actualWroteBytes);
+
+            return byteBuf.writerIndex(actualWroteBytes);
         }
 
         private static ByteBuffer newNioByteBuffer(ByteBuf byteBuf, int writableBytes) {

@@ -15,9 +15,9 @@
  */
 package com.simple.pulsejob.transport.processor;
 
-import org.jupiter.transport.Status;
-import org.jupiter.transport.channel.JChannel;
-import org.jupiter.transport.payload.JRequestPayload;
+import com.simple.pulsejob.transport.Status;
+import com.simple.pulsejob.transport.channel.JChannel;
+import com.simple.pulsejob.transport.payload.JRequestPayload;
 
 /**
  * Provider's processor.
