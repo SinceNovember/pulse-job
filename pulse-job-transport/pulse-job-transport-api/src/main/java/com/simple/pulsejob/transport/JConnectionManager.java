@@ -18,6 +18,8 @@ package com.simple.pulsejob.transport;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import com.simple.pulsejob.common.util.Maps;
+import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
+import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 
 /**
  * Jupiter的连接管理器, 用于自动管理(按照地址归组)连接.
@@ -28,6 +30,8 @@ import com.simple.pulsejob.common.util.Maps;
  * @author jiachun.fjc
  */
 public class JConnectionManager {
+
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(JConnectionManager.class);
 
     private final ConcurrentMap<UnresolvedAddress, CopyOnWriteArrayList<JConnection>> connections = Maps.newConcurrentMap();
 
@@ -56,6 +60,7 @@ public class JConnectionManager {
             for (JConnection c : list) {
                 c.setReconnect(false);
             }
+            logger.warn("Cancel reconnect to: {}.", address);
         }
     }
 

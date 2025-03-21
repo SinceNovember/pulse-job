@@ -15,8 +15,9 @@
  */
 package com.simple.pulsejob.common.util;
 
-import org.jupiter.common.util.internal.logging.InternalLogger;
-import org.jupiter.common.util.internal.logging.InternalLoggerFactory;
+
+import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
+import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 
 /**
  * jupiter
@@ -26,6 +27,7 @@ import org.jupiter.common.util.internal.logging.InternalLoggerFactory;
  */
 public final class ClassUtil {
 
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(ClassUtil.class);
 
     /**
      * 提前加载并初始化指定的类, 某些平台下某些类的静态块里面的代码执行执行的贼鸡儿慢
@@ -37,12 +39,16 @@ public final class ClassUtil {
         long start = System.currentTimeMillis();
         try {
             Class.forName(className);
-        } catch (Throwable ignore) {
-
+        } catch (Throwable t) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Failed to load class [{}] {}.", className, StackTraceUtil.stackTrace(t));
+            }
         }
 
         long duration = System.currentTimeMillis() - start;
-
+        if (duration > tolerableMillis) {
+            logger.warn("{}.<clinit> duration: {} millis.", className, duration);
+        }
     }
 
     public static void checkClass(String className, String message) {

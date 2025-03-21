@@ -18,6 +18,8 @@ package com.simple.pulsejob.transport.netty;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ThreadFactory;
+import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
+import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 import com.simple.pulsejob.transport.JConfigGroup;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -37,6 +39,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
  */
 public abstract class NettyTcpAcceptor extends NettyAcceptor {
 
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(NettyTcpAcceptor.class);
 
     private final boolean isNative; // use native transport
     private final NettyConfig.NettyTcpConfigGroup configGroup = new NettyConfig.NettyTcpConfigGroup();
@@ -210,6 +213,11 @@ public abstract class NettyTcpAcceptor extends NettyAcceptor {
     public void start(boolean sync) throws InterruptedException {
         // wait until the server socket is bind succeed.
         ChannelFuture future = bind(localAddress).sync();
+
+        if (logger.isInfoEnabled()) {
+            logger.info("Jupiter TCP server start" + (sync ? ", and waits until the server socket closed." : ".")
+              + " {}.", toString());
+        }
 
         if (sync) {
             // wait until the server socket is closed.

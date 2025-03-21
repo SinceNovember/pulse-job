@@ -16,6 +16,8 @@
 package com.simple.pulsejob.transport.netty;
 
 import java.util.concurrent.ThreadFactory;
+import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
+import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 import com.simple.pulsejob.transport.JConfigGroup;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -25,8 +27,6 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.unix.DomainSocketAddress;
-import io.netty.util.internal.logging.InternalLogger;
-import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
  * jupiter

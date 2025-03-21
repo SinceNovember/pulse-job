@@ -56,6 +56,18 @@
             <!-- https://github.com/trustin/os-maven-plugin -->
             <classifier>osx-x86_64</classifier>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>ch.qos.logback</groupId>-->
+<!--            <artifactId>logback-classic</artifactId>-->
+<!--            <version>1.2.0</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>ch.qos.logback</groupId>-->
+<!--            <artifactId>logback-core</artifactId>-->
+<!--            <version>1.2.0</version>-->
+<!--        </dependency>-->
     </dependencies>
 
 </project>
