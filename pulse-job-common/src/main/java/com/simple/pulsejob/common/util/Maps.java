@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import com.simple.pulsejob.common.concurrent.NonBlockingHashMap;
-import com.simple.pulsejob.common.concurrent.NonBlockingHashMapLong;
+import com.simple.pulsejob.common.concurrent.collection.NonBlockingHashMap;
+import com.simple.pulsejob.common.concurrent.collection.NonBlockingHashMapLong;
 import com.simple.pulsejob.common.util.internal.UnsafeUtil;
 
 /**

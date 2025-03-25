@@ -10,11 +10,13 @@ import java.util.concurrent.TimeUnit;
 
 public interface JConstants {
 
-    int CPU_PROCESSORS = Runtime.getRuntime().availableProcessors();
+   String DEFAULT_THREAD_NAME_PREFIX = "pulse-job-";
 
-    int DEFAULT_CORE_POOL_SIZE= CPU_PROCESSORS * 4;
+    int AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
 
-    int DEFAULT_MAX_POOL_SIZE = CPU_PROCESSORS * 6;
+    int DEFAULT_CORE_POOL_SIZE= AVAILABLE_PROCESSORS * 4;
+
+    int DEFAULT_MAX_POOL_SIZE = AVAILABLE_PROCESSORS * 6;
 
     boolean CODEC_LOW_COPY =
         SystemPropertyUtil.getBoolean("jupiter.io.codec.low_copy", true);
@@ -23,8 +25,8 @@ public interface JConstants {
      * 可配置的 available processors. 默认值是 {@link Runtime#availableProcessors()}.
      * 可以通过设置 system property "jupiter.available_processors" 来覆盖默认值.
      */
-    int AVAILABLE_PROCESSORS =
-        SystemPropertyUtil.getInt("jupiter.available_processors", Runtime.getRuntime().availableProcessors());
+//    int AVAILABLE_PROCESSORS =
+//        SystemPropertyUtil.getInt("jupiter.available_processors", Runtime.getRuntime().availableProcessors());
 
     int EXPLICIT_FLUSH_AFTER_FLUSHES =
         SystemPropertyUtil.getInt("jupiter.io.explicit.flush.after.flushes", 1024);

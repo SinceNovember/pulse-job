@@ -2,12 +2,12 @@ package com.simple.pulsejob.common.concurrent;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import static com.simple.pulsejob.common.JConstants.DEFAULT_THREAD_NAME_PREFIX;
 import com.simple.pulsejob.common.util.Requires;
 import com.simple.pulsejob.common.util.internal.InternalThread;
 
 public class JNamedThreadFactory implements ThreadFactory {
 
-    private static final String DEFAULT_THREAD_NAME_PREFIX = "pulse-job-";
     private static final String DEFAULT_THREAD_POOL_NAME = "default";
     private final AtomicInteger id = new AtomicInteger();
     private final String name;
