@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import com.simple.pulsejob.common.JConstants;
 import com.simple.pulsejob.common.concurrent.executor.reject.RejectedTaskPolicyWithReport;
 import com.simple.pulsejob.common.util.StackTraceUtil;
-import com.simple.pulsejob.common.util.Strings;
+import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.SystemPropertyUtil;
 import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
 import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
@@ -47,7 +47,7 @@ public class ThreadPoolExecutorFactory extends AbstractExecutorFactory {
         String handlerClass = SystemPropertyUtil.get(CONSUMER_THREAD_POOL_REJECTED_HANDLER);
         ;
 
-        if (Strings.isNotBlank(handlerClass)) {
+        if (StringUtil.isNotBlank(handlerClass)) {
             try {
                 Class<?> cls = Class.forName(handlerClass);
                 try {

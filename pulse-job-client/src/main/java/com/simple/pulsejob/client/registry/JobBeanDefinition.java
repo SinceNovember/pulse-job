@@ -3,23 +3,23 @@ package com.simple.pulsejob.client.registry;
 import java.lang.reflect.Method;
 import com.simple.pulsejob.client.annonation.JobRegister;
 
+
 public class JobBeanDefinition {
 
-    private long jobId;
-
+    public JobBeanDefinition(Object targetBean, Method targetMethod, JobRegister jobRegister) {
+        this.targetBean = targetBean;
+        this.targetMethod = targetMethod;
+        this.jobRegister = jobRegister;
+    }
     private Object targetBean;
 
     private Method targetMethod;
 
     private JobRegister jobRegister;
 
-    public long getJobId() {
-        return jobId;
-    }
+    private String initMethodName;
 
-    public void setJobId(long jobId) {
-        this.jobId = jobId;
-    }
+    private String destroyMethodName;
 
     public Object getTargetBean() {
         return targetBean;
@@ -43,5 +43,21 @@ public class JobBeanDefinition {
 
     public void setJobRegister(JobRegister jobRegister) {
         this.jobRegister = jobRegister;
+    }
+
+    public String getInitMethodName() {
+        return initMethodName;
+    }
+
+    public void setInitMethodName(String initMethodName) {
+        this.initMethodName = initMethodName;
+    }
+
+    public String getDestroyMethodName() {
+        return destroyMethodName;
+    }
+
+    public void setDestroyMethodName(String destroyMethodName) {
+        this.destroyMethodName = destroyMethodName;
     }
 }

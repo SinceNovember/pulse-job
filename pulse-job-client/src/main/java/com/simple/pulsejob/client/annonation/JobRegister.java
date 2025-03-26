@@ -23,6 +23,16 @@ public @interface JobRegister {
     String value() default "";
 
     /**
+     * 执行任务前调用的方法名称
+     */
+    String init();
+
+    /**
+     * 任务执行后调用的方法名称
+     */
+    String destroy();
+
+    /**
      * CRON表达式
      * 定义任务执行时间
      */

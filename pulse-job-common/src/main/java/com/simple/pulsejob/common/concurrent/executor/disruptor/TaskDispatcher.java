@@ -137,7 +137,6 @@ public class TaskDispatcher implements Dispatcher<Runnable>, Executor {
                 throw new RejectedExecutionException("Ring buffer is full");
             }
         }
-
     }
 
     @Override

@@ -48,7 +48,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
      * @param name the name of the {@link Constant}
      */
     public T valueOf(String name) {
-        Requires.requireTrue(!Strings.isNullOrEmpty(name), "empty name");
+        Requires.requireTrue(!StringUtil.isNullOrEmpty(name), "empty name");
         return getOrCreate(name);
     }
 
@@ -73,7 +73,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
      * Returns {@code true} if exists for the given {@code name}.
      */
     public boolean exists(String name) {
-        Requires.requireTrue(!Strings.isNullOrEmpty(name), "empty name");
+        Requires.requireTrue(!StringUtil.isNullOrEmpty(name), "empty name");
         return constants.containsKey(name);
     }
 
@@ -82,7 +82,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
      * {@link IllegalArgumentException} if a {@link Constant} for the given {@code name} exists.
      */
     public T newInstance(String name) {
-        Requires.requireTrue(!Strings.isNullOrEmpty(name), "empty name");
+        Requires.requireTrue(!StringUtil.isNullOrEmpty(name), "empty name");
         return createOrThrow(name);
     }
 

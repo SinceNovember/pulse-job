@@ -8,9 +8,11 @@ import com.simple.plusejob.serialization.io.OutputStreams;
 import com.simple.pulsejob.common.util.ThrowUtil;
 import com.simple.pulsejob.serialization.java.io.Inputs;
 import com.simple.pulsejob.serialization.java.io.Outputs;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 
+@Component
 public class JavaSerializer extends Serializer {
     @Override
     public byte code() {

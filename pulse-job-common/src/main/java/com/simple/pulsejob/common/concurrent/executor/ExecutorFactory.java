@@ -2,8 +2,16 @@ package com.simple.pulsejob.common.concurrent.executor;
 
 public interface ExecutorFactory {
 
+    String EXECUTOR_FACTORY_DISRUPTOR = "disruptor";
+
     CloseableExecutor newExecutor(int coreWorkers, int maxWorkers, int queueCapacity);
 
+    static ExecutorFactory getExecutorFactory(String executor) {
+        if (EXECUTOR_FACTORY_DISRUPTOR.equals(executor)) {
+            return new DisruptorExecutorFactory();
+        }
+        return new ThreadPoolExecutorFactory();
+    }
     String CONSUMER_EXECUTOR_CORE_WORKERS           = "jupiter.executor.factory.consumer.core.workers";
     String PROVIDER_EXECUTOR_CORE_WORKERS           = "jupiter.executor.factory.provider.core.workers";
     String CONSUMER_EXECUTOR_MAX_WORKERS            = "jupiter.executor.factory.consumer.max.workers";
