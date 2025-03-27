@@ -16,7 +16,7 @@
 package com.simple.pulsejob.transport;
 
 import java.net.SocketAddress;
-import com.simple.pulsejob.transport.processor.ProviderProcessor;
+import com.simple.pulsejob.transport.processor.ClientProcessor;
 
 /**
  * Server acceptor.
@@ -48,12 +48,12 @@ public interface JAcceptor extends Transporter {
     /**
      * Returns the rpc processor.
      */
-    ProviderProcessor processor();
+    ClientProcessor processor();
 
     /**
      * Binds the rpc processor.
      */
-    void withProcessor(ProviderProcessor processor);
+    void withProcessor(ClientProcessor processor);
 
     /**
      * Start the server and wait until the server socket is closed.

@@ -10,13 +10,10 @@ import com.simple.plusejob.serialization.io.OutputStreams;
 import com.simple.pulsejob.common.util.ThrowUtil;
 import com.simple.pulsejob.serialization.hessian.io.Inputs;
 import com.simple.pulsejob.serialization.hessian.io.Outputs;
-import org.springframework.stereotype.Component;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-@Component
 public class HessianSerializer extends Serializer {
     @Override
     public byte code() {

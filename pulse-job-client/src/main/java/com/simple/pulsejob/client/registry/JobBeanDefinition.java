@@ -2,62 +2,29 @@ package com.simple.pulsejob.client.registry;
 
 import java.lang.reflect.Method;
 import com.simple.pulsejob.client.annonation.JobRegister;
+import lombok.Getter;
 
 
+@Getter
 public class JobBeanDefinition {
+
+    private final Object targetBean;
+
+    private final Method targetMethod;
+
+    private final JobRegister jobRegister;
 
     public JobBeanDefinition(Object targetBean, Method targetMethod, JobRegister jobRegister) {
         this.targetBean = targetBean;
         this.targetMethod = targetMethod;
         this.jobRegister = jobRegister;
     }
-    private Object targetBean;
 
-    private Method targetMethod;
-
-    private JobRegister jobRegister;
-
-    private String initMethodName;
-
-    private String destroyMethodName;
-
-    public Object getTargetBean() {
-        return targetBean;
+    public String getTargetInitMethodName() {
+        return jobRegister.init();
     }
 
-    public void setTargetBean(Object targetBean) {
-        this.targetBean = targetBean;
-    }
-
-    public Method getTargetMethod() {
-        return targetMethod;
-    }
-
-    public void setTargetMethod(Method targetMethod) {
-        this.targetMethod = targetMethod;
-    }
-
-    public JobRegister getJobRegister() {
-        return jobRegister;
-    }
-
-    public void setJobRegister(JobRegister jobRegister) {
-        this.jobRegister = jobRegister;
-    }
-
-    public String getInitMethodName() {
-        return initMethodName;
-    }
-
-    public void setInitMethodName(String initMethodName) {
-        this.initMethodName = initMethodName;
-    }
-
-    public String getDestroyMethodName() {
-        return destroyMethodName;
-    }
-
-    public void setDestroyMethodName(String destroyMethodName) {
-        this.destroyMethodName = destroyMethodName;
+    public String getTargetDestroyMethodName() {
+        return jobRegister.destroy();
     }
 }

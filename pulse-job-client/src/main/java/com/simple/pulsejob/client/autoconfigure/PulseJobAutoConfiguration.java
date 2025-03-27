@@ -1,6 +1,13 @@
 package com.simple.pulsejob.client.autoconfigure;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.simple.plusejob.serialization.Serializer;
+import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.client.invoker.DefaultInvoker;
+import com.simple.pulsejob.client.invoker.Invoker;
+import com.simple.pulsejob.client.registry.JobBeanDefinitionLookupService;
+import com.simple.pulsejob.client.registry.JobBeanDefinitionRegistry;
 import com.simple.pulsejob.common.concurrent.executor.CloseableExecutor;
 import com.simple.pulsejob.common.concurrent.executor.DisruptorExecutorFactory;
 import com.simple.pulsejob.common.concurrent.executor.ExecutorFactory;
@@ -29,13 +36,26 @@ public class PulseJobAutoConfiguration {
     }
 
     @Bean
-    public Serializer javaSerializer() {
-        return new JavaSerializer();
+    @ConditionalOnMissingBean
+    public JobBeanDefinitionRegistry jobBeanDefinitionRegistry() {
+        return new JobBeanDefinitionRegistry();
     }
 
     @Bean
-    public Serializer hessianSerializer() {
-        return new HessianSerializer();
+    @ConditionalOnMissingBean
+    public Invoker invoker() {
+        return new DefaultInvoker();
+    }
+
+    /**
+     * 使用 Map<Byte, Serializer> 直接存储
+     */
+    @Bean
+    public Map<Byte, Serializer> serializerMap() {
+        Map<Byte, Serializer> serializerMap = new HashMap<>();
+        serializerMap.put(SerializerType.JAVA.value(), new JavaSerializer());
+        serializerMap.put(SerializerType.HESSIAN.value(), new HessianSerializer());
+        return serializerMap;
     }
 
 

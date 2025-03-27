@@ -18,18 +18,11 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
-public class JobBeanDefinitionRegistry implements BeanPostProcessor, ApplicationContextAware {
+public class JobBeanDefinitionRegistry implements BeanPostProcessor {
 
     private InternalLogger logger = InternalLoggerFactory.getInstance(JobBeanDefinitionRegistry.class);
 
     private final Map<String, JobBeanDefinition> jobBeanDefinitionMap = new ConcurrentHashMap<>(256);
-
-    private ApplicationContext applicationContext;
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

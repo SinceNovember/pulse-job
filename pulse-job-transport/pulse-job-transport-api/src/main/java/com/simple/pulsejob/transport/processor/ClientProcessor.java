@@ -15,6 +15,7 @@
  */
 package com.simple.pulsejob.transport.processor;
 
+import com.simple.plusejob.serialization.Serializer;
 import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
@@ -27,7 +28,12 @@ import com.simple.pulsejob.transport.payload.JRequestPayload;
  *
  * @author jiachun.fjc
  */
-public interface ProviderProcessor {
+public interface ClientProcessor {
+
+    /**
+     * 获取指定序列化方式
+     */
+    Serializer serializer(Byte code);
 
     /**
      * 处理正常请求
@@ -40,4 +46,6 @@ public interface ProviderProcessor {
     void handleException(JChannel channel, JRequestPayload request, Status status, Throwable cause);
 
     void shutdown();
+
+
 }

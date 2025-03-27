@@ -25,7 +25,7 @@ import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.netty.channel.NettyChannel;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
-import com.simple.pulsejob.transport.processor.ProviderProcessor;
+import com.simple.pulsejob.transport.processor.ClientProcessor;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandler;
@@ -47,7 +47,7 @@ public class AcceptorHandler extends ChannelInboundHandlerAdapter {
 
     private static final AtomicInteger channelCounter = new AtomicInteger(0);
 
-    private ProviderProcessor processor;
+    private ClientProcessor processor;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -132,11 +132,11 @@ public class AcceptorHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public ProviderProcessor processor() {
+    public ClientProcessor processor() {
         return processor;
     }
 
-    public void processor(ProviderProcessor processor) {
+    public void processor(ClientProcessor processor) {
         this.processor = processor;
     }
 }

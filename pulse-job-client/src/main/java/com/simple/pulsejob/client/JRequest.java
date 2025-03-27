@@ -36,6 +36,14 @@ import lombok.Data;
 public class JRequest {
 
     private final JRequestPayload payload;   // 请求bytes/stream
+
     private MessageWrapper message;          // 请求对象
 
+    public long invokeId() {
+        return payload.invokeId();
+    }
+
+    public byte serializerCode() {
+        return payload.serializerCode();
+    }
 }
