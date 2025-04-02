@@ -41,6 +41,10 @@ public class JobContext {
         return args;
     }
 
+    public long invokeId() {
+        return request.invokeId();
+    }
+
     public String targetInitMethodName() {
         return jobBeanDefinition.getTargetInitMethodName();
     }
