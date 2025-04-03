@@ -26,7 +26,7 @@ import com.simple.pulsejob.transport.payload.JResponsePayload;
  *
  * @author jiachun.fjc
  */
-public interface ConsumerProcessor {
+public interface AcceptorProcessor {
 
     void handleResponse(JChannel channel, JResponsePayload response) throws Exception;
 

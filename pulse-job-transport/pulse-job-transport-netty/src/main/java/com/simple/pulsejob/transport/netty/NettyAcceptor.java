@@ -9,7 +9,8 @@ import com.simple.pulsejob.transport.JAcceptor;
 import com.simple.pulsejob.transport.JConfig;
 import com.simple.pulsejob.transport.JOption;
 import com.simple.pulsejob.transport.netty.estimator.JMessageSizeEstimator;
-import com.simple.pulsejob.transport.processor.ClientProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -33,7 +34,7 @@ public abstract class NettyAcceptor implements JAcceptor {
     private EventLoopGroup boss;
     private EventLoopGroup worker;
 
-    private ClientProcessor processor;
+    private AcceptorProcessor processor;
 
     public NettyAcceptor(Protocol protocol, SocketAddress localAddress) {
         this(protocol, localAddress, JConstants.AVAILABLE_PROCESSORS << 1);
@@ -85,12 +86,12 @@ public abstract class NettyAcceptor implements JAcceptor {
     }
 
     @Override
-    public ClientProcessor processor() {
+    public AcceptorProcessor processor() {
         return processor;
     }
 
     @Override
-    public void withProcessor(ClientProcessor processor) {
+    public void withProcessor(AcceptorProcessor processor) {
         setProcessor(this.processor = processor);
     }
 
@@ -149,7 +150,7 @@ public abstract class NettyAcceptor implements JAcceptor {
      * Sets provider's processor.
      */
     @SuppressWarnings("unused")
-    protected void setProcessor(ClientProcessor processor) {
+    protected void setProcessor(AcceptorProcessor processor) {
         // the default implementation does nothing
     }
 

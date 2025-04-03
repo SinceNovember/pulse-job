@@ -6,13 +6,10 @@ import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
 import com.simple.pulsejob.client.invoker.DefaultInvoker;
 import com.simple.pulsejob.client.invoker.Invoker;
-import com.simple.pulsejob.client.registry.JobBeanDefinitionLookupService;
+import com.simple.pulsejob.client.log.CustomLogAppenderInitializer;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionRegistry;
 import com.simple.pulsejob.common.concurrent.executor.CloseableExecutor;
-import com.simple.pulsejob.common.concurrent.executor.DisruptorExecutorFactory;
 import com.simple.pulsejob.common.concurrent.executor.ExecutorFactory;
-import com.simple.pulsejob.common.concurrent.executor.ThreadPoolExecutorFactory;
-import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.serialization.hessian.HessianSerializer;
 import com.simple.pulsejob.serialization.java.JavaSerializer;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +17,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration
 @RequiredArgsConstructor
+@Import(CustomLogAppenderInitializer.class)
 @EnableConfigurationProperties(PulseJobProperties.class)
 public class PulseJobAutoConfiguration {
 
@@ -57,7 +56,6 @@ public class PulseJobAutoConfiguration {
         serializerMap.put(SerializerType.HESSIAN.value(), new HessianSerializer());
         return serializerMap;
     }
-
 
 }
 

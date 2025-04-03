@@ -13,7 +13,8 @@ import com.simple.pulsejob.transport.*;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
 import com.simple.pulsejob.transport.netty.channel.NettyChannelGroup;
 import com.simple.pulsejob.transport.netty.estimator.JMessageSizeEstimator;
-import com.simple.pulsejob.transport.processor.ConsumerProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -42,7 +43,7 @@ public abstract class NettyConnector implements JConnector<JConnection> {
 
     private int nWorkers;
 
-    private ConsumerProcessor processor;
+    private ConnectorProcessor processor;
 
     public NettyConnector(Protocol protocol) {
         this(protocol, JConstants.AVAILABLE_PROCESSORS << 1);
@@ -78,12 +79,12 @@ public abstract class NettyConnector implements JConnector<JConnection> {
     }
 
     @Override
-    public ConsumerProcessor processor() {
+    public ConnectorProcessor processor() {
         return processor;
     }
 
     @Override
-    public void withProcessor(ConsumerProcessor processor) {
+    public void withProcessor(ConnectorProcessor processor) {
         setProcessor(this.processor = processor);
     }
 
@@ -157,7 +158,7 @@ public abstract class NettyConnector implements JConnector<JConnection> {
      * Sets consumer's processor.
      */
     @SuppressWarnings("unused")
-    protected void setProcessor(ConsumerProcessor processor) {
+    protected void setProcessor(ConnectorProcessor processor) {
         // the default implementation does nothing
     }
 

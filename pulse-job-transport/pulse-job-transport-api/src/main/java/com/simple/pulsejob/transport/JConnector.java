@@ -16,10 +16,9 @@
 package com.simple.pulsejob.transport;
 
 import java.util.Collection;
-import com.simple.pulsejob.transport.channel.CopyOnWriteGroupList;
-import com.simple.pulsejob.transport.channel.DirectoryJChannelGroup;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
-import com.simple.pulsejob.transport.processor.ConsumerProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 
 /**
  * 注意 JConnector 单例即可, 不要创建多个实例.
@@ -39,12 +38,12 @@ public interface JConnector<C> extends Transporter {
     /**
      * Returns the rpc processor.
      */
-    ConsumerProcessor processor();
+    ConnectorProcessor processor();
 
     /**
      * Binds the rpc processor.
      */
-    void withProcessor(ConsumerProcessor processor);
+    void withProcessor(ConnectorProcessor processor);
 
     /**
      * Connects to the remote peer.

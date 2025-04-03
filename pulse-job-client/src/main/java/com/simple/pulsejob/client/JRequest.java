@@ -46,4 +46,9 @@ public class JRequest {
     public byte serializerCode() {
         return payload.serializerCode();
     }
+
+    public long timestamp() {
+        return payload.timestamp();
+    }
+
 }

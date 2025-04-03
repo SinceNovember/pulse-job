@@ -25,7 +25,9 @@ import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.netty.channel.NettyChannel;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
-import com.simple.pulsejob.transport.processor.ClientProcessor;
+import com.simple.pulsejob.transport.payload.JResponsePayload;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandler;
@@ -47,18 +49,18 @@ public class AcceptorHandler extends ChannelInboundHandlerAdapter {
 
     private static final AtomicInteger channelCounter = new AtomicInteger(0);
 
-    private ClientProcessor processor;
+    private AcceptorProcessor processor;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel ch = ctx.channel();
 
-        if (msg instanceof JRequestPayload) {
-            JChannel jChannel = NettyChannel.attachChannel(ch);
+        if (msg instanceof JResponsePayload) {
             try {
-                processor.handleRequest(jChannel, (JRequestPayload) msg);
+                processor.handleResponse(NettyChannel.attachChannel(ch), (JResponsePayload) msg);
             } catch (Throwable t) {
-                processor.handleException(jChannel, (JRequestPayload) msg, Status.SERVER_ERROR, t);
+                logger.error("An exception was caught: {}, on {} #channelRead().", StackTraceUtil.stackTrace(t), ch);
+
             }
         } else {
             logger.warn("Unexpected message type received: {}, channel: {}.", msg.getClass(), ch);
@@ -132,11 +134,11 @@ public class AcceptorHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public ClientProcessor processor() {
+    public AcceptorProcessor processor() {
         return processor;
     }
 
-    public void processor(ClientProcessor processor) {
+    public void processor(AcceptorProcessor processor) {
         this.processor = processor;
     }
 }

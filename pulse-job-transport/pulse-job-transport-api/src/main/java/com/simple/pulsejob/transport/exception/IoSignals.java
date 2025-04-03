@@ -38,4 +38,5 @@ public class IoSignals {
     public static final Signal READER_IDLE      = Signal.valueOf(IoSignals.class, "READER_IDLE");
     /** Protocol body 太大 */
     public static final Signal BODY_TOO_LARGE   = Signal.valueOf(IoSignals.class, "BODY_TOO_LARGE");
+
 }

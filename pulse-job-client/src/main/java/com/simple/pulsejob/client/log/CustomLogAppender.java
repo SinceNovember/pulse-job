@@ -7,7 +7,7 @@ import java.io.IOException;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 
-public class PulseJobLogAppender extends AppenderBase<ILoggingEvent> {
+public class CustomLogAppender extends AppenderBase<ILoggingEvent> {
 
     private String logDirectory = "D://logs";
 

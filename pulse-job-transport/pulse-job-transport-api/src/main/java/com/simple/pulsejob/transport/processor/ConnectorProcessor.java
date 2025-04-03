@@ -28,7 +28,7 @@ import com.simple.pulsejob.transport.payload.JRequestPayload;
  *
  * @author jiachun.fjc
  */
-public interface ClientProcessor {
+public interface ConnectorProcessor {
 
     /**
      * 获取指定序列化方式

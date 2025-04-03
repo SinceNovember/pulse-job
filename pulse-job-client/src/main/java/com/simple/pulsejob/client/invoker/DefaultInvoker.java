@@ -8,13 +8,15 @@ public class DefaultInvoker implements Invoker {
 
     @Override
     public Object invoke(JobContext jobContext) {
-        MDC.put("invokeId", String.valueOf(jobContext.invokeId()));
         try {
-            Object o = Reflects.fastInvoke(jobContext.targetBean(), jobContext.targetMethodName(),
+            MDC.put("invokeId", String.valueOf(jobContext.invokeId()));
+            return Reflects.fastInvoke(jobContext.targetBean(), jobContext.targetMethodName(),
                 jobContext.parameterTypes(), jobContext.args());
         } catch (Throwable t) {
+            jobContext.setCause(t);
+        } finally {
+            MDC.remove("invokeId");
         }
         return null;
-
     }
 }

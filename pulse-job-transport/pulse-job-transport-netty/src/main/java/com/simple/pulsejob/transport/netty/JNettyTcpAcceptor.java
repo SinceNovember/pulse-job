@@ -28,7 +28,8 @@ import com.simple.pulsejob.transport.netty.handler.ProtocolDecoder;
 import com.simple.pulsejob.transport.netty.handler.ProtocolEncoder;
 import com.simple.pulsejob.transport.netty.handler.acceptor.AcceptorHandler;
 import com.simple.pulsejob.transport.netty.handler.acceptor.AcceptorIdleStateTrigger;
-import com.simple.pulsejob.transport.processor.ClientProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -168,7 +169,7 @@ public class JNettyTcpAcceptor extends NettyTcpAcceptor {
     }
 
     @Override
-    protected void setProcessor(ClientProcessor processor) {
+    protected void setProcessor(AcceptorProcessor processor) {
         handler.processor(Requires.requireNotNull(processor, "processor"));
     }
 }

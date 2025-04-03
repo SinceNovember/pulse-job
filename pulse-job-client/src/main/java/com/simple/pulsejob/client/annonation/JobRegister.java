@@ -25,18 +25,18 @@ public @interface JobRegister {
     /**
      * 执行任务前调用的方法名称
      */
-    String init();
+    String init() default "";
 
     /**
      * 任务执行后调用的方法名称
      */
-    String destroy();
+    String destroy() default "";
 
     /**
      * CRON表达式
      * 定义任务执行时间
      */
-    String cron() default "";
+    String cron();
 
     /**
      * 固定延迟执行

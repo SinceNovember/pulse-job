@@ -23,9 +23,10 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>pulse-job-common</artifactId>
         </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>pulse-job-transport-api</artifactId>
+            <artifactId>pulse-job-transport-netty</artifactId>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>

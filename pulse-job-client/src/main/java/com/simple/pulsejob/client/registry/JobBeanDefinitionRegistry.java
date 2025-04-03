@@ -28,7 +28,9 @@ public class JobBeanDefinitionRegistry implements BeanPostProcessor {
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         ReflectionUtils.doWithMethods(bean.getClass(), method -> {
             JobRegister jobRegister = AnnotationUtils.findAnnotation(method, JobRegister.class);
-            registerJobMethod(bean, method, jobRegister);
+            if (jobRegister != null) {
+                registerJobMethod(bean, method, jobRegister);
+            }
         });
         return bean;
     }

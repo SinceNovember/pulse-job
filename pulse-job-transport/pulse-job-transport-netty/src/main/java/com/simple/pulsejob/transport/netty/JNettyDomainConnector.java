@@ -33,7 +33,8 @@ import com.simple.pulsejob.transport.netty.handler.ProtocolEncoder;
 import com.simple.pulsejob.transport.netty.handler.connector.ConnectionWatchdog;
 import com.simple.pulsejob.transport.netty.handler.connector.ConnectorHandler;
 import com.simple.pulsejob.transport.netty.handler.connector.ConnectorIdleStateTrigger;
-import com.simple.pulsejob.transport.processor.ConsumerProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -128,7 +129,7 @@ public class JNettyDomainConnector extends NettyDomainConnector {
     }
 
     @Override
-    protected void setProcessor(ConsumerProcessor processor) {
+    protected void setProcessor(ConnectorProcessor processor) {
         handler.processor(Requires.requireNotNull(processor, "processor"));
     }
 

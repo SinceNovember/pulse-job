@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 import com.simple.pulsejob.common.JConstants;
 import com.simple.pulsejob.common.util.Requires;
 import com.simple.pulsejob.transport.CodecConfig;
-import com.simple.pulsejob.transport.Directory;
 import com.simple.pulsejob.transport.JConnection;
 import com.simple.pulsejob.transport.JOption;
 import com.simple.pulsejob.transport.UnresolvedAddress;
@@ -20,7 +19,8 @@ import com.simple.pulsejob.transport.netty.handler.ProtocolEncoder;
 import com.simple.pulsejob.transport.netty.handler.connector.ConnectionWatchdog;
 import com.simple.pulsejob.transport.netty.handler.connector.ConnectorHandler;
 import com.simple.pulsejob.transport.netty.handler.connector.ConnectorIdleStateTrigger;
-import com.simple.pulsejob.transport.processor.ConsumerProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -120,7 +120,7 @@ public class JNettyTcpConnector extends NettyTcpConnector {
     }
 
     @Override
-    protected void setProcessor(ConsumerProcessor processor) {
+    protected void setProcessor(ConnectorProcessor processor) {
         handler.processor(Requires.requireNotNull(processor, "processor"));
     }
 

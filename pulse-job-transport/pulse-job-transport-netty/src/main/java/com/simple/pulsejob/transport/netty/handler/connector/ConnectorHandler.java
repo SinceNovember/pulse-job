@@ -5,9 +5,13 @@ import com.simple.pulsejob.common.util.Signal;
 import com.simple.pulsejob.common.util.StackTraceUtil;
 import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
 import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
+import com.simple.pulsejob.transport.Status;
+import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.netty.channel.NettyChannel;
+import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
-import com.simple.pulsejob.transport.processor.ConsumerProcessor;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandler;
@@ -22,18 +26,18 @@ public class ConnectorHandler extends ChannelInboundHandlerAdapter {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ConnectorHandler.class);
 
-    private ConsumerProcessor processor;
+    private ConnectorProcessor processor;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel ch = ctx.channel();
 
-        if (msg instanceof JResponsePayload) {
+        if (msg instanceof JRequestPayload) {
+            JChannel jChannel = NettyChannel.attachChannel(ch);
             try {
-                processor.handleResponse(NettyChannel.attachChannel(ch), (JResponsePayload) msg);
+                processor.handleRequest(jChannel, (JRequestPayload) msg);
             } catch (Throwable t) {
-                logger.error("An exception was caught: {}, on {} #channelRead().", StackTraceUtil.stackTrace(t), ch);
-
+                processor.handleException(jChannel, (JRequestPayload) msg, Status.SERVER_ERROR, t);
             }
         } else {
             logger.warn("Unexpected message type received: {}, channel: {}.", msg.getClass(), ch);
@@ -89,11 +93,11 @@ public class ConnectorHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public ConsumerProcessor processor() {
+    public ConnectorProcessor processor() {
         return processor;
     }
 
-    public void processor(ConsumerProcessor processor) {
+    public void processor(ConnectorProcessor processor) {
         this.processor = processor;
     }
 }

@@ -61,5 +61,11 @@ public class JobContext {
         return request;
     }
 
+    public void setResult(Object result) {
+        this.result = result;
+    }
 
+    public void setCause(Throwable cause) {
+        this.cause = cause;
+    }
 }
