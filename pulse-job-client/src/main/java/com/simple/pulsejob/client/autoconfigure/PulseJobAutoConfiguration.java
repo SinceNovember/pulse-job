@@ -4,14 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.client.DefaultClient;
 import com.simple.pulsejob.client.invoker.DefaultInvoker;
 import com.simple.pulsejob.client.invoker.Invoker;
 import com.simple.pulsejob.client.log.CustomLogAppenderInitializer;
+import com.simple.pulsejob.client.processor.DefaultClientProcessor;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionRegistry;
 import com.simple.pulsejob.common.concurrent.executor.CloseableExecutor;
 import com.simple.pulsejob.common.concurrent.executor.ExecutorFactory;
 import com.simple.pulsejob.serialization.hessian.HessianSerializer;
 import com.simple.pulsejob.serialization.java.JavaSerializer;
+import com.simple.pulsejob.transport.Transporter;
+import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -55,6 +59,19 @@ public class PulseJobAutoConfiguration {
         serializerMap.put(SerializerType.JAVA.value(), new JavaSerializer());
         serializerMap.put(SerializerType.HESSIAN.value(), new HessianSerializer());
         return serializerMap;
+    }
+
+    @Bean
+    public ConnectorProcessor connectorProcessor(CloseableExecutor closeableExecutor,
+                                                 Map<Byte, Serializer> serializerMap,
+                                                 JobBeanDefinitionRegistry jobBeanDefinitionRegistry,
+                                                 Invoker invoker) {
+        return new DefaultClientProcessor(closeableExecutor, serializerMap, jobBeanDefinitionRegistry, invoker);
+    }
+
+    @Bean
+    public DefaultClient defaultClient(PulseJobProperties properties, ConnectorProcessor connectorProcessor) {
+        return new DefaultClient(properties, connectorProcessor);
     }
 
 }

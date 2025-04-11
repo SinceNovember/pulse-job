@@ -32,7 +32,6 @@ public class DefaultClient implements ApplicationListener<ApplicationReadyEvent>
         }
         if (connector.processor() == null) {
             connector.withProcessor(clientProcessor);
-
         }
         JConnection connect = connector.connect(new UnresolvedSocketAddress(
             properties.getAdmin().getHost(), properties.getAdmin().getPort()));
