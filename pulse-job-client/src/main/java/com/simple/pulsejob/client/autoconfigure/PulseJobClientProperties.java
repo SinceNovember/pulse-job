@@ -5,8 +5,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
-@ConfigurationProperties(prefix = PulseJobProperties.PULSE_JOB_PREFIX)
-public class PulseJobProperties {
+@ConfigurationProperties(prefix = PulseJobClientProperties.PULSE_JOB_PREFIX)
+public class PulseJobClientProperties {
 
     public static final String PULSE_JOB_PREFIX = "pulse.job";
 

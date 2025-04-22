@@ -77,10 +77,10 @@ public abstract class ConnectionWatchdog extends ChannelInboundHandlerAdapter im
                 attempts++;
             }
             long timeout = 2L << attempts;
-            timer.newTimeout(this, timeout, TimeUnit.MICROSECONDS);
+            timer.newTimeout(this, timeout, TimeUnit.MILLISECONDS);
         }
 
-        logger.warn("Disconnects with {}, address: {}, reconnect: {}.", ctx.channel(), remoteAddress, doReconnect);
+        logger.warn("attempts: {}, Disconnects with {}, address: {}, reconnect: {}.", attempts, ctx.channel(), remoteAddress, doReconnect);
 
         ctx.fireChannelInactive();
     }

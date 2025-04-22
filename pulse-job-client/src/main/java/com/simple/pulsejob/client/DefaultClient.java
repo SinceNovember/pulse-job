@@ -1,6 +1,6 @@
 package com.simple.pulsejob.client;
 
-import com.simple.pulsejob.client.autoconfigure.PulseJobProperties;
+import com.simple.pulsejob.client.autoconfigure.PulseJobClientProperties;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.transport.JConnection;
 import com.simple.pulsejob.transport.JConnector;
@@ -14,11 +14,11 @@ import org.springframework.context.ApplicationListener;
 @Slf4j
 public class DefaultClient implements ApplicationListener<ApplicationReadyEvent> {
 
-    private final PulseJobProperties properties;
+    private final PulseJobClientProperties properties;
     private final JConnector<JConnection> connector;
     private final ConnectorProcessor clientProcessor;
 
-    public DefaultClient(PulseJobProperties properties, ConnectorProcessor clientProcessor) {
+    public DefaultClient(PulseJobClientProperties properties, ConnectorProcessor clientProcessor) {
         this.properties = properties;
         this.connector = new JNettyTcpConnector();
         this.clientProcessor = clientProcessor;

@@ -1,1 +1,1 @@
-com.simple.pulsejob.client.autoconfigure.PulseJobAutoConfiguration
+com.simple.pulsejob.client.autoconfigure.PulseJobClientConfiguration

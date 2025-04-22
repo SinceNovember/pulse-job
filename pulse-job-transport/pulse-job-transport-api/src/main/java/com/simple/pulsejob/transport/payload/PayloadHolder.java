@@ -29,7 +29,6 @@ public abstract class PayloadHolder {
 
     private OutputBuf outputBuf;
 
-
     public byte serializerCode() {
         return serializerCode;
     }

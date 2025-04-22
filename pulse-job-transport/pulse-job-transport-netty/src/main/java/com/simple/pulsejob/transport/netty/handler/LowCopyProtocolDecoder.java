@@ -85,6 +85,8 @@ public class LowCopyProtocolDecoder extends ReplayingDecoder<LowCopyProtocolDeco
                 switch (header.messageCode()) {
                     case JProtocolHeader.HEARTBEAT:
                         break;
+                    case JProtocolHeader.REGISTER_SERVICE:
+
                     case JProtocolHeader.REQUEST: {
                         int length = checkBodySize(header.bodySize());
 

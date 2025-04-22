@@ -14,7 +14,6 @@ import com.simple.pulsejob.common.concurrent.executor.CloseableExecutor;
 import com.simple.pulsejob.common.concurrent.executor.ExecutorFactory;
 import com.simple.pulsejob.serialization.hessian.HessianSerializer;
 import com.simple.pulsejob.serialization.java.JavaSerializer;
-import com.simple.pulsejob.transport.Transporter;
 import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,10 +25,10 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @RequiredArgsConstructor
 @Import(CustomLogAppenderInitializer.class)
-@EnableConfigurationProperties(PulseJobProperties.class)
-public class PulseJobAutoConfiguration {
+@EnableConfigurationProperties(PulseJobClientProperties.class)
+public class PulseJobClientConfiguration {
 
-    private final PulseJobProperties properties;
+    private final PulseJobClientProperties properties;
 
     @Bean
     @ConditionalOnMissingBean
@@ -70,7 +69,7 @@ public class PulseJobAutoConfiguration {
     }
 
     @Bean
-    public DefaultClient defaultClient(PulseJobProperties properties, ConnectorProcessor connectorProcessor) {
+    public DefaultClient defaultClient(PulseJobClientProperties properties, ConnectorProcessor connectorProcessor) {
         return new DefaultClient(properties, connectorProcessor);
     }
 
