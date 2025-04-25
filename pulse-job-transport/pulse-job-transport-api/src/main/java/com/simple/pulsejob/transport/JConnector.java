@@ -16,8 +16,8 @@
 package com.simple.pulsejob.transport;
 
 import java.util.Collection;
+import com.simple.pulsejob.transport.channel.CopyOnWriteGroupList;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
-import com.simple.pulsejob.transport.processor.AcceptorProcessor;
 import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 
 /**
@@ -64,6 +64,10 @@ public interface JConnector<C> extends Transporter {
      * Returns all {@link JChannelGroup}s.
      */
     Collection<JChannelGroup> groups();
+
+    CopyOnWriteGroupList workerGroups(WorkerInfo workerInfo);
+
+    boolean addChannelGroup(WorkerInfo directory, JChannelGroup group);
 
     /**
      * Returns the {@link JConnectionManager}.

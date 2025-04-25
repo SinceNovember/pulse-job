@@ -9,19 +9,27 @@ import com.simple.pulsejob.common.concurrent.JNamedThreadFactory;
 import com.simple.pulsejob.common.util.ClassUtil;
 import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.common.util.Requires;
+import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
+import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 import com.simple.pulsejob.transport.*;
+import com.simple.pulsejob.transport.channel.CopyOnWriteGroupList;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
+import com.simple.pulsejob.transport.channel.WorkerJChannelGroup;
 import com.simple.pulsejob.transport.netty.channel.NettyChannelGroup;
 import com.simple.pulsejob.transport.netty.estimator.JMessageSizeEstimator;
-import com.simple.pulsejob.transport.processor.AcceptorProcessor;
 import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.HashedWheelTimer;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class NettyConnector implements JConnector<JConnection> {
+
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(NettyConnector.class);
+
 
     static {
         // touch off DefaultChannelId.<clinit>
@@ -36,6 +44,8 @@ public abstract class NettyConnector implements JConnector<JConnection> {
     private final ConcurrentMap<UnresolvedAddress, JChannelGroup> addressGroups = Maps.newConcurrentMap();
 
     private final JConnectionManager connectionManager = new JConnectionManager();
+
+    private final WorkerJChannelGroup workerGroup = new WorkerJChannelGroup();
 
     private Bootstrap bootstrap;
 
@@ -57,7 +67,6 @@ public abstract class NettyConnector implements JConnector<JConnection> {
     protected void init() {
         ThreadFactory workerFactory = workerThreadFactory();
         worker = initEventLoopGroup(nWorkers, workerFactory);
-
         bootstrap = new Bootstrap().group(worker);
 
         JConfig child = config();
@@ -106,6 +115,23 @@ public abstract class NettyConnector implements JConnector<JConnection> {
     @Override
     public Collection<JChannelGroup> groups() {
         return addressGroups.values();
+    }
+
+    @Override
+    public boolean addChannelGroup(WorkerInfo workerInfo, JChannelGroup group) {
+        CopyOnWriteGroupList groups = workerGroups(workerInfo);
+        boolean added = groups.addIfAbsent(group);
+        if (added) {
+            if (logger.isInfoEnabled()) {
+                logger.info("Added channel group: {} to {}.", group, workerInfo.workerString());
+            }
+        }
+        return added;
+    }
+
+    @Override
+    public CopyOnWriteGroupList workerGroups(WorkerInfo workerInfo) {
+        return workerGroup.find(workerInfo);
     }
 
     @Override

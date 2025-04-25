@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.simple.pulsejob.client;
+package com.simple.pulsejob.transport;
 
 
-import com.simple.pulsejob.client.model.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.Status;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 
 /**

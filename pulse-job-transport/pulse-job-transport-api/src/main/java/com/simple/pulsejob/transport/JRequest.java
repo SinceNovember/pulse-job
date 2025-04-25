@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.simple.pulsejob.client;
+package com.simple.pulsejob.transport;
 
 import java.util.Collections;
 import java.util.Map;
 import com.simple.plusejob.serialization.io.OutputBuf;
-import com.simple.pulsejob.client.model.metadata.MessageWrapper;
+import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.Data;
 
@@ -38,6 +38,18 @@ public class JRequest {
     private final JRequestPayload payload;   // 请求bytes/stream
 
     private MessageWrapper message;          // 请求对象
+
+    public JRequest() {
+        this(new JRequestPayload());
+    }
+
+    public JRequest(JRequestPayload payload) {
+        this.payload = payload;
+    }
+
+    public JRequestPayload payload() {
+        return payload;
+    }
 
     public long invokeId() {
         return payload.invokeId();

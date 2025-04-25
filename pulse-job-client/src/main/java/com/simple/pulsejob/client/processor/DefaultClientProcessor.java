@@ -2,10 +2,10 @@ package com.simple.pulsejob.client.processor;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.io.OutputBuf;
-import com.simple.pulsejob.client.JRequest;
+import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.client.JobContext;
 import com.simple.pulsejob.client.invoker.Invoker;
-import com.simple.pulsejob.client.model.metadata.ResultWrapper;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.client.processor.task.MessageTask;
 import com.simple.pulsejob.client.registry.JobBeanDefinition;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionLookupService;

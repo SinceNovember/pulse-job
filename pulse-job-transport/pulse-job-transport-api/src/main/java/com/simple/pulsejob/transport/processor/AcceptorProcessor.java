@@ -30,5 +30,7 @@ public interface AcceptorProcessor {
 
     void handleResponse(JChannel channel, JResponsePayload response) throws Exception;
 
+    void handleActive(JChannel channel);
+
     void shutdown();
 }

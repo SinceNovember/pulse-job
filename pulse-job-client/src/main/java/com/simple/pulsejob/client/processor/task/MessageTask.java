@@ -1,30 +1,23 @@
 package com.simple.pulsejob.client.processor.task;
 
 import com.simple.plusejob.serialization.Serializer;
-import com.simple.plusejob.serialization.io.InputBuf;
 import com.simple.plusejob.serialization.io.OutputBuf;
-import com.simple.pulsejob.client.JRequest;
+import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.client.JobContext;
-import com.simple.pulsejob.client.model.metadata.MessageWrapper;
-import com.simple.pulsejob.client.model.metadata.ResultWrapper;
+import com.simple.pulsejob.transport.metadata.MessageWrapper;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.client.processor.DefaultClientProcessor;
 import com.simple.pulsejob.client.registry.JobBeanDefinition;
 import com.simple.pulsejob.common.concurrent.executor.reject.RejectedRunnable;
-import com.simple.pulsejob.common.util.Reflects;
-import com.simple.pulsejob.common.util.Signal;
 import com.simple.pulsejob.common.util.SystemClock;
-import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
-import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 import com.simple.pulsejob.transport.CodecConfig;
 import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
-import com.simple.pulsejob.transport.exception.IoSignals;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j

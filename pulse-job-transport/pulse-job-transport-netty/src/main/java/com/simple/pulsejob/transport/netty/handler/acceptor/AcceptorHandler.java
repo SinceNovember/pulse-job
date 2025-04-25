@@ -72,6 +72,7 @@ public class AcceptorHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         int count = channelCounter.incrementAndGet();
+        processor.handleActive(NettyChannel.attachChannel(ctx.channel()));
 
         logger.info("Connects with {} as the {}th channel.", ctx.channel(), count);
 

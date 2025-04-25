@@ -36,6 +36,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOutboundHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Jupiter tcp acceptor based on netty.
  *

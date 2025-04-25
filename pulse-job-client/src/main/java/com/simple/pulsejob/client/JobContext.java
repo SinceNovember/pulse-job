@@ -1,7 +1,8 @@
 package com.simple.pulsejob.client;
 
-import com.simple.pulsejob.client.model.metadata.MessageWrapper;
+import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.client.registry.JobBeanDefinition;
+import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 
 public class JobContext {

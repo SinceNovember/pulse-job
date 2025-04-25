@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.simple.pulsejob.client.model.metadata;
+package com.simple.pulsejob.transport.metadata;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
@@ -35,6 +36,7 @@ import lombok.Data;
 @Data
 public class MessageWrapper implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1009813828866652852L;
 
     private String jobBeanDefinitionName; //任务名称
