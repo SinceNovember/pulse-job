@@ -25,7 +25,6 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.HashedWheelTimer;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public abstract class NettyConnector implements JConnector<JConnection> {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(NettyConnector.class);

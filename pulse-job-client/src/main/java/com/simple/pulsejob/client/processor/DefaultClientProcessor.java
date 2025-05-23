@@ -107,7 +107,7 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
         if (closeChannel) {
             channel.write(response, JChannel.CLOSE);
         } else {
-            channel.write(response, new JFutureListener<JChannel>() {
+            channel.write(response, new JFutureListener<>() {
 
                 @Override
                 public void operationSuccess(JChannel channel) throws Exception {

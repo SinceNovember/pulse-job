@@ -35,7 +35,7 @@ public class DefaultClient implements ApplicationListener<ApplicationReadyEvent>
         }
         JConnection connect = connector.connect(new UnresolvedSocketAddress(
             properties.getAdmin().getHost(), properties.getAdmin().getPort()));
-        connector.group();
+//        connector.group();
         connect.operationComplete(operationListener -> {
             log.info("[pulse-job] admin connect success!");
         });

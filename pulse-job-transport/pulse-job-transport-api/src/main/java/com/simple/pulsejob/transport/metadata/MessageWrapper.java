@@ -38,7 +38,6 @@ public class MessageWrapper implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1009813828866652852L;
-
     private String jobBeanDefinitionName; //任务名称
     private Object[] args;                  // 目标方法参数
 
