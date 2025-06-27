@@ -85,8 +85,7 @@ public class LowCopyProtocolDecoder extends ReplayingDecoder<LowCopyProtocolDeco
                 switch (header.messageCode()) {
                     case JProtocolHeader.HEARTBEAT:
                         break;
-                    case JProtocolHeader.REGISTER_SERVICE:
-
+                    case JProtocolHeader.REGISTER_EXECUTOR:
                     case JProtocolHeader.REQUEST: {
                         int length = checkBodySize(header.bodySize());
 
@@ -95,7 +94,7 @@ public class LowCopyProtocolDecoder extends ReplayingDecoder<LowCopyProtocolDeco
                         ByteBuf bodyByteBuf = in.readRetainedSlice(length);
                         JRequestPayload request = new JRequestPayload(header.id());
                         request.timestamp(SystemClock.millisClock().now());
-                        request.inputBuf(header.serializerCode(), new NettyInputBuf(bodyByteBuf));
+                        request.inputBuf(header.serializerCode(), header.messageCode(), new NettyInputBuf(bodyByteBuf));
 
                         out.add(request);
                         break;
@@ -106,7 +105,7 @@ public class LowCopyProtocolDecoder extends ReplayingDecoder<LowCopyProtocolDeco
 
                         JResponsePayload response = new JResponsePayload(header.id());
                         response.status(header.status());
-                        response.inputBuf(header.serializerCode(), new NettyInputBuf(bodyByteBuf));
+                        response.inputBuf(header.serializerCode(), header.messageCode(), new NettyInputBuf(bodyByteBuf));
 
                         out.add(response);
                         break;

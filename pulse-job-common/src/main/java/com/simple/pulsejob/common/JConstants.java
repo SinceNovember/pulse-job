@@ -10,11 +10,11 @@ import java.util.concurrent.TimeUnit;
 
 public interface JConstants {
 
-   String DEFAULT_THREAD_NAME_PREFIX = "pulse-job-";
+    String DEFAULT_THREAD_NAME_PREFIX = "pulse-job-";
 
     int AVAILABLE_PROCESSORS = Runtime.getRuntime().availableProcessors();
 
-    int DEFAULT_CORE_POOL_SIZE= AVAILABLE_PROCESSORS * 4;
+    int DEFAULT_CORE_POOL_SIZE = AVAILABLE_PROCESSORS * 4;
 
     int DEFAULT_MAX_POOL_SIZE = AVAILABLE_PROCESSORS * 6;
 
@@ -37,12 +37,13 @@ public interface JConstants {
     int WRITER_IDLE_TIME_SECONDS =
         SystemPropertyUtil.getInt("jupiter.io.writer.idle.time.seconds", 30);
 
+    String CHANNEL_ATTR_EXECUTOR_NAME_KEY = "executorName";
+
     static ThreadPoolExecutor createDefaultExecutor() {
         return new ThreadPoolExecutor(
-                DEFAULT_CORE_POOL_SIZE, DEFAULT_MAX_POOL_SIZE, 60L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(), new JNamedThreadFactory());
+            DEFAULT_CORE_POOL_SIZE, DEFAULT_MAX_POOL_SIZE, 60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(), new JNamedThreadFactory());
     }
-
 
 
 }

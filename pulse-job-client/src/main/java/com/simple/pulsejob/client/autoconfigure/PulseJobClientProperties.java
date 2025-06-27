@@ -18,6 +18,10 @@ public class PulseJobClientProperties {
 
     private int maxPoolSize = JConstants.DEFAULT_MAX_POOL_SIZE;
 
+    private String executorName;
+
+    private String serializerType;
+
     private PulseJobAdmin admin;
 
     @Data

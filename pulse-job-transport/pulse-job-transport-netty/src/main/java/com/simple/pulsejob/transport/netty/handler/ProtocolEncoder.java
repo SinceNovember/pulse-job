@@ -59,7 +59,7 @@ public class ProtocolEncoder extends MessageToByteEncoder<PayloadHolder> {
     }
 
     private void doEncodeRequest(JRequestPayload request, ByteBuf out) {
-        byte sign = JProtocolHeader.toSign(request.serializerCode(), JProtocolHeader.REQUEST);
+        byte sign = JProtocolHeader.toSign(request.serializerCode(), request.messageCode());
         long invokeId = request.invokeId();
         byte[] bytes = request.bytes();
         int length = bytes.length;

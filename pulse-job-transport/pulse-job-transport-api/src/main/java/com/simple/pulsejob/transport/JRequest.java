@@ -15,9 +15,7 @@
  */
 package com.simple.pulsejob.transport;
 
-import java.util.Collections;
-import java.util.Map;
-import com.simple.plusejob.serialization.io.OutputBuf;
+import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.Data;
@@ -38,6 +36,8 @@ public class JRequest {
     private final JRequestPayload payload;   // 请求bytes/stream
 
     private MessageWrapper message;          // 请求对象
+
+    private JobExecutorWrapper executor;
 
     public JRequest() {
         this(new JRequestPayload());

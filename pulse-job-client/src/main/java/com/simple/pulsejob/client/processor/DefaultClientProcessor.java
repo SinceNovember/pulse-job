@@ -2,6 +2,7 @@ package com.simple.pulsejob.client.processor;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.io.OutputBuf;
+import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.client.JobContext;
 import com.simple.pulsejob.client.invoker.Invoker;
@@ -23,6 +24,7 @@ import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -41,9 +43,16 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
 
     private final Invoker invoker;
 
+    private final String executorName;
+
     @Override
     public Serializer serializer(Byte code) {
         return serializerMap.get(code);
+    }
+
+    @Override
+    public void handleActive(JChannel channel) {
+        channel.attachExecutorName(executorName);
     }
 
     @Override
@@ -98,10 +107,10 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
         if (CodecConfig.isCodecLowCopy()) {
             OutputBuf outputBuf =
                 serializer.writeObject(channel.allocOutputBuf(), result);
-            response.outputBuf(s_code, outputBuf);
+            response.outputBuf(s_code, JProtocolHeader.RESPONSE, outputBuf);
         } else {
             byte[] bytes = serializer.writeObject(result);
-            response.bytes(s_code, bytes);
+            response.bytes(s_code, JProtocolHeader.RESPONSE, bytes);
         }
 
         if (closeChannel) {

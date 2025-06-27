@@ -18,9 +18,10 @@ public interface JobInfoMapper extends JpaRepository<JobInfo, Integer>, JpaSpeci
     List<JobInfo> findByJobHandler(String jobHandler);
     
     /**
-     * 根据cronType查找任务
-     * @param cronType cron类型
+     * 根据executorId查找任务
+     * @param executorId 执行器ID
      * @return 任务列表
      */
-    List<JobInfo> findByCronType(Short cronType);
+    List<JobInfo> findByExecutorId(Integer executorId);
+
 } 

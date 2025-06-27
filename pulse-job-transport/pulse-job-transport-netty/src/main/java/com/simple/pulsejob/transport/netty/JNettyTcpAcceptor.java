@@ -90,7 +90,7 @@ public class JNettyTcpAcceptor extends NettyTcpAcceptor {
     public static final int DEFAULT_ACCEPTOR_PORT = 18090;
 
     // handlers
-    private final AcceptorIdleStateTrigger idleStateTrigger = new AcceptorIdleStateTrigger();
+    private final AcceptorIdleStateTrigger idleStateTrigger = new AcceptorIdleStateTrigger(processor());
     private final ChannelOutboundHandler encoder =
             CodecConfig.isCodecLowCopy() ? new LowCopyProtocolEncoder() : new ProtocolEncoder();
     private final AcceptorHandler handler = new AcceptorHandler();

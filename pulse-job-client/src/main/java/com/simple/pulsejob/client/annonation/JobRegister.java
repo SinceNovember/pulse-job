@@ -70,4 +70,6 @@ public @interface JobRegister {
      * 描述信息
      */
     String description() default "";
+
+    boolean autoRegister() default true;
 }

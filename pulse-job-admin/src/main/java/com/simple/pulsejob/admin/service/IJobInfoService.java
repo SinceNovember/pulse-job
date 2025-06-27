@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.service;
 
 import com.simple.pulsejob.admin.model.entity.JobInfo;
+import com.simple.pulsejob.admin.model.param.JobInfoParam;
 
 import java.util.List;
 import java.util.Optional;
@@ -9,10 +10,10 @@ public interface IJobInfoService {
     
     /**
      * 保存任务信息
-     * @param jobInfo 任务信息
-     * @return 保存后的任务信息
+     *
+     * @param jobInfoParam 任务信息
      */
-    JobInfo saveJobInfo(JobInfo jobInfo);
+    void addJobInfo(JobInfoParam jobInfoParam);
     
     /**
      * 根据ID查询任务信息
@@ -35,12 +36,12 @@ public interface IJobInfoService {
     List<JobInfo> getJobInfosByHandler(String jobHandler);
     
     /**
-     * 根据cronType查询任务信息
-     * @param cronType cron类型
+     * 根据executorId查询任务信息
+     * @param executorId 执行器ID
      * @return 任务信息列表
      */
-    List<JobInfo> getJobInfosByCronType(Short cronType);
-    
+    List<JobInfo> getJobInfosByExecutorId(Integer executorId);
+
     /**
      * 更新任务信息
      * @param jobInfo 任务信息
@@ -57,8 +58,7 @@ public interface IJobInfoService {
 
     /**
      * 批量保存任务信息
-     * @param jobInfos 任务信息列表
-     * @return 保存后的任务信息列表
+     * @param jobInfoParams 任务信息列表
      */
-    List<JobInfo> batchSaveJobInfos(List<JobInfo> jobInfos);
+    void batchAddJobInfos(List<JobInfoParam> jobInfoParams);
 } 

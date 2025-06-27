@@ -16,6 +16,8 @@
 package com.simple.pulsejob.transport.netty.handler.acceptor;
 
 import com.simple.pulsejob.transport.exception.IoSignals;
+import com.simple.pulsejob.transport.netty.channel.NettyChannel;
+import com.simple.pulsejob.transport.processor.AcceptorProcessor;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -31,11 +33,20 @@ import io.netty.handler.timeout.IdleStateEvent;
 @ChannelHandler.Sharable
 public class AcceptorIdleStateTrigger extends ChannelInboundHandlerAdapter {
 
+    private final AcceptorProcessor processor;
+
+    public AcceptorIdleStateTrigger(AcceptorProcessor processor) {
+        this.processor = processor;
+    }
+
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
             IdleState state = ((IdleStateEvent) evt).state();
             if (state == IdleState.READER_IDLE) {
+                if (processor != null) {
+                    processor.handleInactive(NettyChannel.attachChannel(ctx.channel()));
+                }
                 throw IoSignals.READER_IDLE;
             }
         } else {

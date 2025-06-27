@@ -35,6 +35,8 @@ public interface ConnectorProcessor {
      */
     Serializer serializer(Byte code);
 
+    void handleActive(JChannel channel);
+
     /**
      * 处理正常请求
      */

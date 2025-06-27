@@ -83,7 +83,7 @@ public class ProtocolDecoder extends ReplayingDecoder<ProtocolDecoder.State> {
 
                         JRequestPayload request = new JRequestPayload(header.id());
                         request.timestamp(SystemClock.millisClock().now());
-                        request.bytes(header.serializerCode(), bytes);
+                        request.bytes(header.serializerCode(), header.messageCode(), bytes);
 
                         out.add(request);
                         break;
@@ -95,7 +95,7 @@ public class ProtocolDecoder extends ReplayingDecoder<ProtocolDecoder.State> {
 
                         JResponsePayload response = new JResponsePayload(header.id());
                         response.status(header.status());
-                        response.bytes(header.serializerCode(), bytes);
+                        response.bytes(header.serializerCode(), header.messageCode(), bytes);
 
                         out.add(response);
                         break;

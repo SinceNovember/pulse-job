@@ -23,6 +23,8 @@ public abstract class PayloadHolder {
 
     private byte serializerCode;
 
+    private byte messageCode;
+
     private byte[] bytes;
 
     private InputBuf inputBuf;
@@ -33,12 +35,17 @@ public abstract class PayloadHolder {
         return serializerCode;
     }
 
+    public byte messageCode() {
+        return messageCode;
+    }
+
     public byte[] bytes() {
         return bytes;
     }
 
-    public void bytes(byte serializerCode, byte[] bytes) {
+    public void bytes(byte serializerCode, byte messageCode, byte[] bytes) {
         this.serializerCode = serializerCode;
+        this.messageCode = messageCode;
         this.bytes = bytes;
     }
 
@@ -46,8 +53,9 @@ public abstract class PayloadHolder {
         return inputBuf;
     }
 
-    public void inputBuf(byte serializerCode, InputBuf inputBuf) {
+    public void inputBuf(byte serializerCode, byte messageCode, InputBuf inputBuf) {
         this.serializerCode = serializerCode;
+        this.messageCode = messageCode;
         this.inputBuf = inputBuf;
     }
 
@@ -55,8 +63,9 @@ public abstract class PayloadHolder {
         return outputBuf;
     }
 
-    public void outputBuf(byte serializerCode, OutputBuf outputBuf) {
+    public void outputBuf(byte serializerCode, byte messageCode, OutputBuf outputBuf) {
         this.serializerCode = serializerCode;
+        this.messageCode = messageCode;
         this.outputBuf = outputBuf;
     }
 

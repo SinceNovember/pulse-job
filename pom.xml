@@ -39,11 +39,11 @@
         <lombok.version>1.18.30</lombok.version>
         <jpa.version>3.4.3</jpa.version>
         <mysql.version>8.0.30</mysql.version>
+        <mapstrcut.version>1.5.5.Final</mapstrcut.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-
             <!-- # pulse-job module dependency: begin -->
             <dependency>
                 <groupId>${project.groupId}</groupId>
@@ -165,6 +165,17 @@
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstrcut.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstrcut.version}</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

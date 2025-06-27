@@ -1,5 +1,6 @@
 package com.simple.pulsejob.admin.model.entity;
 
+import com.simple.pulsejob.admin.model.enums.ScheduleTypeEnum;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -21,10 +22,13 @@ public class JobInfo implements Serializable {
     @Column(name = "job_handler", length = 100)
     private String jobHandler;
 
-    @Column(name = "cron", length = 100)
-    private String cron;
+    @Column(name = "schedule_rate", length = 100)
+    private String scheduleRate;
 
-    @Column(name = "cron_type")
-    private Short cronType;
+    @Column(name = "schedule_type")
+    private ScheduleTypeEnum scheduleType;
+
+    @Column(name = "executor_id")
+    private Integer executorId;
 
 } 

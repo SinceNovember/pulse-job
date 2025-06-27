@@ -87,7 +87,8 @@ import io.netty.handler.flush.FlushConsolidationHandler;
 public class JNettyDomainAcceptor extends NettyDomainAcceptor {
 
     // handlers
-    private final AcceptorIdleStateTrigger idleStateTrigger = new AcceptorIdleStateTrigger();
+    private final AcceptorIdleStateTrigger idleStateTrigger = new AcceptorIdleStateTrigger(processor());
+
     private final ChannelOutboundHandler encoder =
             CodecConfig.isCodecLowCopy() ? new LowCopyProtocolEncoder() : new ProtocolEncoder();
     private final AcceptorHandler handler = new AcceptorHandler();

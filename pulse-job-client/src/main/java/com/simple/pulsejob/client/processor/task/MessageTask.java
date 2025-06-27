@@ -2,6 +2,7 @@ package com.simple.pulsejob.client.processor.task;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.io.OutputBuf;
+import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.client.JobContext;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
@@ -91,10 +92,10 @@ public class MessageTask implements RejectedRunnable {
         if (CodecConfig.isCodecLowCopy()) {
             OutputBuf outputBuf =
                 serializer.writeObject(channel.allocOutputBuf(), result);
-            responsePayload.outputBuf(s_code, outputBuf);
+            responsePayload.outputBuf(s_code, JProtocolHeader.RESPONSE, outputBuf);
         } else {
             byte[] bytes = serializer.writeObject(result);
-            responsePayload.bytes(s_code, bytes);
+            responsePayload.bytes(s_code, JProtocolHeader.RESPONSE, bytes);
         }
 
         responsePayload.status(Status.OK.value());

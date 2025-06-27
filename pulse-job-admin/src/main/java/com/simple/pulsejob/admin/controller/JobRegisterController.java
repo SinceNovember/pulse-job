@@ -1,7 +1,7 @@
 package com.simple.pulsejob.admin.controller;
 
 import java.util.List;
-import com.simple.pulsejob.admin.model.param.JobRegisterParam;
+import com.simple.pulsejob.admin.model.param.JobInfoParam;
 import com.simple.pulsejob.admin.service.IJobRegisterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +17,7 @@ public class JobRegisterController {
     private final IJobRegisterService jobRegisterService;
 
     @GetMapping("/register")
-    public void registerJob(@RequestBody List<JobRegisterParam> jobRegisterParams) {
+    public void registerJob(@RequestBody List<JobInfoParam> jobRegisterParams) {
         jobRegisterService.registerJob(jobRegisterParams);
     }
 

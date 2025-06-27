@@ -108,7 +108,7 @@ public abstract class NettyTcpConnector extends NettyConnector {
     }
 
     @Override
-    public JConnection connect(UnresolvedAddress address) {
+    public JNettyConnection connect(UnresolvedAddress address) {
         return connect(address, false);
     }
 

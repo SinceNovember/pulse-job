@@ -1,10 +1,12 @@
 package com.simple.pulsejob.transport.netty.channel;
 
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import com.simple.plusejob.serialization.io.OutputBuf;
+import com.simple.pulsejob.common.JConstants;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
@@ -22,7 +24,7 @@ import io.netty.util.internal.PlatformDependent;
 /**
  * 对Netty {@link Channel} 的包装, 通过静态方法 {@link #attachChannel(Channel)} 获取一个实例,
  * {@link NettyChannel} 实例构造后会attach到对应 {@link Channel} 上, 不需要每次创建.
- *
+ * <p>
  * jupiter
  * org.jupiter.transport.netty.channel
  *
@@ -31,6 +33,10 @@ import io.netty.util.internal.PlatformDependent;
 public class NettyChannel implements JChannel {
 
     private static final AttributeKey<NettyChannel> NETTY_CHANNEL_KEY = AttributeKey.valueOf("netty.channel");
+
+    private static final AttributeKey<String> NETTY_CHANNEL_EXECUTOR_KEY =
+        AttributeKey.valueOf(JConstants.CHANNEL_ATTR_EXECUTOR_NAME_KEY);
+
 
     public static NettyChannel attachChannel(Channel channel) {
         Attribute<NettyChannel> attr = channel.attr(NETTY_CHANNEL_KEY);
@@ -45,6 +51,7 @@ public class NettyChannel implements JChannel {
         return nChannel;
     }
 
+
     private final Channel channel;
     private final AdaptiveOutputBufAllocator.Handle allocHandle = AdaptiveOutputBufAllocator.DEFAULT.newHandle();
 
@@ -52,6 +59,7 @@ public class NettyChannel implements JChannel {
 
     private final Runnable runAllTasks = this::runAllTasks;
 
+    private String executorName;
 
     private NettyChannel(Channel channel) {
         this.channel = channel;
@@ -62,8 +70,18 @@ public class NettyChannel implements JChannel {
     }
 
     @Override
+    public void attachExecutorName(String executorName) {
+        this.channel.attr(NETTY_CHANNEL_EXECUTOR_KEY).set(executorName);
+    }
+
+    @Override
     public String id() {
         return channel.id().asShortText(); // 注意这里的id并不是全局唯一, 单节点中是唯一的
+    }
+
+    @Override
+    public String executorName() {
+        return this.channel.attr(NETTY_CHANNEL_EXECUTOR_KEY).get();
     }
 
     @Override
@@ -84,6 +102,30 @@ public class NettyChannel implements JChannel {
     @Override
     public SocketAddress remoteAddress() {
         return channel.remoteAddress();
+    }
+
+    @Override
+    public String localIp() {
+        InetSocketAddress address = (InetSocketAddress) channel.localAddress();
+        return address.getAddress().getHostAddress();
+    }
+
+    @Override
+    public String remoteIp() {
+        InetSocketAddress address = (InetSocketAddress) channel.remoteAddress();
+        return address.getAddress().getHostAddress();
+    }
+
+    @Override
+    public String localIpPort() {
+        InetSocketAddress address = (InetSocketAddress) channel.localAddress();
+        return address.getAddress().getHostAddress() + ":" + address.getPort();
+    }
+
+    @Override
+    public String remoteIpPort() {
+        InetSocketAddress address = (InetSocketAddress) channel.remoteAddress();
+        return address.getAddress().getHostAddress() + ":" + address.getPort();
     }
 
     @Override
@@ -127,7 +169,7 @@ public class NettyChannel implements JChannel {
 
     @Override
     public JChannel write(Object msg) {
-        channel.write(msg, channel.voidPromise());
+        channel.writeAndFlush(msg, channel.voidPromise());
         return this;
     }
 

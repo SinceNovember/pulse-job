@@ -9,6 +9,7 @@ import com.simple.pulsejob.client.invoker.DefaultInvoker;
 import com.simple.pulsejob.client.invoker.Invoker;
 import com.simple.pulsejob.client.log.CustomLogAppenderInitializer;
 import com.simple.pulsejob.client.processor.DefaultClientProcessor;
+import com.simple.pulsejob.client.registry.JobAutoRegister;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionRegistry;
 import com.simple.pulsejob.common.concurrent.executor.CloseableExecutor;
 import com.simple.pulsejob.common.concurrent.executor.ExecutorFactory;
@@ -19,12 +20,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
 @RequiredArgsConstructor
-@Import(CustomLogAppenderInitializer.class)
+@Import({JobAutoRegister.class, CustomLogAppenderInitializer.class})
 @EnableConfigurationProperties(PulseJobClientProperties.class)
 public class PulseJobClientConfiguration {
 
@@ -65,12 +67,16 @@ public class PulseJobClientConfiguration {
                                                  Map<Byte, Serializer> serializerMap,
                                                  JobBeanDefinitionRegistry jobBeanDefinitionRegistry,
                                                  Invoker invoker) {
-        return new DefaultClientProcessor(closeableExecutor, serializerMap, jobBeanDefinitionRegistry, invoker);
+        return new DefaultClientProcessor(closeableExecutor, serializerMap, jobBeanDefinitionRegistry, invoker,
+            properties.getExecutorName());
     }
 
     @Bean
-    public DefaultClient defaultClient(PulseJobClientProperties properties, ConnectorProcessor connectorProcessor) {
-        return new DefaultClient(properties, connectorProcessor);
+    public DefaultClient defaultClient(PulseJobClientProperties properties,
+                                       ConnectorProcessor connectorProcessor,
+                                       Map<Byte, Serializer> serializerMap) {
+
+        return new DefaultClient(properties, connectorProcessor, serializerMap);
     }
 
 }

@@ -19,6 +19,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.ReferenceCountUtil;
+import lombok.Value;
 
 
 @ChannelHandler.Sharable
@@ -27,6 +28,11 @@ public class ConnectorHandler extends ChannelInboundHandlerAdapter {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ConnectorHandler.class);
 
     private ConnectorProcessor processor;
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        processor.handleActive(NettyChannel.attachChannel(ctx.channel()));
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -45,6 +51,7 @@ public class ConnectorHandler extends ChannelInboundHandlerAdapter {
             ReferenceCountUtil.release(msg);
         }
     }
+
 
     @Override
     public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {

@@ -134,7 +134,7 @@ public class JNettyDomainConnector extends NettyDomainConnector {
     }
 
     @Override
-    public JConnection connect(UnresolvedAddress address, boolean async) {
+    public JNettyConnection connect(UnresolvedAddress address, boolean async) {
         setOptions();
 
         final Bootstrap boot = bootstrap();

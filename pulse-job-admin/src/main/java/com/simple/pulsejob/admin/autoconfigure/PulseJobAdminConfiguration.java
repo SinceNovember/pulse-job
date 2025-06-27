@@ -30,11 +30,6 @@ public class PulseJobAdminConfiguration {
     }
 
     @Bean
-    public AcceptorProcessor defaultAcceptorProcessor() {
-        return new DefaultAcceptorProcessor();
-    }
-
-    @Bean
     public Map<Byte, Serializer> serializerMap() {
         Map<Byte, Serializer> serializerMap = new HashMap<>();
         serializerMap.put(SerializerType.JAVA.value(), new JavaSerializer());

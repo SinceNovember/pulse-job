@@ -1,11 +1,11 @@
 package com.simple.pulsejob.admin.service.impl;
 
+import com.simple.pulsejob.admin.mapping.JobInfoMapping;
 import com.simple.pulsejob.admin.model.entity.JobInfo;
 import com.simple.pulsejob.admin.mapper.JobInfoMapper;
+import com.simple.pulsejob.admin.model.param.JobInfoParam;
 import com.simple.pulsejob.admin.service.IJobInfoService;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,8 +19,9 @@ public class JobInfoServiceImpl implements IJobInfoService {
     private final JobInfoMapper jobInfoMapper;
 
     @Override
-    public JobInfo saveJobInfo(JobInfo jobInfo) {
-        return jobInfoMapper.save(jobInfo);
+    public void addJobInfo(JobInfoParam jobInfoParam) {
+        JobInfo jobInfo = JobInfoMapping.INSTANCE.toJobInfo(jobInfoParam);
+        jobInfoMapper.save(jobInfo);
     }
 
     @Override
@@ -43,8 +44,8 @@ public class JobInfoServiceImpl implements IJobInfoService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<JobInfo> getJobInfosByCronType(Short cronType) {
-        return jobInfoMapper.findByCronType(cronType);
+    public List<JobInfo> getJobInfosByExecutorId(Integer executorId) {
+        return jobInfoMapper.findByExecutorId(executorId);
     }
 
     @Override
@@ -61,11 +62,12 @@ public class JobInfoServiceImpl implements IJobInfoService {
     }
 
     @Override
-    @Transactional
-    public List<JobInfo> batchSaveJobInfos(List<JobInfo> jobInfos) {
-        if (jobInfos == null || jobInfos.isEmpty()) {
+    @Transactional(rollbackFor = Exception.class)
+    public void batchAddJobInfos(List<JobInfoParam> jobInfoParams) {
+        if (jobInfoParams == null || jobInfoParams.isEmpty()) {
             throw new IllegalArgumentException("批量保存的任务信息列表不能为空");
         }
-        return jobInfoMapper.saveAll(jobInfos);
+        List<JobInfo> jobInfos = JobInfoMapping.INSTANCE.toJobInfoList(jobInfoParams);
+        jobInfoMapper.saveAll(jobInfos);
     }
 }    

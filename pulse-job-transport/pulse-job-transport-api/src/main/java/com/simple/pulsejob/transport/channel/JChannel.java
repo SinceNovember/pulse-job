@@ -22,6 +22,10 @@ public interface JChannel {
      */
     String id();
 
+    String executorName();
+
+    void attachExecutorName(String executorName);
+
     /**
      * Return {@code true} if the {@link JChannel} is active and so connected.
      */
@@ -42,6 +46,14 @@ public interface JChannel {
      * Returns the remote address where this channel is connected to.
      */
     SocketAddress remoteAddress();
+
+    String localIp();
+
+    String remoteIp();
+
+    String localIpPort();
+
+    String remoteIpPort();
 
     /**
      * Returns {@code true} if and only if the I/O thread will perform the

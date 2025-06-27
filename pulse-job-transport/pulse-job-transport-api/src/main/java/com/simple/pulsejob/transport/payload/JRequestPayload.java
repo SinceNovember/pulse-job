@@ -61,4 +61,5 @@ public class JRequestPayload extends PayloadHolder {
     public void timestamp(long timestamp) {
         this.timestamp = timestamp;
     }
+
 }

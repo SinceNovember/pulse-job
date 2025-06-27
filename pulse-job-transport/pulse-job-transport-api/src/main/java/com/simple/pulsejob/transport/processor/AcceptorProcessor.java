@@ -16,6 +16,7 @@
 package com.simple.pulsejob.transport.processor;
 
 import com.simple.pulsejob.transport.channel.JChannel;
+import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 
 /**
@@ -28,9 +29,13 @@ import com.simple.pulsejob.transport.payload.JResponsePayload;
  */
 public interface AcceptorProcessor {
 
-    void handleResponse(JChannel channel, JResponsePayload response) throws Exception;
+    void handleRequest(JChannel channel, JRequestPayload request);
+
+    void handleResponse(JChannel channel, JResponsePayload response);
 
     void handleActive(JChannel channel);
+
+    void handleInactive(JChannel channel);
 
     void shutdown();
 }
