@@ -105,7 +105,9 @@ public abstract class ConnectionWatchdog extends ChannelInboundHandlerAdapter im
                 boolean succeed = f.isSuccess();
                 logger.warn("Reconnects with {}, {}.", remoteAddress, succeed ? "succeed" : "failed");
 
-                if (!succeed) {
+                if (succeed) {
+
+                } else {
                     f.channel().pipeline().fireChannelInactive();
                 }
             });

@@ -34,10 +34,6 @@ public class NettyChannel implements JChannel {
 
     private static final AttributeKey<NettyChannel> NETTY_CHANNEL_KEY = AttributeKey.valueOf("netty.channel");
 
-    private static final AttributeKey<String> NETTY_CHANNEL_EXECUTOR_KEY =
-        AttributeKey.valueOf(JConstants.CHANNEL_ATTR_EXECUTOR_NAME_KEY);
-
-
     public static NettyChannel attachChannel(Channel channel) {
         Attribute<NettyChannel> attr = channel.attr(NETTY_CHANNEL_KEY);
         NettyChannel nChannel = attr.get();
@@ -51,15 +47,12 @@ public class NettyChannel implements JChannel {
         return nChannel;
     }
 
-
     private final Channel channel;
     private final AdaptiveOutputBufAllocator.Handle allocHandle = AdaptiveOutputBufAllocator.DEFAULT.newHandle();
 
     private final Queue<Runnable> taskQueue = PlatformDependent.newMpscQueue(1024);
 
     private final Runnable runAllTasks = this::runAllTasks;
-
-    private String executorName;
 
     private NettyChannel(Channel channel) {
         this.channel = channel;
@@ -70,19 +63,10 @@ public class NettyChannel implements JChannel {
     }
 
     @Override
-    public void attachExecutorName(String executorName) {
-        this.channel.attr(NETTY_CHANNEL_EXECUTOR_KEY).set(executorName);
-    }
-
-    @Override
     public String id() {
         return channel.id().asShortText(); // 注意这里的id并不是全局唯一, 单节点中是唯一的
     }
 
-    @Override
-    public String executorName() {
-        return this.channel.attr(NETTY_CHANNEL_EXECUTOR_KEY).get();
-    }
 
     @Override
     public boolean isActive() {

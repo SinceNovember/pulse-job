@@ -77,13 +77,6 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     public void handleInactive(JChannel channel) {
         log.info("[pulse-job] connection closed: {}", channel.remoteAddress());
         CLIENT_CHANNELS.remove(channel);
-
-        // 清理执行器映射
-        String executorName = getExecutorNameByChannel(channel);
-        if (StringUtil.isNotBlank(executorName)) {
-            EXECUTOR_CHANNELS.remove(executorName);
-            log.info("[pulse-job] executor offline: {}", executorName);
-        }
     }
 
     @Override
@@ -97,16 +90,6 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
      */
     private void handleExecutorRegister(JChannel channel, JobExecutorWrapper executorWrapper) {
         jobExecutorService.autoRegisterJobExecutor(channel, executorWrapper);
-    }
-
-    /**
-     * 根据Channel获取执行器名称
-     */
-    private String getExecutorNameByChannel(JChannel channel) {
-        if (channel instanceof NettyChannel) {
-            return ((NettyChannel) channel).executorName();
-        }
-        return null;
     }
 
     /**

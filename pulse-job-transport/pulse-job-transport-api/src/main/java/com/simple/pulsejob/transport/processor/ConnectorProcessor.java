@@ -16,6 +16,7 @@
 package com.simple.pulsejob.transport.processor;
 
 import com.simple.plusejob.serialization.Serializer;
+import com.simple.pulsejob.transport.JConnection;
 import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
@@ -36,6 +37,7 @@ public interface ConnectorProcessor {
     Serializer serializer(Byte code);
 
     void handleActive(JChannel channel);
+
 
     /**
      * 处理正常请求

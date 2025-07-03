@@ -67,8 +67,7 @@ public class PulseJobClientConfiguration {
                                                  Map<Byte, Serializer> serializerMap,
                                                  JobBeanDefinitionRegistry jobBeanDefinitionRegistry,
                                                  Invoker invoker) {
-        return new DefaultClientProcessor(closeableExecutor, serializerMap, jobBeanDefinitionRegistry, invoker,
-            properties.getExecutorName());
+        return new DefaultClientProcessor(closeableExecutor, serializerMap, jobBeanDefinitionRegistry, invoker, properties);
     }
 
     @Bean

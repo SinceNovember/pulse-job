@@ -22,10 +22,6 @@ public interface JChannel {
      */
     String id();
 
-    String executorName();
-
-    void attachExecutorName(String executorName);
-
     /**
      * Return {@code true} if the {@link JChannel} is active and so connected.
      */
