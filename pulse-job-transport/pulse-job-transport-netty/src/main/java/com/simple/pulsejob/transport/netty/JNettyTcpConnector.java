@@ -10,6 +10,7 @@ import com.simple.pulsejob.transport.JOption;
 import com.simple.pulsejob.transport.UnresolvedAddress;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
 import com.simple.pulsejob.transport.exception.ConnectFailedException;
+import com.simple.pulsejob.transport.netty.channel.NettyChannel;
 import com.simple.pulsejob.transport.netty.handler.IdleStateChecker;
 import com.simple.pulsejob.transport.netty.handler.LowCopyProtocolDecoder;
 import com.simple.pulsejob.transport.netty.handler.LowCopyProtocolEncoder;

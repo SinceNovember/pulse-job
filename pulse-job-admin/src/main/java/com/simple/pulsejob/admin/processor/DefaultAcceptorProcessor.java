@@ -21,6 +21,8 @@ import com.simple.pulsejob.transport.processor.AcceptorProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 @Slf4j
 @Component
@@ -32,7 +34,8 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     public static final Map<String, List<JChannelGroup>> EXECUTOR_CHANNEL_GROUPS = new HashMap<>();
 
     // 执行器名称到Channel的映射
-    private static final Map<String, JChannel> EXECUTOR_CHANNELS = new HashMap<>();
+    private static final Map<JChannel, String> CHANNEL_EXECUTOR_MAP = new HashMap<>();
+
 
     private final Map<Byte, Serializer> serializerMap;
 
@@ -50,8 +53,6 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
      */
     @Override
     public void handleRequest(JChannel channel, JRequestPayload request) {
-        System.out.println(request);
-        // 反序列化消息
         Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
         InputBuf inputBuf = request.inputBuf();
         if (JProtocolHeader.REGISTER_EXECUTOR == request.messageCode()) {
@@ -76,12 +77,22 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     @Override
     public void handleInactive(JChannel channel) {
         log.info("[pulse-job] connection closed: {}", channel.remoteAddress());
+        handleExecutorDeregister(channel);
         CLIENT_CHANNELS.remove(channel);
+    }
+
+    private void handleExecutorDeregister(JChannel channel) {
+        String executorName = CHANNEL_EXECUTOR_MAP.get(channel);
+        if (StringUtil.isBlank(executorName)) {
+            return;
+        }
+        jobExecutorService.deregisterJobExecutor(channel, executorName);
+        CHANNEL_EXECUTOR_MAP.remove(channel);
     }
 
     @Override
     public void shutdown() {
-        EXECUTOR_CHANNELS.clear();
+        CHANNEL_EXECUTOR_MAP.clear();
         CLIENT_CHANNELS.clear();
     }
 
@@ -90,12 +101,6 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
      */
     private void handleExecutorRegister(JChannel channel, JobExecutorWrapper executorWrapper) {
         jobExecutorService.autoRegisterJobExecutor(channel, executorWrapper);
-    }
-
-    /**
-     * 根据执行器名称获取Channel
-     */
-    public static JChannel getChannelByExecutorName(String executorName) {
-        return EXECUTOR_CHANNELS.get(executorName);
+        CHANNEL_EXECUTOR_MAP.putIfAbsent(channel, executorWrapper.getExecutorName());
     }
 }

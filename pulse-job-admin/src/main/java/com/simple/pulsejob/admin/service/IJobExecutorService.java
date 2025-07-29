@@ -70,4 +70,16 @@ public interface IJobExecutorService {
      * @param jobExecutorParams 执行器信息列表
      */
     void batchAddJobExecutors(List<JobExecutorParam> jobExecutorParams);
-} 
+
+    /**
+     * 注销对应ip：port的注册执行器
+     *
+     * @param channel
+     */
+    void deregisterJobExecutor(JChannel channel, String executorName);
+
+    /**
+     * admin启动的时候先清除掉库里的所有executor地址，防止admin断电等强制关闭导致执行器连接信息未清理清理完
+     */
+    void clearAllJobExecutorAddress();
+}

@@ -45,30 +45,25 @@ public class DefaultClient implements ApplicationListener<ApplicationReadyEvent>
         if (connector.processor() == null) {
             connector.withProcessor(clientProcessor);
         }
-        JNettyConnection connect = connector.connect(new UnresolvedSocketAddress(
-            properties.getAdmin().getHost(), properties.getAdmin().getPort()));
-        connect.operationComplete(operationListener -> {
-            log.info("[pulse-job] admin connect success!");
-            Channel channel = connect.getFuture().channel();
-            registerExecutor(channel);
-        });
-
+        connector.connect(new UnresolvedSocketAddress(
+                properties.getAdmin().getHost(), properties.getAdmin().getPort()))
+            .operationComplete(operationListener -> log.info("[pulse-job] admin connect success!"));
     }
 
     private void registerExecutor(Channel channel) {
         JobExecutorWrapper executorWrapper = new JobExecutorWrapper(properties.getExecutorName());
 
         NettyChannel nettyChannel = NettyChannel.attachChannel(channel);
-        Serializer serializer = serializerMap.get((byte)0x04);
+        Serializer serializer = serializerMap.get((byte) 0x04);
 
         JRequestPayload requestPayload = new JRequestPayload();
         if (CodecConfig.isCodecLowCopy()) {
             OutputBuf outputBuf =
                 serializer.writeObject(nettyChannel.allocOutputBuf(), executorWrapper);
-            requestPayload.outputBuf((byte)0x04, JProtocolHeader.REGISTER_EXECUTOR, outputBuf);
+            requestPayload.outputBuf((byte) 0x04, JProtocolHeader.REGISTER_EXECUTOR, outputBuf);
         } else {
             byte[] bytes = serializer.writeObject(executorWrapper);
-            requestPayload.bytes((byte)0x04, JProtocolHeader.REGISTER_EXECUTOR, bytes);
+            requestPayload.bytes((byte) 0x04, JProtocolHeader.REGISTER_EXECUTOR, bytes);
         }
         nettyChannel.write(requestPayload);
     }

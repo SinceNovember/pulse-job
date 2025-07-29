@@ -6,8 +6,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@RequiredArgsConstructor
 @SpringBootApplication
+@RequiredArgsConstructor
 public class PulseJobApplication implements ApplicationRunner {
 
     private final DefaultServer defaultServer;

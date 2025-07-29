@@ -38,7 +38,6 @@ public interface ConnectorProcessor {
 
     void handleActive(JChannel channel);
 
-
     /**
      * 处理正常请求
      */
