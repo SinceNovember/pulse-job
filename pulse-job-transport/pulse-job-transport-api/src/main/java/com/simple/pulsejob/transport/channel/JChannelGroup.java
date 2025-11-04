@@ -55,6 +55,8 @@ public interface JChannelGroup {
      */
     boolean add(JChannel channel);
 
+    boolean add(JChannel channel, Runnable preCloseProcessor);
+
     /**
      * Removes the specified {@link JChannel} from this group.
      */

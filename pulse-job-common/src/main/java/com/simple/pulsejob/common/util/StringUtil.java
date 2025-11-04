@@ -47,7 +47,7 @@ public final class StringUtil {
      * Returns {@code true} if the given string is null or is the empty string.
      */
     public static boolean isNullOrEmpty(String str) {
-        return str == null || str.length() == 0;
+        return str == null || str.isEmpty();
     }
 
     /**

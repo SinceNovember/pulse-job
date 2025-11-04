@@ -45,5 +45,4 @@ public interface JConstants {
             new LinkedBlockingQueue<>(), new JNamedThreadFactory());
     }
 
-
 }

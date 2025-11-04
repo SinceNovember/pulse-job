@@ -1,0 +1,65 @@
+spring:
+  datasource:
+    url: jdbc:mysql://114.67.242.159:3306/pulse_job?useSSL=false&serverTimezone=UTC
+    username: root
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+jpa:
+  hibernate:
+    ddl-auto: update    # 可选值：none, validate, update, create, create-drop
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
+
+# PulseJob Admin 配置
+pulse:
+  job:
+    admin:
+      host: localhost
+      port: 10410
+      # 线程池配置
+      thread-pool:
+        # 任务调度线程池配置
+        scheduler-core-pool-size: 4
+        scheduler-max-pool-size: 8
+        scheduler-queue-size: 1000
+        # 任务执行线程池配置
+        executor-core-pool-size: 8
+        executor-max-pool-size: 16
+        executor-queue-size: 2000
+        # 异步处理线程池配置
+        async-core-pool-size: 4
+        async-max-pool-size: 8
+        async-queue-size: 500
+        # 线程空闲时间（秒）
+        keep-alive-seconds: 60
+      # 时间轮配置
+      hashed-wheel-timer:
+        # 时间轮刻度间隔（毫秒）
+        tick-duration: 1
+        # 时间轮刻度间隔时间单位
+        tick-duration-unit: SECONDS
+        # 时间轮刻度数量
+        ticks-per-wheel: 512
+        # 最大等待任务数，-1表示无限制
+        max-pending-timeouts: -1
+        # 线程工厂名称前缀
+        thread-name-prefix: hashed-wheel-timer-
+      # 任务调度配置
+      scheduler:
+        # 查询间隔（毫秒）
+        query-interval: 5000
+        # 查询时间窗口（秒）
+        query-window: 10
+        # 重试间隔（秒）
+        retry-interval: 30
+        # 最大重试次数
+        max-retry-times: 3
+
+# 日志配置
+logging:
+  level:
+    com.simple.pulsejob.admin.scheduler: DEBUG
+    com.simple.pulsejob.admin.service: DEBUG

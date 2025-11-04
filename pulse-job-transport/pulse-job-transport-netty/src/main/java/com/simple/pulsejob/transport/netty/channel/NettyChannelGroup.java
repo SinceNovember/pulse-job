@@ -10,6 +10,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import com.simple.pulsejob.common.JConstants;
 import com.simple.pulsejob.common.atomic.AtomicUpdater;
 import com.simple.pulsejob.common.util.IntSequence;
@@ -42,8 +45,14 @@ public class NettyChannelGroup implements JChannelGroup {
     private final CopyOnWriteArrayList<NettyChannel> channels = new CopyOnWriteArrayList<>();
 
     // 连接断开时自动被移除
-    private final ChannelFutureListener remover = future -> remove(NettyChannel.attachChannel(future.channel()));
-
+    private final Function<Runnable, ChannelFutureListener> remover =
+        preCloseProcessor -> future -> {
+            JChannel jChannel = NettyChannel.attachChannel(future.channel());
+            if (preCloseProcessor != null) {
+                preCloseProcessor.run();
+            }
+            remove(jChannel);
+        };
     private final IntSequence sequence = new IntSequence(DEFAULT_SEQUENCE_STEP);
 
     private final ReentrantLock lock = new ReentrantLock();
@@ -102,10 +111,15 @@ public class NettyChannelGroup implements JChannelGroup {
 
     @Override
     public boolean add(JChannel channel) {
+        return add(channel, null);
+    }
+
+    @Override
+    public boolean add(JChannel channel, Runnable preCloseProcessor) {
         boolean added = channel instanceof NettyChannel && channels.add((NettyChannel) channel);
         if (added) {
             timestamp = SystemClock.millisClock().now();
-            ((NettyChannel) channel).channel().closeFuture().addListener(remover);
+            ((NettyChannel) channel).channel().closeFuture().addListener(remover.apply(preCloseProcessor));
             deadlineMillis = -1;
 
             //如果signalNeeded之前的值是1的话，代表需要通知其他线程，新的 channel 已添加
@@ -123,6 +137,7 @@ public class NettyChannelGroup implements JChannelGroup {
         return added;
     }
 
+
     @Override
     public boolean remove(JChannel channel) {
         boolean removed = channel instanceof NettyChannel && channels.remove(channel);
@@ -139,6 +154,7 @@ public class NettyChannelGroup implements JChannelGroup {
     public int size() {
         return channels.size();
     }
+
 
     @Override
     public void setCapacity(int capacity) {
