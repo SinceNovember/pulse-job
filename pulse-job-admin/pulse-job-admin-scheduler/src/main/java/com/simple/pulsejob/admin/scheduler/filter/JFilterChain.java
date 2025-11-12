@@ -1,4 +1,4 @@
-package com.simple.pulsejob.admin.scheduler;
+package com.simple.pulsejob.admin.scheduler.filter;
 
 import com.simple.pulsejob.transport.JRequest;
 

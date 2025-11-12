@@ -8,7 +8,6 @@ import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Slf4j
 @RequiredArgsConstructor
