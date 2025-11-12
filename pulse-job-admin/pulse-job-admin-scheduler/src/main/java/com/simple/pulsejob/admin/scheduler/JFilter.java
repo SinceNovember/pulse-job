@@ -1,4 +1,4 @@
 package com.simple.pulsejob.admin.scheduler;
 
-public interface JobFilter {
+public interface JFilter {
 }

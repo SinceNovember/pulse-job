@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class JobSchedulerService {
+public class JSchedulerService {
 
 //    private final IJobInfoService jobInfoService;
     private final Timer hashedWheelTimer;

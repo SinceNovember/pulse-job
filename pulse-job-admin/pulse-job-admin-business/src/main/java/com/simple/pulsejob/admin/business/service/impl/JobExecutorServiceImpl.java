@@ -6,11 +6,10 @@ import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorParam;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
-import com.simple.pulsejob.admin.scheduler.JobSchedulerService;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.channel.JChannel;
-import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,7 @@ public class JobExecutorServiceImpl implements IJobExecutorService {
     }
 
     @Override
-    public void autoRegisterJobExecutor(JChannel channel, JobExecutorWrapper executorWrapper) {
+    public void autoRegisterJobExecutor(JChannel channel, ExecutorKey executorWrapper) {
         log.info("auto register job executor channel : {}", channel);
         String executorName = executorWrapper.getExecutorName();
         String channelAddress = channel.remoteIpPort();

@@ -4,7 +4,7 @@ import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorParam;
 import com.simple.pulsejob.transport.channel.JChannel;
-import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +23,7 @@ public interface IJobExecutorService {
      * @param channel
      * @param executorWrapper
      */
-    void autoRegisterJobExecutor(JChannel channel, JobExecutorWrapper executorWrapper);
+    void autoRegisterJobExecutor(JChannel channel, ExecutorKey executorWrapper);
 
     /**
      * 根据ID查询执行器信息

@@ -103,7 +103,6 @@ public interface JChannelGroup {
      */
     void onAvailable(Runnable listener);
 
-
     /**
      * Time of birth.
      */
@@ -113,4 +112,5 @@ public interface JChannelGroup {
      * Deadline millis.
      */
     long deadlineMillis();
+
 }

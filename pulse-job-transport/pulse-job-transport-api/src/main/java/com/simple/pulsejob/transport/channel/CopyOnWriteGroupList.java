@@ -55,14 +55,14 @@ public class CopyOnWriteGroupList {
         return tabAt0(array);
     }
 
-    public final Object getWeightArray(JChannelGroup[] snapshot, String directory) {
+    public final Object getWeightArray(JChannelGroup[] snapshot, String executorKey) {
         Object[] array = this.array; // data snapshot
         return tabAt0(array) != snapshot
                 ? null
-                : (tabAt1(array) == null ? null : tabAt1(array).get(directory));
+                : (tabAt1(array) == null ? null : tabAt1(array).get(executorKey));
     }
 
-    public final boolean setWeightArray(JChannelGroup[] snapshot, String directory, Object weightArray) {
+    public final boolean setWeightArray(JChannelGroup[] snapshot, String executorKey, Object weightArray) {
         if (weightArray == null || snapshot != tabAt0(array)) {
             return false;
         }
@@ -73,7 +73,7 @@ public class CopyOnWriteGroupList {
                 if (snapshot != tabAt0(array)) {
                     return false;
                 }
-                setWeightArray(directory, weightArray);
+                setWeightArray(executorKey, weightArray);
                 return true;
             } finally {
                 lock.unlock();
@@ -92,13 +92,13 @@ public class CopyOnWriteGroupList {
         array = new Object[] { groups, weightArray };
     }
 
-    private void setWeightArray(String directory, Object weightArray) {
+    private void setWeightArray(String executorKey, Object weightArray) {
         Map<String, Object> weightsMap = tabAt1(array);
         if (weightsMap == null) {
             weightsMap = new HashMap<>();
             setTabAt(array, 1, weightsMap);
         }
-        weightsMap.put(directory, weightArray);
+        weightsMap.put(executorKey, weightArray);
     }
 
     public int size() {

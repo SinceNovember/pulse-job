@@ -1,7 +1,7 @@
 package com.simple.pulsejob.admin;
 
 import com.simple.pulsejob.admin.business.service.IJobExecutorService;
-import com.simple.pulsejob.admin.scheduler.JobScheduler;
+import com.simple.pulsejob.admin.scheduler.JScheduler;
 import com.simple.pulsejob.transport.JAcceptor;
 import com.simple.pulsejob.transport.processor.AcceptorProcessor;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class DefaultServer {
 
     private final IJobExecutorService jobExecutorService;
 
-    private final JobScheduler jobScheduler;
+    private final JScheduler jobScheduler;
 
     public void start() throws InterruptedException {
         // 启动前先清空admin所有得执行器地址，防止上次因为强关导致执行器未清空

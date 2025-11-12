@@ -23,6 +23,7 @@ import com.simple.pulsejob.common.util.ThrowUtil;
 import com.simple.pulsejob.transport.UnresolvedAddress;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import io.netty.channel.ChannelFutureListener;
 
 public class NettyChannelGroup implements JChannelGroup {

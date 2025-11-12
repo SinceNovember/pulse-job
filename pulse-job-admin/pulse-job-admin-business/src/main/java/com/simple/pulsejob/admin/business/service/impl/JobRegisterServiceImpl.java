@@ -14,7 +14,7 @@ import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
-import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +42,9 @@ public class JobRegisterServiceImpl implements IJobRegisterService {
         message.setArgs(new Object[]{});
         jRequest.setMessage(message);
         Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
-        JobExecutorWrapper executorWrapper = new JobExecutorWrapper("my-executor");
+        ExecutorKey executorWrapper = new ExecutorKey("my-executor");
         JChannel jChannel =
-            DefaultAcceptorProcessor.channelGroups().find(executorWrapper).next();
+            DefaultAcceptorProcessor.channelGroupManager().find(executorWrapper).next();
         JRequestPayload jRequestPayload = new JRequestPayload();
         OutputBuf outputBuf = serializer.writeObject(jChannel.allocOutputBuf(), message);
         jRequestPayload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.RESPONSE, outputBuf);

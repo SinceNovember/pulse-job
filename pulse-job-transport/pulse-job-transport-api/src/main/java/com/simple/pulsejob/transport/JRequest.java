@@ -15,7 +15,7 @@
  */
 package com.simple.pulsejob.transport;
 
-import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.Data;
@@ -37,7 +37,7 @@ public class JRequest {
 
     private MessageWrapper message;          // 请求对象
 
-    private JobExecutorWrapper executor;
+    private ExecutorKey executor;
 
     public JRequest() {
         this(new JRequestPayload());

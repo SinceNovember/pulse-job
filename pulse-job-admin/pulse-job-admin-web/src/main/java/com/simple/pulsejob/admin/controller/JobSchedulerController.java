@@ -1,7 +1,7 @@
 package com.simple.pulsejob.admin.controller;
 
 import com.simple.pulsejob.admin.common.model.base.ResponseResult;
-import com.simple.pulsejob.admin.scheduler.JobSchedulerService;
+import com.simple.pulsejob.admin.scheduler.JSchedulerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class JobSchedulerController {
 
-    private final JobSchedulerService jobSchedulerService;
+    private final JSchedulerService jobSchedulerService;
 
     /**
      * 取消任务调度

@@ -1,6 +1,5 @@
 package com.simple.pulsejob.admin.scheduler.processor;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -10,18 +9,16 @@ import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.InputBuf;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
-import com.simple.pulsejob.admin.scheduler.channel.ExecutorJChannelGroup;
+import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.channel.JChannel;
-import com.simple.pulsejob.transport.channel.JChannelGroup;
-import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.AcceptorProcessor;
-import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,7 +29,7 @@ import org.springframework.stereotype.Component;
 public class DefaultAcceptorProcessor implements AcceptorProcessor {
 
     // 执行器名称到Channel的映射
-    private static final ExecutorJChannelGroup channelGroups = new ExecutorJChannelGroup();
+    private static final ExecutorChannelGroupManager channelGroupManager = new ExecutorChannelGroupManager();
 
     private final Map<Byte, Serializer> serializerMap;
 
@@ -59,7 +56,7 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
         Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
         InputBuf inputBuf = request.inputBuf();
         if (JProtocolHeader.REGISTER_EXECUTOR == request.messageCode()) {
-            JobExecutorWrapper executorWrapper = serializer.readObject(inputBuf, JobExecutorWrapper.class);
+            ExecutorKey executorWrapper = serializer.readObject(inputBuf, ExecutorKey.class);
             handleExecutorRegister(channel, executorWrapper);
         } else {
             try {
@@ -75,14 +72,14 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     public void handleActive(JChannel channel) {
         try {
             // 检查连接数量限制
-            if (channelGroups.size() >= MAX_CONNECTIONS) {
+            if (channelGroupManager.size() >= MAX_CONNECTIONS) {
                 log.warn("Maximum connections reached, rejecting: {}", channel.remoteAddress());
                 channel.close();
                 return;
             }
 
             log.info("New connection: {}, total connections: {}",
-                channel.remoteAddress(), channelGroups.size());
+                channel.remoteAddress(), channelGroupManager.size());
 
         } catch (Exception e) {
             log.error("Error handling active channel: {}", channel.remoteAddress(), e);
@@ -98,26 +95,26 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     public void shutdown() {
     }
 
-    public static ExecutorJChannelGroup channelGroups() {
-        return channelGroups;
+    public static ExecutorChannelGroupManager channelGroupManager() {
+        return channelGroupManager;
     }
 
     /**
      * 处理执行器注册
      */
-    private void handleExecutorRegister(JChannel channel, JobExecutorWrapper executorWrapper) {
+    private void handleExecutorRegister(JChannel channel, ExecutorKey executorWrapper) {
         if (!isValidExecutorWrapper(executorWrapper)) {
             return;
         }
         autoRegisterJobExecutor(channel, executorWrapper);
-        channelGroups.find(executorWrapper).add(channel, () -> deregisterJobExecutor(executorWrapper, channel));
+        channelGroupManager.find(executorWrapper).add(channel, () -> deregisterJobExecutor(executorWrapper, channel));
     }
 
-    private boolean isValidExecutorWrapper(JobExecutorWrapper executorWrapper) {
+    private boolean isValidExecutorWrapper(ExecutorKey executorWrapper) {
         return !StringUtil.isBlank(executorWrapper.getExecutorName());
     }
 
-    public void autoRegisterJobExecutor(JChannel channel, JobExecutorWrapper executorWrapper) {
+    public void autoRegisterJobExecutor(JChannel channel, ExecutorKey executorWrapper) {
         log.info("auto register job executor channel : {}", channel);
         final String executorName = executorWrapper.getExecutorName();
         String channelAddress = channel.remoteIpPort();
@@ -130,7 +127,7 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
         jobExecutorMapper.save(jobExecutor);
     }
 
-    public void deregisterJobExecutor(JobExecutorWrapper executorWrapper, JChannel channel) {
+    public void deregisterJobExecutor(ExecutorKey executorWrapper, JChannel channel) {
         final String executorName = executorWrapper.getExecutorName();
         jobExecutorMapper.findByExecutorName(executorName)
             .ifPresent(jobExecutor -> {

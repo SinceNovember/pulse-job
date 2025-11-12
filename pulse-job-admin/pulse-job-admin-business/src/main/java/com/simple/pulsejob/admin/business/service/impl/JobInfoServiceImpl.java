@@ -5,7 +5,6 @@ import com.simple.pulsejob.admin.common.mapping.JobInfoMapping;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
 import com.simple.pulsejob.admin.persistence.mapper.JobInfoMapper;
-import com.simple.pulsejob.admin.scheduler.JobSchedulerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

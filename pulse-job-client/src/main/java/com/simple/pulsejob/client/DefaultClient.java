@@ -9,7 +9,7 @@ import com.simple.pulsejob.transport.CodecConfig;
 import com.simple.pulsejob.transport.JConnector;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.UnresolvedSocketAddress;
-import com.simple.pulsejob.transport.metadata.JobExecutorWrapper;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.netty.JNettyConnection;
 import com.simple.pulsejob.transport.netty.JNettyTcpConnector;
 import com.simple.pulsejob.transport.netty.channel.NettyChannel;
@@ -51,7 +51,7 @@ public class DefaultClient implements ApplicationListener<ApplicationReadyEvent>
     }
 
     private void registerExecutor(Channel channel) {
-        JobExecutorWrapper executorWrapper = new JobExecutorWrapper(properties.getExecutorName());
+        ExecutorKey executorWrapper = new ExecutorKey(properties.getExecutorName());
 
         NettyChannel nettyChannel = NettyChannel.attachChannel(channel);
         Serializer serializer = serializerMap.get((byte) 0x04);
