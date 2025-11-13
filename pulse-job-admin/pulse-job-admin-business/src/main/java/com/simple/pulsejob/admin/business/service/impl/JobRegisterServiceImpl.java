@@ -9,7 +9,7 @@ import com.simple.plusejob.serialization.io.OutputBuf;
 import com.simple.pulsejob.admin.business.service.IJobRegisterService;
 import com.simple.pulsejob.admin.common.model.dto.JobRegisterDTO;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
-import com.simple.pulsejob.admin.scheduler.processor.DefaultAcceptorProcessor;
+import com.simple.pulsejob.admin.scheduler.processor.JobExecutorAcceptorProcessor;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -44,7 +44,7 @@ public class JobRegisterServiceImpl implements IJobRegisterService {
         Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
         ExecutorKey executorWrapper = new ExecutorKey("my-executor");
         JChannel jChannel =
-            DefaultAcceptorProcessor.channelGroupManager().find(executorWrapper).next();
+            JobExecutorAcceptorProcessor.channelGroupManager().find(executorWrapper).next();
         JRequestPayload jRequestPayload = new JRequestPayload();
         OutputBuf outputBuf = serializer.writeObject(jChannel.allocOutputBuf(), message);
         jRequestPayload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.RESPONSE, outputBuf);

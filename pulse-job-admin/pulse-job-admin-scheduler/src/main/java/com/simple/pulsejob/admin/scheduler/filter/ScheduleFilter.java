@@ -1,4 +1,4 @@
 package com.simple.pulsejob.admin.scheduler.filter;
 
-public interface JFilterContext {
+public interface ScheduleFilter {
 }

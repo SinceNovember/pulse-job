@@ -1,13 +1,21 @@
 package com.simple.pulsejob.admin.scheduler.load.balance;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import com.simple.pulsejob.transport.channel.CopyOnWriteGroupList;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Component("randomLoadBalancer")
-public class RandomLoadBalancer implements LoadBalancer {
+@Scope("prototype")
+@Component("roundRobinLoadBalancer")
+public class RoundRobinLoadBalancer implements LoadBalancer {
+
+    private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
+        AtomicIntegerFieldUpdater.newUpdater(RoundRobinLoadBalancer.class, "index");
+
+    private volatile int index = 0;
+
     @Override
     public JChannelGroup select(CopyOnWriteGroupList groups, ExecutorKey executorKey) {
         JChannelGroup[] elements = groups.getSnapshot();
@@ -20,8 +28,8 @@ public class RandomLoadBalancer implements LoadBalancer {
         if (length == 1) {
             return elements[0];
         }
-
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        return elements[random.nextInt(length)];
+        int rrIndex = indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE;
+        return elements[rrIndex];
     }
+
 }

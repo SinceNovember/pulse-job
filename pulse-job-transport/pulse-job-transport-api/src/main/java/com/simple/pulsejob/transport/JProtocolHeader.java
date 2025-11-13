@@ -36,11 +36,14 @@ public class JProtocolHeader {
     /** Message Code: 0x01 ~ 0x0f =================================================================================== */
     public static final byte REQUEST                    = 0x01;     // Request
     public static final byte RESPONSE                   = 0x02;     // Response
-    public static final byte REGISTER_EXECUTOR           = 0x03;     // 注册执行器
+    public static final byte REGISTER_EXECUTOR          = 0x03;     // 注册执行器
     public static final byte PUBLISH_CANCEL_SERVICE     = 0x04;     // 取消发布服务
     public static final byte SUBSCRIBE_SERVICE          = 0x05;     // 订阅服务
     public static final byte OFFLINE_NOTICE             = 0x06;     // 通知下线
     public static final byte ACK                        = 0x07;     // Acknowledge
+    public static final byte TRIGGER_JOB                = 0x08;     // 触发任务执行
+    public static final byte JOB_LOG_MESSAGE            = 0x09;     // 任务执行日志（流式）
+    public static final byte JOB_RESULT                 = 0x0a;     // 任务执行结果
     public static final byte HEARTBEAT                  = 0x0f;     // Heartbeat
 
     private byte messageCode; // sign 低地址4位

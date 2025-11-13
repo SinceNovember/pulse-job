@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @RequiredArgsConstructor
 public class PulseJobApplication implements ApplicationRunner {
 
-    private final DefaultServer defaultServer;
+    private final AdminNettyServer defaultServer;
     public static void main(String[] args) {
         SpringApplication.run(PulseJobApplication.class, args);
     }

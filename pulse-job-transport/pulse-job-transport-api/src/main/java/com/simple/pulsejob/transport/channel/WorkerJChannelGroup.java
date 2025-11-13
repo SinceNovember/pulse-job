@@ -38,7 +38,7 @@ public class WorkerJChannelGroup {
         String _directory = directory.workerString();
         CopyOnWriteGroupList groupList = groups.get(_directory);
         if (groupList == null) {
-            CopyOnWriteGroupList newGroupList = new CopyOnWriteGroupList(this);
+            CopyOnWriteGroupList newGroupList = new CopyOnWriteGroupList();
             groupList = groups.putIfAbsent(_directory, newGroupList);
             if (groupList == null) {
                 groupList = newGroupList;

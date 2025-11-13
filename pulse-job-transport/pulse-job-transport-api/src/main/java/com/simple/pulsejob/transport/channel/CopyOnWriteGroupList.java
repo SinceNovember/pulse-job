@@ -40,46 +40,17 @@ public class CopyOnWriteGroupList {
 
     private transient final ReentrantLock lock = new ReentrantLock();
 
-    private final WorkerJChannelGroup parent;
 
     // array[0]: JChannelGroup[]
     // array[1]: Map<DirectoryString, WeightArray>
     private transient volatile Object[] array;
 
-    public CopyOnWriteGroupList(WorkerJChannelGroup parent) {
-        this.parent = parent;
+    public CopyOnWriteGroupList() {
         setArray(EMPTY_ARRAY);
     }
 
     public final JChannelGroup[] getSnapshot() {
         return tabAt0(array);
-    }
-
-    public final Object getWeightArray(JChannelGroup[] snapshot, String executorKey) {
-        Object[] array = this.array; // data snapshot
-        return tabAt0(array) != snapshot
-                ? null
-                : (tabAt1(array) == null ? null : tabAt1(array).get(executorKey));
-    }
-
-    public final boolean setWeightArray(JChannelGroup[] snapshot, String executorKey, Object weightArray) {
-        if (weightArray == null || snapshot != tabAt0(array)) {
-            return false;
-        }
-        final ReentrantLock lock = this.lock;
-        boolean locked = lock.tryLock();
-        if (locked) { // give up if there is competition
-            try {
-                if (snapshot != tabAt0(array)) {
-                    return false;
-                }
-                setWeightArray(executorKey, weightArray);
-                return true;
-            } finally {
-                lock.unlock();
-            }
-        }
-        return false;
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -90,15 +61,6 @@ public class CopyOnWriteGroupList {
     @SuppressWarnings("SameParameterValue")
     private void setArray(JChannelGroup[] groups, Object weightArray) {
         array = new Object[] { groups, weightArray };
-    }
-
-    private void setWeightArray(String executorKey, Object weightArray) {
-        Map<String, Object> weightsMap = tabAt1(array);
-        if (weightsMap == null) {
-            weightsMap = new HashMap<>();
-            setTabAt(array, 1, weightsMap);
-        }
-        weightsMap.put(executorKey, weightArray);
     }
 
     public int size() {
@@ -189,7 +151,6 @@ public class CopyOnWriteGroupList {
             System.arraycopy(current, 0, newElements, 0, index);
             System.arraycopy(current, index + 1, newElements, index, len - index - 1);
             setArray(newElements, null);
-            parent.decrementRefCount(o); // reference count -1
             return true;
         } finally {
             lock.unlock();
@@ -232,7 +193,6 @@ public class CopyOnWriteGroupList {
             JChannelGroup[] newElements = Arrays.copyOf(current, len + 1);
             newElements[len] = o;
             setArray(newElements, null);
-            parent.incrementRefCount(o); // reference count +1
             return true;
         } finally {
             lock.unlock();

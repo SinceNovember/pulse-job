@@ -10,12 +10,15 @@ import com.simple.plusejob.serialization.io.InputBuf;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
+import com.simple.pulsejob.admin.scheduler.log.JobLogStreamManager;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
+import com.simple.pulsejob.transport.metadata.JobLogMessage;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.AcceptorProcessor;
@@ -26,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DefaultAcceptorProcessor implements AcceptorProcessor {
+public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
 
     // 执行器名称到Channel的映射
     private static final ExecutorChannelGroupManager channelGroupManager = new ExecutorChannelGroupManager();
@@ -34,6 +37,8 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     private final Map<Byte, Serializer> serializerMap;
 
     private final JobExecutorMapper jobExecutorMapper;
+    
+    private final JobLogStreamManager logStreamManager;
 
     // 连接数量限制
     private static final int MAX_CONNECTIONS = 1000;
@@ -47,7 +52,10 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     }
 
     /**
-     * 处理client发来的请求，这边主要处理注册执行器请求
+     * 处理client发来的请求，包括：
+     * 1. 注册执行器
+     * 2. 任务执行日志（流式）
+     * 3. 任务执行结果
      * @param channel
      * @param request
      */
@@ -55,17 +63,66 @@ public class DefaultAcceptorProcessor implements AcceptorProcessor {
     public void handleRequest(JChannel channel, JRequestPayload request) {
         Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
         InputBuf inputBuf = request.inputBuf();
-        if (JProtocolHeader.REGISTER_EXECUTOR == request.messageCode()) {
-            ExecutorKey executorWrapper = serializer.readObject(inputBuf, ExecutorKey.class);
-            handleExecutorRegister(channel, executorWrapper);
-        } else {
-            try {
-                MessageWrapper messageWrapper = serializer.readObject(inputBuf, MessageWrapper.class);
-            } catch (Exception e) {
-                log.error("[pulse-job] handle request failed", e);
+        byte messageCode = request.messageCode();
+        
+        try {
+            switch (messageCode) {
+                case JProtocolHeader.REGISTER_EXECUTOR:
+                    // 处理执行器注册
+                    ExecutorKey executorKey = serializer.readObject(inputBuf, ExecutorKey.class);
+                    handleExecutorRegister(channel, executorKey);
+                    break;
+                    
+                case JProtocolHeader.JOB_LOG_MESSAGE:
+                    // 处理任务执行日志（流式）
+                    JobLogMessage logMessage = serializer.readObject(inputBuf, JobLogMessage.class);
+                    handleJobLog(channel, logMessage);
+                    break;
+                    
+                case JProtocolHeader.JOB_RESULT:
+                    // 处理任务执行结果
+                    ResultWrapper resultWrapper = serializer.readObject(inputBuf, ResultWrapper.class);
+                    handleJobResult(channel, request.invokeId(), resultWrapper);
+                    break;
+                    
+                default:
+                    log.warn("Unknown message code: {}", messageCode);
+                    break;
             }
+        } catch (Exception e) {
+            log.error("[pulse-job] handle request failed, messageCode={}", messageCode, e);
         }
-
+    }
+    
+    /**
+     * 处理任务执行日志
+     */
+    private void handleJobLog(JChannel channel, JobLogMessage logMessage) {
+        log.debug("收到任务日志: invokeId={}, level={}, content={}", 
+            logMessage.getInvokeId(), logMessage.getLevel(), logMessage.getContent());
+        
+        // 交给日志流管理器处理
+        logStreamManager.receiveLog(logMessage);
+    }
+    
+    /**
+     * 处理任务执行结果
+     */
+    private void handleJobResult(JChannel channel, long invokeId, ResultWrapper result) {
+        log.info("收到任务执行结果: invokeId={}, hasError={}", 
+            invokeId, result.getError() != null);
+        
+        // 标记日志流结束
+        JobLogMessage finalLog = new JobLogMessage();
+        finalLog.setInvokeId(invokeId);
+        finalLog.setLast(true);
+        finalLog.setContent(result.getError() != null ? "任务执行失败" : "任务执行成功");
+        finalLog.setLevel(result.getError() != null ? 
+            JobLogMessage.LogLevel.ERROR : JobLogMessage.LogLevel.INFO);
+        
+        logStreamManager.receiveLog(finalLog);
+        
+        // TODO: 这里可以保存任务执行结果到数据库
     }
 
     @Override
