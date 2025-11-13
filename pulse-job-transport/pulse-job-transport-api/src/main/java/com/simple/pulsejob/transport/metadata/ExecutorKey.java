@@ -21,6 +21,10 @@ public class ExecutorKey implements Serializable {
         this.executorName = executorName;
     }
 
+    public static ExecutorKey of(String executorName) {
+        return new ExecutorKey(executorName);
+    }
+
     public String exeuctorKeyString() {
         if (executorKeyCache != null) {
             return executorKeyCache;

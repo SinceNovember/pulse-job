@@ -1,6 +1,8 @@
 package com.simple.pulsejob.admin.scheduler.dispatch;
 
 import java.util.List;
+
+import com.simple.plusejob.serialization.Serializer;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.interceptor.ScheduleInterceptor;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
@@ -32,6 +34,8 @@ public abstract class AbstractDispatcher implements Dispatcher {
 
     private final LoadBalancer loadBalancer;
 
+    private final Serializer serializerImpl;                    // 序列化/反序列化impl
+
     protected JChannel select(ExecutorKey executorKey) {
         CopyOnWriteGroupList groups = channelGroupManager.find(executorKey);
         JChannelGroup group = loadBalancer.select(groups, executorKey);
@@ -54,6 +58,12 @@ public abstract class AbstractDispatcher implements Dispatcher {
         throw new IllegalStateException("No connections");
     }
 
+
+    protected Serializer serializer() {
+        return serializerImpl;
+    }
+
+
     protected void write(
         final JChannel channel, final JRequest request, final DispatchType dispatchType) {
         final MessageWrapper message = request.getMessage();
@@ -69,39 +79,22 @@ public abstract class AbstractDispatcher implements Dispatcher {
 
         final JRequestPayload payload = request.payload();
 
-        channel.write(payload, new JFutureListener<JChannel>() {
+        channel.write(payload, new JFutureListener<>() {
 
             @Override
             public void operationSuccess(JChannel channel) throws Exception {
                 // 标记已发送
 //                future.markSent();
 
-                if (dispatchType == DispatchType.ROUND) {
-                    payload.clear();
-                }
+
             }
 
             @Override
             public void operationFailure(JChannel channel, Throwable cause) throws Exception {
-                if (dispatchType == DispatchType.ROUND) {
-                    payload.clear();
-                }
 
-                if (log.isWarnEnabled()) {
-                    log.warn("Writes {} fail on {}, {}.", request, channel, StackTraceUtil.stackTrace(cause));
-                }
 
-                ResultWrapper result = new ResultWrapper();
-                result.setError(new JupiterRemoteException(cause));
-
-                JResponse response = new JResponse(payload.invokeId());
-                response.status(Status.CLIENT_ERROR);
-                response.result(result);
-
-                DefaultInvokeFuture.fakeReceived(channel, response, dispatchType);
             }
         });
 
-        return future;
     }
 }
