@@ -37,28 +37,28 @@ public class JobRegisterServiceImpl implements IJobRegisterService {
 
     @Override
     public void triggerJob() {
-        JRequest jRequest = new JRequest();
-        MessageWrapper message = new MessageWrapper("test");
-        message.setArgs(new Object[]{});
-        jRequest.setMessage(message);
-        Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
-        ExecutorKey executorWrapper = new ExecutorKey("my-executor");
-        JChannel jChannel =
-            JobExecutorAcceptorProcessor.channelGroupManager().find(executorWrapper).next();
-        JRequestPayload jRequestPayload = new JRequestPayload();
-        OutputBuf outputBuf = serializer.writeObject(jChannel.allocOutputBuf(), message);
-        jRequestPayload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.RESPONSE, outputBuf);
-        jChannel.write(jRequestPayload, new JFutureListener<JChannel>() {
-            @Override
-            public void operationSuccess(JChannel channel) throws Exception {
-                System.out.println(channel);
-            }
-
-            @Override
-            public void operationFailure(JChannel channel, Throwable cause) throws Exception {
-                System.out.println(cause);
-            }
-        });
+//        JRequest jRequest = new JRequest();
+//        MessageWrapper message = new MessageWrapper("test");
+//        message.setArgs(new Object[]{});
+//        jRequest.setMessage(message);
+//        Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
+//        ExecutorKey executorWrapper = new ExecutorKey("my-executor");
+//        JChannel jChannel =
+//            JobExecutorAcceptorProcessor.channelGroupManager().find(executorWrapper).next();
+//        JRequestPayload jRequestPayload = new JRequestPayload();
+//        OutputBuf outputBuf = serializer.writeObject(jChannel.allocOutputBuf(), message);
+//        jRequestPayload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.RESPONSE, outputBuf);
+//        jChannel.write(jRequestPayload, new JFutureListener<JChannel>() {
+//            @Override
+//            public void operationSuccess(JChannel channel) throws Exception {
+//                System.out.println(channel);
+//            }
+//
+//            @Override
+//            public void operationFailure(JChannel channel, Throwable cause) throws Exception {
+//                System.out.println(cause);
+//            }
+//        });
     }
 
     public JobRegisterDTO toJobRegisterDTO(JobInfoParam jobRegisterParam) {

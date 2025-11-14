@@ -1,12 +1,9 @@
 package com.simple.pulsejob.admin.scheduler.filter;
 
 import com.simple.pulsejob.transport.JRequest;
+import com.simple.pulsejob.transport.channel.JChannel;
 
 public interface ScheduleFilterChain {
 
-    ScheduleFilter getFilter();
-
-    ScheduleFilterChain getNext();
-
-    <T extends ScheduleFilterContext> void doFilter(JRequest request, T filterCtx) throws Throwable;
+    void doFilter(JRequest request, JChannel channel) throws Throwable;
 }

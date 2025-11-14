@@ -10,7 +10,7 @@ import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
-public class DefaultRoundDispatcher extends AbstractDispatcher {
+public class RoundRobinDispatcher extends AbstractDispatcher {
 
     @Override
     public void dispatch(JRequest request) {
@@ -23,10 +23,9 @@ public class DefaultRoundDispatcher extends AbstractDispatcher {
 
         byte s_code = _serializer.code();
 
-
         OutputBuf outputBuf =
                 _serializer.writeObject(channel.allocOutputBuf(), message);
         request.outputBuf(s_code, JProtocolHeader.TRIGGER_JOB, outputBuf);
-
+        write(channel, request, DispatchType.ROUND);
     }
 }

@@ -8,5 +8,5 @@ public interface ScheduleInterceptor {
 
     void beforeSchedule(JRequest request, JChannel channel);
 
-    void afterSchedule(JResponse response, JChannel channel);
+    void afterSchedule(JRequest request, JChannel channel);
 }

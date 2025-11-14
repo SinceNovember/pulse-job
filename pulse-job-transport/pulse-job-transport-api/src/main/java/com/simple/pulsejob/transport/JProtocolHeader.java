@@ -36,7 +36,7 @@ public class JProtocolHeader {
     /** Message Code: 0x01 ~ 0x0f =================================================================================== */
     public static final byte REQUEST                    = 0x01;     // Request
     public static final byte RESPONSE                   = 0x02;     // Response
-    public static final byte REGISTER_EXECUTOR          = 0x03;     // 注册执行器
+    public static final byte REGISTER_EXECUTOR           = 0x03;     // 注册执行器
     public static final byte ACK                        = 0x04;     // Acknowledge
     public static final byte TRIGGER_JOB                = 0x05;     // 触发任务执行
     public static final byte JOB_LOG_MESSAGE            = 0x06;     // 任务执行日志（流式）

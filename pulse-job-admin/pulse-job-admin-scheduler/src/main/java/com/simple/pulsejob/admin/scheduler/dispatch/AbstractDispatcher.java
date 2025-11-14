@@ -4,6 +4,8 @@ import java.util.List;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
+import com.simple.pulsejob.admin.scheduler.filter.DefaultScheduleFilterChains;
+import com.simple.pulsejob.admin.scheduler.filter.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.interceptor.ScheduleInterceptor;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
 import com.simple.pulsejob.common.util.StackTraceUtil;
@@ -22,7 +24,6 @@ import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.net.DispatchType;
 
 @Slf4j
 @SuperBuilder
@@ -35,6 +36,8 @@ public abstract class AbstractDispatcher implements Dispatcher {
     private final LoadBalancer loadBalancer;
 
     private final Serializer serializerImpl;                    // 序列化/反序列化impl
+
+    private final DefaultScheduleFilterChains chains;
 
     protected JChannel select(ExecutorKey executorKey) {
         CopyOnWriteGroupList groups = channelGroupManager.find(executorKey);
@@ -58,43 +61,22 @@ public abstract class AbstractDispatcher implements Dispatcher {
         throw new IllegalStateException("No connections");
     }
 
+    protected JChannelGroup[] groups(ExecutorKey executorKey) {
+        return channelGroupManager.find(executorKey).getSnapshot();
+    }
+
+
 
     protected Serializer serializer() {
         return serializerImpl;
     }
 
 
-    protected void write(
-        final JChannel channel, final JRequest request, final DispatchType dispatchType) {
-        final MessageWrapper message = request.getMessage();
-//        final DefaultInvokeFuture<T> future = DefaultInvokeFuture
-//            .with(request.invokeId(), channel, timeoutMillis, returnType, dispatchType)
-//            .interceptors(interceptors);
-
-        if (interceptors != null) {
-            for (int i = 0; i < interceptors.size(); i++) {
-                interceptors.get(i).beforeSchedule(request, channel);
-            }
+    protected void write(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
+        try {
+            chains.doFilter(request, channel);
+        } catch (Throwable e) {
+            log.error("Job Schedule error, channel: {}", channel);
         }
-
-        final JRequestPayload payload = request.payload();
-
-        channel.write(payload, new JFutureListener<>() {
-
-            @Override
-            public void operationSuccess(JChannel channel) throws Exception {
-                // 标记已发送
-//                future.markSent();
-
-
-            }
-
-            @Override
-            public void operationFailure(JChannel channel, Throwable cause) throws Exception {
-
-
-            }
-        });
-
     }
 }
