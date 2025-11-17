@@ -1,27 +1,27 @@
 package com.simple.pulsejob.admin.scheduler.load.balance;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import com.simple.pulsejob.transport.channel.CopyOnWriteGroupList;
+import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
-import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import org.springframework.stereotype.Component;
 
-@Component("randomLoadBalancer")
+@Component
 public class RandomLoadBalancer implements LoadBalancer {
     @Override
-    public JChannelGroup select(CopyOnWriteGroupList groups, ExecutorKey executorKey) {
-        JChannelGroup[] elements = groups.getSnapshot();
-        int length = elements.length;
+    public JChannel select(JChannelGroup channelGroup) {
+        List<? extends JChannel> channels = channelGroup.channels();
+        int length = channels.size();
 
         if (length == 0) {
             return null;
         }
 
         if (length == 1) {
-            return elements[0];
+            return channels.get(0);
         }
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        return elements[random.nextInt(length)];
+        return channels.get(random.nextInt(length));
     }
 }

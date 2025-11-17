@@ -43,7 +43,7 @@ public interface JChannelGroup {
     /**
      * Returns all {@link JChannel}s in the group.
      */
-    List<? extends JChannel> channels();
+    List<JChannel> channels();
 
     /**
      * Returns true if this group contains no {@link JChannel}.

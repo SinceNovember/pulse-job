@@ -40,7 +40,6 @@ public class CopyOnWriteGroupList {
 
     private transient final ReentrantLock lock = new ReentrantLock();
 
-
     // array[0]: JChannelGroup[]
     // array[1]: Map<DirectoryString, WeightArray>
     private transient volatile Object[] array;

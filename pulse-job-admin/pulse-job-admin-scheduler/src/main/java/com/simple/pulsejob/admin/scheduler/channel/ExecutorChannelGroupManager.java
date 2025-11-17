@@ -1,5 +1,6 @@
 package com.simple.pulsejob.admin.scheduler.channel;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.transport.channel.CopyOnWriteGroupList;
@@ -17,34 +18,20 @@ import org.springframework.stereotype.Component;
 public class ExecutorChannelGroupManager {
 
     // key: 执行器名称; value: 对应的执行器节点组
-    private final ConcurrentMap<String, CopyOnWriteGroupList> groups = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, JChannelGroup> groups = Maps.newConcurrentMap();
 
-    public CopyOnWriteGroupList find(ExecutorKey executorKey) {
+    public JChannelGroup find(ExecutorKey executorKey) {
         String _executorKey = executorKey.exeuctorKeyString();
-        CopyOnWriteGroupList groupList = groups.get(_executorKey);
-        if (groupList == null) {
-            CopyOnWriteGroupList newGroupList = new CopyOnWriteGroupList();
-            groupList = groups.putIfAbsent(_executorKey, newGroupList);
-            if (groupList == null) {
-                groupList = newGroupList;
-            }
-        }
-        return groupList;
+        return groups.computeIfAbsent(
+            _executorKey, k -> new NettyChannelGroup());
     }
 
-//    public int size() {
-//        int channelCount = 0;
-//        for (JChannelGroup channelGroup : groups.values()) {
-//            channelCount += channelGroup.size();
-//        }
-//        return channelCount;
-//    }
-//
-//    public void removeChannel(ExecutorKey executorKey, JChannel channel) {
-//        JChannelGroup groupList = groups.get(executorKey);
-//        if (groupList != null) {
-//            groupList.remove(channel);
-//        }
-//    }
+    public void add(ExecutorKey executorKey, JChannel channel, Runnable preCloseProcessor) {
+        find(executorKey).add(channel, preCloseProcessor);
+    }
+
+    public void remove(ExecutorKey executorKey, JChannel channel) {
+        find(executorKey).remove(channel);
+    }
 
 }

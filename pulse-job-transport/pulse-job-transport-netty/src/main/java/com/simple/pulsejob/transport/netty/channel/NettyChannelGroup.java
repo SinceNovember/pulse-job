@@ -10,8 +10,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import com.simple.pulsejob.common.JConstants;
 import com.simple.pulsejob.common.atomic.AtomicUpdater;
@@ -23,7 +21,6 @@ import com.simple.pulsejob.common.util.ThrowUtil;
 import com.simple.pulsejob.transport.UnresolvedAddress;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
-import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import io.netty.channel.ChannelFutureListener;
 
 public class NettyChannelGroup implements JChannelGroup {
@@ -41,7 +38,7 @@ public class NettyChannelGroup implements JChannelGroup {
 
     private final ConcurrentLinkedQueue<Runnable> waitAvailableListeners = new ConcurrentLinkedQueue<>();
 
-    private final UnresolvedAddress address;
+    private UnresolvedAddress address;
 
     private final CopyOnWriteArrayList<NettyChannel> channels = new CopyOnWriteArrayList<>();
 
@@ -69,6 +66,9 @@ public class NettyChannelGroup implements JChannelGroup {
     private volatile long timestamp = SystemClock.millisClock().now();
 
     private volatile long deadlineMillis = -1;
+
+    public NettyChannelGroup() {
+    }
 
     public NettyChannelGroup(UnresolvedAddress address) {
         this.address = address;
@@ -101,7 +101,7 @@ public class NettyChannelGroup implements JChannelGroup {
     }
 
     @Override
-    public List<? extends JChannel> channels() {
+    public List<JChannel> channels() {
         return Lists.newArrayList(channels);
     }
 
