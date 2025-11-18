@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import static com.simple.pulsejob.transport.JProtocolHeader.*;
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.InputBuf;
@@ -62,16 +63,19 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
             return;
         }
 
+
         final InputBuf inputBuf = request.inputBuf();
-        if (JProtocolHeader.REGISTER_EXECUTOR == request.messageCode()) {
-            ExecutorKey executorWrapper = serializer.readObject(inputBuf, ExecutorKey.class);
-            registerExecutor(channel, executorWrapper);
-        } else {
-            try {
+        switch (request.messageCode()) {
+            case REGISTER_EXECUTOR:
+                ExecutorKey executorKey = serializer.readObject(inputBuf, ExecutorKey.class);
+                registerExecutor(channel, executorKey);
+                break;
+            case TRIGGER_JOB:
+
+            default:
                 MessageWrapper messageWrapper = serializer.readObject(inputBuf, MessageWrapper.class);
-            } catch (Exception e) {
-                log.error("[pulse-job] handle request failed", e);
-            }
+
+
         }
 
     }

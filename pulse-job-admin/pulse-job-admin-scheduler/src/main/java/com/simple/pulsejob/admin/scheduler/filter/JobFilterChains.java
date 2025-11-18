@@ -9,23 +9,23 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class DefaultScheduleFilterChains {
+public class JobFilterChains {
 
-    private final List<ScheduleFilter> filters;
+    private final List<JobFilter> filters;
 
-    private ScheduleFilterChain headerChain;
+    private JobFilterChain headerChain;
 
-    public <T extends ScheduleFilterContext> void doFilter(JRequest request, JChannel channel)  throws Throwable {
+    public void doFilter(JRequest request, JChannel channel)  throws Throwable {
         headerChain.doFilter(request, channel);
     }
 
     @PostConstruct
     private void compositeFilterChain() {
-        ScheduleFilterChain nextChain = null;
+        JobFilterChain nextChain = null;
 
         for (int i = filters.size() - 1; i >= 0; i--) {
-            ScheduleFilter filter = filters.get(i);
-            nextChain = new DefaultScheduleFilterChain(filter, nextChain);
+            JobFilter filter = filters.get(i);
+            nextChain = new JobFilterChainImpl(filter, nextChain);
         }
 
         this.headerChain = nextChain;

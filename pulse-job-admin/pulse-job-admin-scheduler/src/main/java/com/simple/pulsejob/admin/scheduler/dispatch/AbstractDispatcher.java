@@ -4,10 +4,9 @@ import java.util.List;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
-import com.simple.pulsejob.admin.scheduler.filter.DefaultScheduleFilterChains;
-import com.simple.pulsejob.admin.scheduler.interceptor.ScheduleInterceptor;
+import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
+import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
-import com.simple.pulsejob.common.util.SystemClock;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
@@ -21,13 +20,13 @@ public abstract class AbstractDispatcher implements Dispatcher {
 
     private final ExecutorChannelGroupManager channelGroupManager;
 
-    private final List<ScheduleInterceptor> interceptors;
+    private final List<JobInterceptor> interceptors;
 
     private final LoadBalancer loadBalancer;
 
     private final Serializer serializerImpl;                    // 序列化/反序列化impl
 
-    private final DefaultScheduleFilterChains chains;
+    private final JobFilterChains chains;
 
     protected JChannel select(ExecutorKey executorKey) {
         JChannelGroup channelGroup = channelGroupManager.find(executorKey);
@@ -42,7 +41,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
         return serializerImpl;
     }
 
-    protected void write(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
+    protected void executeJob(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
         try {
             chains.doFilter(request, channel);
         } catch (Throwable e) {

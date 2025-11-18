@@ -26,6 +26,6 @@ public class RoundRobinDispatcher extends AbstractDispatcher {
         OutputBuf outputBuf =
                 _serializer.writeObject(channel.allocOutputBuf(), message);
         request.outputBuf(s_code, JProtocolHeader.TRIGGER_JOB, outputBuf);
-        write(channel, request, DispatchType.ROUND);
+        executeJob(channel, request, DispatchType.ROUND);
     }
 }

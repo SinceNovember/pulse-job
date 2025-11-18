@@ -6,9 +6,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ScheduleContext implements ScheduleFilterContext {
+public class JobFilterContext {
 
     private JChannel channel;
-
 
 }

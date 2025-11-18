@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
 @Order(99)
 @Component
 @RequiredArgsConstructor
-public class JobScheduleFilter implements ScheduleFilter {
+public class ChannelWriteFilter implements JobFilter {
 
     @Override
-    public <T extends ScheduleFilterContext> void doFilter(JRequest request, JChannel channel, ScheduleFilterChain next)
+    public <T> void doFilter(JRequest request, JChannel channel, JobFilterChain next)
         throws Throwable {
         final JRequestPayload payload = request.payload();
         channel.write(payload, new JFutureListener<>() {

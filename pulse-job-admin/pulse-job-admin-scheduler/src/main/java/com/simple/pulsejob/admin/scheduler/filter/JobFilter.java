@@ -3,8 +3,8 @@ package com.simple.pulsejob.admin.scheduler.filter;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 
-public interface ScheduleFilter {
+public interface JobFilter {
 
-    <T extends ScheduleFilterContext> void doFilter(JRequest request, JChannel channel, ScheduleFilterChain next)
+    <T> void doFilter(JRequest request, JChannel channel, JobFilterChain next)
         throws Throwable;
 }

@@ -55,7 +55,6 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
     public void handleActive(JChannel channel) {
         //向管理端发起注册该执行器的消息
         sendRegisterExecutorRequest(channel);
-        logger.info("[pulse-job] admin connect success!");
     }
 
     private void sendRegisterExecutorRequest(JChannel channel) {

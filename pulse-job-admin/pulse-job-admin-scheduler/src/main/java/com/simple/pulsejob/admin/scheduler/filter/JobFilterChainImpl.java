@@ -5,11 +5,11 @@ import com.simple.pulsejob.transport.channel.JChannel;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class DefaultScheduleFilterChain implements ScheduleFilterChain {
+public class JobFilterChainImpl implements JobFilterChain {
 
-    private final ScheduleFilter filter;
+    private final JobFilter filter;
 
-    private final ScheduleFilterChain next;
+    private final JobFilterChain next;
 
     @Override
     public void doFilter(JRequest request, JChannel channel) throws Throwable {
