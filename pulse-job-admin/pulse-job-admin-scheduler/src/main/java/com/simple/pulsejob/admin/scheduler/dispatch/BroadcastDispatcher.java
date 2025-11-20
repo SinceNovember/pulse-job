@@ -12,7 +12,7 @@ import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
-public class BroadcastDispatcher extends AbstractDispatcher{
+public class BroadcastDispatcher extends AbstractDispatcher {
     @Override
     public void dispatch(JRequest request) {
         final Serializer _serializer = serializer();
@@ -27,7 +27,7 @@ public class BroadcastDispatcher extends AbstractDispatcher{
             OutputBuf outputBuf =
                 _serializer.writeObject(channel.allocOutputBuf(), message);
             request.outputBuf(s_code, JProtocolHeader.TRIGGER_JOB, outputBuf);
-            executeJob(channel, request, DispatchType.BROADCAST);
+            write(channel, request, DispatchType.BROADCAST);
         }
     }
 }

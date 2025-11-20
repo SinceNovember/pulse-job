@@ -1,8 +1,9 @@
 package com.simple.pulsejob.admin.scheduler.dispatch;
 
+import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
 import com.simple.pulsejob.transport.JRequest;
 
 public interface Dispatcher {
 
-    void dispatch(JRequest request);
+    InvokeFuture<Object> dispatch(JRequest request);
 }

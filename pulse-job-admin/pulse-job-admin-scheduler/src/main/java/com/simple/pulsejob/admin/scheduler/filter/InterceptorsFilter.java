@@ -41,7 +41,7 @@ public class InterceptorsFilter implements JobFilter {
     private void handleBeforeSchedule(JRequest request, JobFilterContext jobFilterContext) {
         for (JobInterceptor interceptor : interceptors) {
             try {
-                interceptor.beforeExecute(request, jobFilterContext.getChannel());
+                interceptor.beforeInvoke(request, jobFilterContext.getChannel());
             } catch (Throwable t) {
                 log.error("Interceptor[{}#afterInvoke]: {}.", Reflects.simpleClassName(interceptor),
                     StackTraceUtil.stackTrace(t));
@@ -52,7 +52,7 @@ public class InterceptorsFilter implements JobFilter {
     private void handleAfterSchedule(JRequest request, JobFilterContext jobFilterContext) {
         for (int i = interceptors.size() - 1; i >= 0; i--) {
             try {
-                interceptors.get(i).afterExecute(request, jobFilterContext.getChannel());
+//                interceptors.get(i).afterInvoke(request, jobFilterContext.getChannel());
             } catch (Throwable t) {
                 log.error("Interceptor[{}#afterInvoke]: {}.", Reflects.simpleClassName(interceptors.get(i)),
                     StackTraceUtil.stackTrace(t));

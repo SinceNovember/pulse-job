@@ -10,7 +10,9 @@ import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
+import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
+import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,11 +43,16 @@ public abstract class AbstractDispatcher implements Dispatcher {
         return serializerImpl;
     }
 
-    protected void executeJob(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
-        try {
-            chains.doFilter(request, channel);
-        } catch (Throwable e) {
-            log.error("Job Schedule error, channel: {}", channel);
-        }
+    protected void write(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
+        final JRequestPayload payload = request.payload();
+        channel.write(payload, new JFutureListener<>() {
+            @Override
+            public void operationSuccess(JChannel channel) throws Exception {
+            }
+
+            @Override
+            public void operationFailure(JChannel channel, Throwable cause) throws Exception {
+            }
+        });
     }
 }
