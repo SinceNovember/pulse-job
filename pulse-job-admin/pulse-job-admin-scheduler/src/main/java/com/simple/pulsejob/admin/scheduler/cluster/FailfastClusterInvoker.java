@@ -6,7 +6,7 @@ import com.simple.pulsejob.transport.JRequest;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class FailFastClusterInvoker implements ClusterInvoker {
+public class FailfastClusterInvoker implements ClusterInvoker {
 
     private final Dispatcher dispatcher;
 

@@ -5,5 +5,5 @@ import com.simple.pulsejob.transport.JRequest;
 
 public interface Dispatcher {
 
-    InvokeFuture<Object> dispatch(JRequest request);
+    InvokeFuture dispatch(JRequest request);
 }

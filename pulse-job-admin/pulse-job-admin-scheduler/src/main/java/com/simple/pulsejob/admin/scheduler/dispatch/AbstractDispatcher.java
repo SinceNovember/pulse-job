@@ -5,6 +5,7 @@ import java.util.List;
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
+import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
 import com.simple.pulsejob.transport.JRequest;
@@ -15,6 +16,7 @@ import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 
 @Slf4j
 @SuperBuilder
@@ -43,8 +45,19 @@ public abstract class AbstractDispatcher implements Dispatcher {
         return serializerImpl;
     }
 
-    protected void write(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
+    protected DefaultInvokeFuture write(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
         final JRequestPayload payload = request.payload();
+
+        final DefaultInvokeFuture future = DefaultInvokeFuture
+            .with(request.invokeId(), channel, 0, null, dispatchType)
+            .interceptors(interceptors);
+
+        if (!CollectionUtils.isEmpty(interceptors)) {
+            for (int i = 0; i < interceptors.size(); i++) {
+                interceptors.get(i).beforeInvoke(request, channel);
+            }
+        }
+
         channel.write(payload, new JFutureListener<>() {
             @Override
             public void operationSuccess(JChannel channel) throws Exception {
@@ -54,5 +67,6 @@ public abstract class AbstractDispatcher implements Dispatcher {
             public void operationFailure(JChannel channel, Throwable cause) throws Exception {
             }
         });
+        return future;
     }
 }
