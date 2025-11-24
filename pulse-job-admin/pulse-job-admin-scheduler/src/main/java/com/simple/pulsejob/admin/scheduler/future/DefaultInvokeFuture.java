@@ -85,6 +85,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
             complete(wrapper.getResult());
         }
 
+
         List<JobInterceptor> interceptors = this.interceptors;
         if (interceptors != null) {
             for (int i = interceptors.size() - 1; i >= 0; i--) {
