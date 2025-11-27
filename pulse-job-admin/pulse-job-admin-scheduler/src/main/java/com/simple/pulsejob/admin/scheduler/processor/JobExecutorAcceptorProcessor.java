@@ -12,12 +12,18 @@ import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
 import com.simple.pulsejob.admin.scheduler.ExecutorRegistryService;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
+import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
+import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
+import com.simple.pulsejob.admin.scheduler.future.LogMessage;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.JProtocolHeader;
+import com.simple.pulsejob.transport.JResponse;
+import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.AcceptorProcessor;
@@ -70,14 +76,54 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
                 ExecutorKey executorKey = serializer.readObject(inputBuf, ExecutorKey.class);
                 registerExecutor(channel, executorKey);
                 break;
-            case TRIGGER_JOB:
-
+                
+            case JOB_LOG_MESSAGE:
+                // ✅ 接收日志流 - 转发到对应的 Future
+                LogMessage logMessage = serializer.readObject(inputBuf, LogMessage.class);
+                handleJobLog(channel, request.invokeId(), logMessage);
+                break;
+                
+            case JOB_RESULT:
+                // ✅ 接收任务结果 - 转发到对应的 Future
+                handleJobResult(channel, request, serializer);
+                break;
+                
             default:
-                MessageWrapper messageWrapper = serializer.readObject(inputBuf, MessageWrapper.class);
-
-
+                log.warn("Unknown message code: {}", request.messageCode());
+                break;
         }
 
+    }
+    
+    /**
+     * ✅ 处理任务执行日志（流式）
+     */
+    private void handleJobLog(JChannel channel, long invokeId, LogMessage logMessage) {
+        log.debug("收到任务日志: invokeId={}, level={}, content={}", 
+            invokeId, logMessage.getLevel(), logMessage.getContent());
+        
+        // 转发日志到对应的 Future
+        DefaultInvokeFuture.receivedLog(channel, invokeId, logMessage);
+    }
+    
+    /**
+     * ✅ 处理任务执行结果（最终结果）
+     */
+    private void handleJobResult(JChannel channel, JRequestPayload request, Serializer serializer) {
+        long invokeId = request.invokeId();
+        
+        ResultWrapper resultWrapper = serializer.readObject(request.inputBuf(), ResultWrapper.class);
+        
+        log.info("收到任务执行结果: invokeId={}, hasError={}", 
+            invokeId, resultWrapper.getError() != null);
+        
+        // 构建 JResponse
+        JResponse response = new JResponse(invokeId);
+        response.status(resultWrapper.getError() == null ? Status.OK.value() : Status.SERVER_ERROR.value());
+        response.result(resultWrapper);
+        
+        // 转发结果到对应的 Future
+        DefaultInvokeFuture.received(channel, response);
     }
 
     @Override
