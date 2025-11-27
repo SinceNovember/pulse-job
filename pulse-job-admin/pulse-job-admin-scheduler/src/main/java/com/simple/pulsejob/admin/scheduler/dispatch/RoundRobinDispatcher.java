@@ -29,4 +29,9 @@ public class RoundRobinDispatcher extends AbstractDispatcher {
         request.outputBuf(s_code, JProtocolHeader.TRIGGER_JOB, outputBuf);
         return write(channel, request, DispatchType.ROUND);
     }
+
+    @Override
+    public DispatchType type() {
+        return DispatchType.ROUND;
+    }
 }

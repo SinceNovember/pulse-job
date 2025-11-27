@@ -1,6 +1,5 @@
 package com.simple.pulsejob.admin.scheduler.dispatch;
 
-import java.util.List;
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.io.OutputBuf;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
@@ -11,6 +10,8 @@ import com.simple.pulsejob.transport.channel.JChannelGroup;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import lombok.experimental.SuperBuilder;
+
+import java.util.List;
 
 @SuperBuilder
 public class BroadcastDispatcher extends AbstractDispatcher {
@@ -31,5 +32,10 @@ public class BroadcastDispatcher extends AbstractDispatcher {
             write(channel, request, DispatchType.BROADCAST);
         }
         return null;
+    }
+
+    @Override
+    public DispatchType type() {
+        return DispatchType.BROADCAST;
     }
 }

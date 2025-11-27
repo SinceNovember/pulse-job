@@ -7,8 +7,7 @@ import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ResultWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,13 +20,13 @@ import java.util.function.Consumer;
  * 默认异步调用 Future
  * 支持流式日志接收
  */
+@Slf4j
 public class DefaultInvokeFuture extends CompletableFuture<Object> implements InvokeFuture {
 
     private static final ConcurrentMap<Long, DefaultInvokeFuture> roundFutures =
             Maps.newConcurrentMapLong(1024);
     private static final ConcurrentMap<String, DefaultInvokeFuture> broadcastFutures =
             Maps.newConcurrentMap(1024);
-    private static final Logger log = LoggerFactory.getLogger(DefaultInvokeFuture.class);
 
     private final long invokeId;
     private final JChannel channel;
@@ -126,7 +125,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         } else {
             // 任务执行失败
             ResultWrapper wrapper = response.result();
-            completeExceptionally(wrapper.getError());
+//            completeExceptionally(wrapper.getError());
         }
 
         // 拦截器后置处理
@@ -144,7 +143,6 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     /**
      * ✅ 接收日志消息
      */
-    @Override
     public void receiveLog(LogMessage logMessage) {
         log.debug("接收日志: invokeId={}, level={}, content={}", 
             invokeId, logMessage.getLevel(), logMessage.getContent());
@@ -170,7 +168,6 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     /**
      * ✅ 添加日志监听器
      */
-    @Override
     public InvokeFuture addLogListener(Consumer<LogMessage> logListener) {
         logListeners.add(logListener);
         
@@ -179,7 +176,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
             try {
                 logListener.accept(log);
             } catch (Exception e) {
-                log.error("推送历史日志失败", e);
+//                log.error("推送历史日志失败", e);
             }
         }
         
@@ -189,7 +186,6 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     /**
      * ✅ 标记任务完成
      */
-    @Override
     public void markCompleted(Object result) {
         complete(result);
         cleanup();
@@ -198,7 +194,6 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     /**
      * ✅ 标记任务失败
      */
-    @Override
     public void markFailed(Throwable cause) {
         completeExceptionally(cause);
         cleanup();

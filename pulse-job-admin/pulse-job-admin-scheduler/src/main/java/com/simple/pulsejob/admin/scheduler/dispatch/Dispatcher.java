@@ -6,4 +6,6 @@ import com.simple.pulsejob.transport.JRequest;
 public interface Dispatcher {
 
     InvokeFuture dispatch(JRequest request);
+
+    DispatchType type();
 }
