@@ -16,6 +16,7 @@
 package com.simple.pulsejob.admin.scheduler.cluster;
 
 
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
 import com.simple.pulsejob.admin.scheduler.future.FailsafeInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
@@ -48,7 +49,7 @@ public class FailsafeClusterInvoker implements ClusterInvoker {
     }
 
     @Override
-    public InvokeFuture invoke(JRequest request) throws Exception {
+    public InvokeFuture invoke(JRequest request, ScheduleContext scheduleContext) throws Exception {
         InvokeFuture future = dispatcher.dispatch(request);
         return FailsafeInvokeFuture.with(future);
     }

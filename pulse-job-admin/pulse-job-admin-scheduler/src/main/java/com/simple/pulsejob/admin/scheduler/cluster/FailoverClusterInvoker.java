@@ -1,18 +1,17 @@
 package com.simple.pulsejob.admin.scheduler.cluster;
 
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.dispatch.RoundRobinDispatcher;
+import com.simple.pulsejob.admin.scheduler.dispatch.DispatcherFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.FailoverInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.common.util.Reflects;
-import com.simple.pulsejob.common.util.Requires;
 import com.simple.pulsejob.common.util.StackTraceUtil;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /**
  * 失败自动切换, 当出现失败, 重试其它服务器, 要注意的是重试会带来更长的延时.
@@ -29,20 +28,13 @@ import lombok.extern.slf4j.Slf4j;
  * @author jiachun.fjc
  */
 @Slf4j
+@Component
 public class FailoverClusterInvoker implements ClusterInvoker {
 
-    private final Dispatcher dispatcher;
+    private final DispatcherFactory dispatcherFactory;
 
-    private final int retries;
-
-    public FailoverClusterInvoker(Dispatcher dispatcher, int retries) {
-        Requires.requireTrue(
-            dispatcher instanceof RoundRobinDispatcher,
-            Reflects.simpleClassName(dispatcher) + " is unsupported [FailoverClusterInvoker]"
-        );
-
-        this.dispatcher = dispatcher;
-        this.retries = retries;
+    public FailoverClusterInvoker(DispatcherFactory dispatcherFactory) {
+        this.dispatcherFactory = dispatcherFactory;
     }
 
     @Override
@@ -51,15 +43,17 @@ public class FailoverClusterInvoker implements ClusterInvoker {
     }
 
     @Override
-    public InvokeFuture invoke(JRequest request) throws Exception {
+    public InvokeFuture invoke(JRequest request, ScheduleContext scheduleContext) throws Exception {
+        Dispatcher dispatcher = dispatcherFactory.get(scheduleContext.getDispatchType());
         FailoverInvokeFuture future = FailoverInvokeFuture.with();
-        int tryCount = retries + 1;
-        invoke0(request, tryCount, future, null);
+        int tryCount = scheduleContext.getRetries() + 1;
+        invoke0(request, dispatcher, tryCount, future, null);
 
         return future;
     }
 
     private void invoke0(final JRequest request,
+                         final Dispatcher dispatcher,
                          final int tryCount,
                          final FailoverInvokeFuture failOverFuture,
                          final Throwable lastCause) {
@@ -80,7 +74,7 @@ public class FailoverClusterInvoker implements ClusterInvoker {
                             message.getMethodName(),
                             StackTraceUtil.stackTrace(throwable));
                     }
-                    invoke0(request, tryCount - 1, failOverFuture, throwable);
+                    invoke0(request, dispatcher, tryCount - 1, failOverFuture, throwable);
                 }
             });
         } else {

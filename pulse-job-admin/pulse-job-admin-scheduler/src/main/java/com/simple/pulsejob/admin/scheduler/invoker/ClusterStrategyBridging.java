@@ -16,9 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ClusterStrategyBridging {
     private final Map<DispatchType, Map<ClusterInvoker.Strategy, ObjectProvider<? extends ClusterInvoker>>> providerMap = new ConcurrentHashMap<>();
 
-    public ClusterStrategyBridging(ApplicationContext context,
-                                 List<ClusterInvoker> invokers,
-                                 List<Dispatcher> dispatchers) {
+    public ClusterStrategyBridging(List<ClusterInvoker> invokers, List<Dispatcher> dispatchers) {
 
         // 初始化 DispatchType Map
         for (Dispatcher dispatcher : dispatchers) {
