@@ -8,21 +8,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class DispatcherFactory {
+public class DispatcherRegistry {
 
-    private final Map<DispatchType, ObjectProvider<Dispatcher>> dispatcherProviderMap = new ConcurrentHashMap<>();
+    private final Map<DispatchType, ObjectProvider<Dispatcher>> registry = new ConcurrentHashMap<>();
 
-    public DispatcherFactory(List<ObjectProvider<Dispatcher>> providers) {
+    public DispatcherRegistry(List<ObjectProvider<Dispatcher>> providers) {
         for (ObjectProvider<Dispatcher> provider : providers) {
             Dispatcher dispatcher = provider.getIfAvailable();
-            if (dispatcher != null) {
-                dispatcherProviderMap.put(dispatcher.type(), provider);
-            }
+            registry.put(dispatcher.type(), provider);
         }
     }
 
     public Dispatcher get(DispatchType type) {
-        ObjectProvider<Dispatcher> provider = dispatcherProviderMap.get(type);
+        ObjectProvider<Dispatcher> provider = registry.get(type);
         if (provider == null) {
             throw new IllegalArgumentException("No Dispatcher for type: " + type);
         }

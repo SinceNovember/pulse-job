@@ -2,7 +2,7 @@ package com.simple.pulsejob.admin.scheduler.cluster;
 
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.dispatch.DispatcherFactory;
+import com.simple.pulsejob.admin.scheduler.dispatch.DispatcherRegistry;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.FailoverInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
@@ -31,9 +31,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class FailoverClusterInvoker implements ClusterInvoker {
 
-    private final DispatcherFactory dispatcherFactory;
+    private final DispatcherRegistry dispatcherFactory;
 
-    public FailoverClusterInvoker(DispatcherFactory dispatcherFactory) {
+    public FailoverClusterInvoker(DispatcherRegistry dispatcherFactory) {
         this.dispatcherFactory = dispatcherFactory;
     }
 
