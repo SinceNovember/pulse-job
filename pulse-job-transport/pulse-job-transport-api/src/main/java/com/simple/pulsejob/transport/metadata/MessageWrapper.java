@@ -15,13 +15,10 @@
  */
 package com.simple.pulsejob.transport.metadata;
 
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
-import com.simple.pulsejob.common.util.Maps;
-import com.simple.pulsejob.common.util.SystemPropertyUtil;
-import lombok.Data;
 
 /**
  * Request data wrapper.
@@ -38,17 +35,14 @@ public class MessageWrapper implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1009813828866652852L;
-    private String executorName; //执行器名称
-    private String jobBeanDefinitionName; //任务名称
-    private String methodName;              // 目标方法名称
-    private Object[] args;                  // 目标方法参数
+    private String handlerName; //执行器名称
+    private String args;                  // 目标方法参数
 
-    public MessageWrapper(String executorName) {
-        this.executorName = executorName;
+    public MessageWrapper(String handlerName) {
+        this.handlerName = handlerName;
     }
-    public MessageWrapper(String jobBeanDefinitionName, Object[] args) {
-        this.jobBeanDefinitionName = jobBeanDefinitionName;
+    public MessageWrapper(String handlerName, String args) {
+        this.handlerName = handlerName;
         this.args = args;
     }
-
 }

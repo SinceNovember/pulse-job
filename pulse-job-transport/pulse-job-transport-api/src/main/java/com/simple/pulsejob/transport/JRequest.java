@@ -38,7 +38,7 @@ public class JRequest {
 
     private MessageWrapper message;          // 请求对象
 
-    private ExecutorKey executor;
+    private ExecutorKey executorKey;
 
     public JRequest() {
         this(new JRequestPayload());

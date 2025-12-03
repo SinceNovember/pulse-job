@@ -15,7 +15,9 @@ public class DispatcherRegistry {
     public DispatcherRegistry(List<ObjectProvider<Dispatcher>> providers) {
         for (ObjectProvider<Dispatcher> provider : providers) {
             Dispatcher dispatcher = provider.getIfAvailable();
-            registry.put(dispatcher.type(), provider);
+            if (dispatcher != null) {
+                registry.put(dispatcher.type(), provider);
+            }
         }
     }
 

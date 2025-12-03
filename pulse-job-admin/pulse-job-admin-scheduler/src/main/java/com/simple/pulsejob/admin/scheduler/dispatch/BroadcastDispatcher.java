@@ -20,7 +20,7 @@ public class BroadcastDispatcher extends AbstractDispatcher {
         final Serializer _serializer = serializer();
         final MessageWrapper message = request.getMessage();
 
-        ExecutorKey executorKey = request.getExecutor();
+        ExecutorKey executorKey = request.getExecutorKey();
 
         JChannelGroup channelGroup = channelGroup(executorKey);
         List<JChannel> channels = channelGroup.channels();
