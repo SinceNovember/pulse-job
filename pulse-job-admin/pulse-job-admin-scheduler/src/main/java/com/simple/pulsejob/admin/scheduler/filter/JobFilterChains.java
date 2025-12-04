@@ -1,11 +1,12 @@
 package com.simple.pulsejob.admin.scheduler.filter;
 
-import java.util.List;
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.transport.JRequest;
-import com.simple.pulsejob.transport.channel.JChannel;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -15,8 +16,8 @@ public class JobFilterChains {
 
     private JobFilterChain headerChain;
 
-    public void doFilter(JRequest request, JChannel channel)  throws Throwable {
-        headerChain.doFilter(request, channel);
+    public void doFilter(JRequest request, ScheduleContext context)  throws Throwable {
+        headerChain.doFilter(request, context);
     }
 
     @PostConstruct

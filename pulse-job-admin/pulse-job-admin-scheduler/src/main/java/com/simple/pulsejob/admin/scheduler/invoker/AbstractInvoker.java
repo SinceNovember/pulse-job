@@ -1,6 +1,8 @@
 package com.simple.pulsejob.admin.scheduler.invoker;
 
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
+import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import lombok.experimental.SuperBuilder;
@@ -10,9 +12,13 @@ public abstract class AbstractInvoker {
 
     private final ClusterInvoker clusterInvoker;
 
-    protected Object doInvoke(String handlerName, String args, boolean sync) {
+    private final JobFilterChains chains;
+
+    protected Object doInvoke(String handlerName, String args, boolean sync) throws Throwable {
         JRequest request = createRequest(handlerName, args);
-        return null;
+        ScheduleContext context = new ScheduleContext(clusterInvoker, sync);
+        chains.doFilter(request, context);
+        return context.getResult();
     }
 
     private JRequest createRequest(String handlerName, String args) {

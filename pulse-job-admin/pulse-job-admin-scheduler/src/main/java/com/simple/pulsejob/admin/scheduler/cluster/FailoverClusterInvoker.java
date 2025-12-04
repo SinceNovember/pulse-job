@@ -71,7 +71,7 @@ public class FailoverClusterInvoker implements ClusterInvoker {
                         log.warn("[{}]: [Fail-over] retry, [{}] attempts left, [method: {}], {}.",
                             channel,
                             tryCount - 1,
-                            message.getMethodName(),
+                            message.getHandlerName(),
                             StackTraceUtil.stackTrace(throwable));
                     }
                     invoke0(request, dispatcher, tryCount - 1, failOverFuture, throwable);

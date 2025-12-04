@@ -8,5 +8,5 @@ public interface JobInterceptor {
 
     void beforeInvoke(JRequest request, JChannel channel);
 
-    void afterInvoke(JResponse request, JChannel channel);
+    void afterInvoke(JResponse response, JChannel channel);
 }
