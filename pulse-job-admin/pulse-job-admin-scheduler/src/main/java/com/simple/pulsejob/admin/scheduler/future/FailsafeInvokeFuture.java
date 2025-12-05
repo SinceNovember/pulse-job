@@ -16,7 +16,6 @@
 package com.simple.pulsejob.admin.scheduler.future;
 
 import java.util.concurrent.CompletableFuture;
-import com.simple.pulsejob.admin.scheduler.cluster.FailsafeClusterInvoker;
 import com.simple.pulsejob.common.util.Reflects;
 import com.simple.pulsejob.common.util.StackTraceUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  * jupiter
  * org.jupiter.rpc.consumer.future
  *
- * @see FailsafeClusterInvoker
+ * @see
  *
  * @author jiachun.fjc
  */

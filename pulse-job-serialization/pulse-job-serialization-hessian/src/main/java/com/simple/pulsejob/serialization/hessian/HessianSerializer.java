@@ -16,8 +16,8 @@ import java.io.IOException;
 
 public class HessianSerializer extends Serializer {
     @Override
-    public byte code() {
-        return SerializerType.HESSIAN.value();
+    public SerializerType code() {
+        return SerializerType.HESSIAN;
     }
 
     @Override

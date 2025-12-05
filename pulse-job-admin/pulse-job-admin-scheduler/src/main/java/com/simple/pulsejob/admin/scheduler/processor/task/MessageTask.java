@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.processor.task;
 
 import com.simple.plusejob.serialization.Serializer;
+import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.InputBuf;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
@@ -19,6 +20,7 @@ public class MessageTask implements Runnable {
 
     private final JChannel channel;
     private final JResponse response;
+    private final SerializerFactory serializerFactory;
 
     @Override
     public void run() {
@@ -28,7 +30,7 @@ public class MessageTask implements Runnable {
 
         byte s_code = _response.serializerCode();
 
-        Serializer serializer = SerializerFactory.getSerializer(s_code);
+        Serializer serializer = serializerFactory.get(SerializerType.parse(s_code));
         ResultWrapper wrapper;
         try {
                 InputBuf inputBuf = _responsePayload.inputBuf();

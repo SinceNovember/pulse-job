@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.autoconfigure;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -34,11 +35,8 @@ public class PulseJobAdminConfiguration {
     }
 
     @Bean
-    public Map<Byte, Serializer> serializerMap() {
-        Map<Byte, Serializer> serializerMap = new HashMap<>();
-        serializerMap.put(SerializerType.JAVA.value(), new JavaSerializer());
-        serializerMap.put(SerializerType.HESSIAN.value(), new HessianSerializer());
-        return serializerMap;
+    public List<Serializer> serializers() {
+        return List.of(new JavaSerializer(), new HessianSerializer());
     }
 
     /**

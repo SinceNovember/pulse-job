@@ -11,7 +11,7 @@ public class DefaultInvoker implements Invoker {
         try {
             MDC.put("invokeId", String.valueOf(jobContext.invokeId()));
             return Reflects.fastInvoke(jobContext.targetBean(), jobContext.targetMethodName(),
-                jobContext.parameterTypes(), jobContext.args());
+                jobContext.parameterTypes(), null);
         } catch (Throwable t) {
             jobContext.setCause(t);
         } finally {

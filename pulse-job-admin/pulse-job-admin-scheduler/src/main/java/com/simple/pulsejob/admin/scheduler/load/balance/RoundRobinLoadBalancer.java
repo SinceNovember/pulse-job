@@ -12,4 +12,9 @@ public class RoundRobinLoadBalancer implements LoadBalancer {
         return channelGroup.next();
     }
 
+    @Override
+    public Type type() {
+        return Type.ROUND;
+    }
+
 }

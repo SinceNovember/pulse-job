@@ -7,4 +7,11 @@ public interface LoadBalancer {
 
     JChannel select(JChannelGroup channelGroup);
 
+    Type type();
+
+    enum Type {
+        ROUND,
+        RANDOM
+    }
+
 }

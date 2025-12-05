@@ -15,6 +15,7 @@
  */
 package com.simple.pulsejob.transport;
 
+import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.OutputBuf;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
@@ -37,8 +38,6 @@ public class JRequest {
     private final JRequestPayload payload;   // 请求bytes/stream
 
     private MessageWrapper message;          // 请求对象
-
-    private ExecutorKey executorKey;
 
     public JRequest() {
         this(new JRequestPayload());
@@ -64,8 +63,8 @@ public class JRequest {
         return payload.timestamp();
     }
 
-    public void outputBuf(byte serializerCode, byte messageCode, OutputBuf outputBuf) {
-        payload.outputBuf(serializerCode, messageCode, outputBuf);
+    public void outputBuf(SerializerType serializerType, byte messageCode, OutputBuf outputBuf) {
+        payload.outputBuf(serializerType.value(), messageCode, outputBuf);
     }
 
 }

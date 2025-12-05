@@ -1,11 +1,17 @@
 package com.simple.pulsejob.admin.scheduler.dispatch;
 
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
 import com.simple.pulsejob.transport.JRequest;
 
 public interface Dispatcher {
 
-    InvokeFuture dispatch(JRequest request);
+    InvokeFuture dispatch(JRequest request, ScheduleContext context);
 
-    DispatchType type();
+    Dispatcher.Type type();
+
+    enum Type {
+        ROUND,
+        BROADCAST
+    }
 }

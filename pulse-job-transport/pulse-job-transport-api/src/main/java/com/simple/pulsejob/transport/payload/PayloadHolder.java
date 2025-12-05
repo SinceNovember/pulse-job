@@ -39,6 +39,10 @@ public abstract class PayloadHolder {
         return messageCode;
     }
 
+    public void setSerializerCode(byte serializerCode) {
+        this.serializerCode = serializerCode;
+    }
+
     public byte[] bytes() {
         return bytes;
     }

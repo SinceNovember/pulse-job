@@ -12,6 +12,7 @@ import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
 import com.simple.pulsejob.admin.scheduler.ExecutorRegistryService;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
+import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.LogMessage;
@@ -41,7 +42,7 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
 
     private final ExecutorRegistryService executorRegistryService;
 
-    private final Map<Byte, Serializer> serializerMap;
+    private final SerializerFactory serializerFactory;
 
     private final JobExecutorMapper jobExecutorMapper;
 
@@ -63,7 +64,7 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
      */
     @Override
     public void handleRequest(JChannel channel, JRequestPayload request) {
-        Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
+        Serializer serializer = serializerFactory.get(SerializerType.JAVA);
         if (serializer == null) {
             log.error("No serializer found for code={}", request.serializerCode());
             return;
@@ -114,12 +115,11 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
         
         ResultWrapper resultWrapper = serializer.readObject(request.inputBuf(), ResultWrapper.class);
         
-        log.info("收到任务执行结果: invokeId={}, hasError={}", 
-            invokeId, resultWrapper.getError() != null);
+//        log.info("收到任务执行结果: invokeId={}, hasError={}", invokeId, resultWrapper.getError() != null);
         
         // 构建 JResponse
         JResponse response = new JResponse(invokeId);
-        response.status(resultWrapper.getError() == null ? Status.OK.value() : Status.SERVER_ERROR.value());
+//        response.status(resultWrapper.getError() == null ? Status.OK.value() : Status.SERVER_ERROR.value());
         response.result(resultWrapper);
         
         // 转发结果到对应的 Future

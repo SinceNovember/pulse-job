@@ -35,6 +35,7 @@ public class MessageWrapper implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1009813828866652852L;
+
     private String handlerName; //执行器名称
     private String args;                  // 目标方法参数
 

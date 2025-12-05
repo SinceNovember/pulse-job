@@ -24,4 +24,9 @@ public class RandomLoadBalancer implements LoadBalancer {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         return channels.get(random.nextInt(length));
     }
+
+    @Override
+    public Type type() {
+        return Type.RANDOM;
+    }
 }

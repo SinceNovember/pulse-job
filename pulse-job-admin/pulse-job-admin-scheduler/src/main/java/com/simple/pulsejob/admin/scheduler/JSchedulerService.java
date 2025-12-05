@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
+import com.simple.pulsejob.admin.scheduler.invoker.Invoker;
 import com.simple.pulsejob.admin.scheduler.timer.Timeout;
 import com.simple.pulsejob.admin.scheduler.timer.Timer;
 import com.simple.pulsejob.admin.scheduler.timer.TimerTask;
@@ -29,6 +30,8 @@ public class JSchedulerService {
     @Resource
     private ThreadPoolExecutor jobExecutor;
 
+    private final Invoker invoker;
+
     // 创建一个定时线程池
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -41,13 +44,18 @@ public class JSchedulerService {
      * 每5秒执行一次，查询即将执行的任务并推送到时间轮
      */
     public void scheduleJobs() {
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                queryAndExecuteJobs();
-            } catch (Exception e) {
-                e.printStackTrace(); // 捕获异常避免任务中断
-            }
-        }, 0, 5, TimeUnit.SECONDS); // 初始延迟0秒，每5秒执行一次
+        try {
+            invoker.invoke("my-executor", "queryAndExecuteJobs", null);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+//        scheduler.scheduleAtFixedRate(() -> {
+//            try {
+//                queryAndExecuteJobs();
+//            } catch (Exception e) {
+//                e.printStackTrace(); // 捕获异常避免任务中断
+//            }
+//        }, 0, 5, TimeUnit.SECONDS); // 初始延迟0秒，每5秒执行一次
 
     }
 

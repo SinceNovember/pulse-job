@@ -58,15 +58,15 @@ public class MessageTask implements RejectedRunnable {
             return;
         }
 
-        JobBeanDefinition jobBeanDefinition = processor.getJobBeanDefinition(messageWrapper.getJobBeanDefinitionName());
-        if (jobBeanDefinition == null) {
-            log.error("JobBeanDefinition not found: {}", messageWrapper.getJobBeanDefinitionName());
-            handleException(Status.SERVICE_NOT_FOUND, new IllegalArgumentException(
-                "JobBeanDefinition not found: " + messageWrapper.getJobBeanDefinitionName()));
-            return;
-        }
+//        JobBeanDefinition jobBeanDefinition = processor.getJobBeanDefinition(messageWrapper.getJobBeanDefinitionName());
+//        if (jobBeanDefinition == null) {
+//            log.error("JobBeanDefinition not found: {}", messageWrapper.getJobBeanDefinitionName());
+//            handleException(Status.SERVICE_NOT_FOUND, new IllegalArgumentException(
+//                "JobBeanDefinition not found: " + messageWrapper.getJobBeanDefinitionName()));
+//            return;
+//        }
 
-        JobContext jobContext = new JobContext(channel, request, messageWrapper, jobBeanDefinition);
+        JobContext jobContext = new JobContext(channel, request, messageWrapper, null);
         process(jobContext);
 
     }

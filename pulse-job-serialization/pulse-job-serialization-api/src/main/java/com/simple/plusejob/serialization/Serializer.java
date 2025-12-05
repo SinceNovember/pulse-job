@@ -12,7 +12,7 @@ public abstract class Serializer {
      */
     public static final int DEFAULT_BUF_SIZE = 512;
 
-    public abstract byte code();
+    public abstract SerializerType code();
 
     public abstract <T> OutputBuf writeObject(OutputBuf outputBuf, T obj);
 

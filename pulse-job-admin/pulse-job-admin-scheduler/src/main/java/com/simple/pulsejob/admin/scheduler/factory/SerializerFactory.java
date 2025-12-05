@@ -1,33 +1,22 @@
 package com.simple.pulsejob.admin.scheduler.factory;
 
 import com.simple.plusejob.serialization.Serializer;
+import com.simple.plusejob.serialization.SerializerType;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
-public class SerializerFactory {
+public class SerializerFactory extends EnumBeanFactory<SerializerType, Serializer>{
 
-    private final List<Serializer> serializers;
-
-    private static Map<Byte, Serializer> SERIALIZER_MAP;
-
-    public static Serializer getSerializer(Byte type) {
-        Serializer serializer = SERIALIZER_MAP.get(type);
-        if (serializer == null) {
-            throw new IllegalArgumentException("Unsupported serializer type: " + type);
-        }
-        return serializer;
+    public SerializerFactory(List<Serializer> serializers) {
+        super(serializers, Serializer::code, "Duplicate Serializer type detected: ");
     }
 
-    @PostConstruct
-    public void buildSerializerFactory() {
-        for (Serializer serializer : serializers) {
-            SERIALIZER_MAP.put(serializer.code(), serializer);
-        }
-    }
 }

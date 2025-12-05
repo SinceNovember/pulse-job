@@ -26,6 +26,8 @@ public class JobInfoController {
 
     private final IJobInfoService jobInfoService;
 
+
+
     @PostMapping
     public ResponseResult<JobInfo> addJobInfo(@RequestBody JobInfoParam jobInfoParam) {
         jobInfoService.addJobInfo(jobInfoParam);

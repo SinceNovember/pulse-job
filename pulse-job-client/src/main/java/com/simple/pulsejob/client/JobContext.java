@@ -12,7 +12,7 @@ public class JobContext {
 
     private final JobBeanDefinition jobBeanDefinition;
 
-    private final Object[] args;                  // 目标方法参数
+    private final String args;                  // 目标方法参数
 
     private Object result;
 
@@ -38,7 +38,7 @@ public class JobContext {
         return jobBeanDefinition.getTargetMethod().getParameterTypes();
     }
 
-    public Object[] args() {
+    public String args() {
         return args;
     }
 

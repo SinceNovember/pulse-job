@@ -3,7 +3,11 @@ package com.simple.pulsejob.admin.scheduler.dispatch;
 import java.util.List;
 
 import com.simple.plusejob.serialization.Serializer;
+import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
+import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
+import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
@@ -14,26 +18,30 @@ import com.simple.pulsejob.transport.channel.JChannelGroup;
 import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.net.DispatchType;
 import org.springframework.util.CollectionUtils;
 
 @Slf4j
-@SuperBuilder
+@RequiredArgsConstructor
 public abstract class AbstractDispatcher implements Dispatcher {
 
-    private final ExecutorChannelGroupManager channelGroupManager;
+    protected final ExecutorChannelGroupManager channelGroupManager;
 
-    private final List<JobInterceptor> interceptors;
+    protected final List<JobInterceptor> interceptors;
 
-    private final LoadBalancer loadBalancer;
+    protected final LoadBalancerFactory loadBalancerFactory;
 
-    private final Serializer serializerImpl;                    // 序列化/反序列化impl
+    protected final JobFilterChains chains;
 
-    private final JobFilterChains chains;
+    protected final SerializerFactory serializerFactory;
 
-    protected JChannel select(ExecutorKey executorKey) {
-        JChannelGroup channelGroup = channelGroupManager.find(executorKey);
+
+    protected JChannel select(ScheduleContext context) {
+        JChannelGroup channelGroup = channelGroupManager.find(context.getExecutorKey());
+        LoadBalancer loadBalancer = loadBalancerFactory.get(context.getLoadBalanceType());
         return loadBalancer.select(channelGroup);
     }
 
@@ -41,11 +49,12 @@ public abstract class AbstractDispatcher implements Dispatcher {
         return channelGroupManager.find(executorKey);
     }
 
-    protected Serializer serializer() {
-        return serializerImpl;
+    protected Serializer serializer(SerializerType serializerType) {
+        return serializerFactory.get(serializerType);
     }
 
-    protected DefaultInvokeFuture write(final JChannel channel, final JRequest request, final DispatchType dispatchType) {
+
+    protected DefaultInvokeFuture write(final JChannel channel, final JRequest request, final Type dispatchType) {
         final JRequestPayload payload = request.payload();
 
         final DefaultInvokeFuture future = DefaultInvokeFuture

@@ -2,7 +2,7 @@ package com.simple.pulsejob.admin.scheduler.cluster;
 
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.dispatch.DispatcherRegistry;
+import com.simple.pulsejob.admin.scheduler.factory.DispatcherFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.FailoverInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
@@ -15,13 +15,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * 失败自动切换, 当出现失败, 重试其它服务器, 要注意的是重试会带来更长的延时.
- *
+ * <p>
  * 建议只用于幂等性操作, 通常比较合适用于读操作.
- *
+ * <p>
  * 注意failover不能支持广播的调用方式.
- *
+ * <p>
  * https://en.wikipedia.org/wiki/Failover
- *
+ * <p>
  * jupiter
  * org.jupiter.rpc.consumer.cluster
  *
@@ -31,9 +31,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class FailoverClusterInvoker implements ClusterInvoker {
 
-    private final DispatcherRegistry dispatcherFactory;
+    private final DispatcherFactory dispatcherFactory;
 
-    public FailoverClusterInvoker(DispatcherRegistry dispatcherFactory) {
+    public FailoverClusterInvoker(DispatcherFactory dispatcherFactory) {
         this.dispatcherFactory = dispatcherFactory;
     }
 
@@ -43,22 +43,23 @@ public class FailoverClusterInvoker implements ClusterInvoker {
     }
 
     @Override
-    public InvokeFuture invoke(JRequest request, ScheduleContext scheduleContext) throws Exception {
-        Dispatcher dispatcher = dispatcherFactory.get(scheduleContext.getDispatchType());
+    public InvokeFuture invoke(JRequest request, ScheduleContext context) throws Exception {
+        Dispatcher dispatcher = dispatcherFactory.get(context.getDispatchType());
         FailoverInvokeFuture future = FailoverInvokeFuture.with();
-        int tryCount = scheduleContext.getRetries() + 1;
-        invoke0(request, dispatcher, tryCount, future, null);
+        int tryCount = context.getRetries() + 1;
+        invoke0(request, context, dispatcher, tryCount, future, null);
 
         return future;
     }
 
     private void invoke0(final JRequest request,
+                         final ScheduleContext context,
                          final Dispatcher dispatcher,
                          final int tryCount,
                          final FailoverInvokeFuture failOverFuture,
                          final Throwable lastCause) {
         if (tryCount > 0) {
-            final InvokeFuture future = dispatcher.dispatch(request);
+            final InvokeFuture future = dispatcher.dispatch(request, context);
             future.whenComplete((result, throwable) -> {
                 if (throwable == null) {
                     failOverFuture.complete(request);
@@ -74,7 +75,7 @@ public class FailoverClusterInvoker implements ClusterInvoker {
                             message.getHandlerName(),
                             StackTraceUtil.stackTrace(throwable));
                     }
-                    invoke0(request, dispatcher, tryCount - 1, failOverFuture, throwable);
+                    invoke0(request, context, dispatcher, tryCount - 1, failOverFuture, throwable);
                 }
             });
         } else {

@@ -13,8 +13,8 @@ import java.io.*;
 
 public class JavaSerializer extends Serializer {
     @Override
-    public byte code() {
-        return SerializerType.JAVA.value();
+    public SerializerType code() {
+        return SerializerType.JAVA;
     }
 
     @Override

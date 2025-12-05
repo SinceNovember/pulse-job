@@ -1,6 +1,6 @@
 package com.simple.pulsejob.admin.scheduler.future;
 
-import com.simple.pulsejob.admin.scheduler.dispatch.DispatchType;
+import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
 import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
 import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.transport.JResponse;
@@ -32,7 +32,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final JChannel channel;
     private final Class<?> returnType;
     private final long timeout;
-    private final DispatchType dispatchType;
+    private final Dispatcher.Type dispatchType;
     private volatile boolean sent = false;
 
     private List<JobInterceptor> interceptors;
@@ -44,12 +44,12 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final CopyOnWriteArrayList<LogMessage> logHistory = new CopyOnWriteArrayList<>();
 
     public static DefaultInvokeFuture with(
-            long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, DispatchType dispatchType) {
+            long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
         return new DefaultInvokeFuture(invokeId, channel, timeoutMillis, returnType, dispatchType);
     }
 
     public DefaultInvokeFuture(
-            long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, DispatchType dispatchType) {
+            long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
         this.invokeId = invokeId;
         this.channel = channel;
         this.timeout = timeoutMillis > 0 ? TimeUnit.MILLISECONDS.toNanos(timeoutMillis) : 500;
