@@ -2,13 +2,9 @@ package com.simple.pulsejob.client.processor;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.io.OutputBuf;
-import com.simple.pulsejob.client.autoconfigure.PulseJobClientProperties;
-import com.simple.pulsejob.transport.JProtocolHeader;
-import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.client.JobContext;
+import com.simple.pulsejob.client.autoconfigure.PulseJobClientProperties;
 import com.simple.pulsejob.client.invoker.Invoker;
-import com.simple.pulsejob.transport.metadata.ExecutorKey;
-import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.client.processor.task.MessageTask;
 import com.simple.pulsejob.client.registry.JobBeanDefinition;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionLookupService;
@@ -19,18 +15,20 @@ import com.simple.pulsejob.common.util.ThrowUtil;
 import com.simple.pulsejob.common.util.internal.logging.InternalLogger;
 import com.simple.pulsejob.common.util.internal.logging.InternalLoggerFactory;
 import com.simple.pulsejob.transport.CodecConfig;
+import com.simple.pulsejob.transport.JProtocolHeader;
+import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
+import com.simple.pulsejob.transport.metadata.ExecutorKey;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.ConnectorProcessor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
-@Service
 @RequiredArgsConstructor
 public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefinitionLookupService {
 
