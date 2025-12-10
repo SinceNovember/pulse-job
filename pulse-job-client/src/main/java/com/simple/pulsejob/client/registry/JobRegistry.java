@@ -3,7 +3,6 @@ package com.simple.pulsejob.client.registry;
 import com.simple.pulsejob.client.annonation.JobRegister;
 import com.simple.pulsejob.common.util.Reflects;
 import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.MethodIntrospector;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -18,13 +17,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JobRegistry implements SmartInitializingSingleton {
 
 
-    private final Map<String, Method> registry = new ConcurrentHashMap<>();
+    private final Map<String, MethodHolder> registry = new ConcurrentHashMap<>();
 
     private final ApplicationContext applicationContext;
 
     public JobRegistry(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
+
+    static class MethodHolder {
+        final Object bean;
+        final Method method;
+
+        MethodHolder(Object bean, Method method) {
+            this.bean = bean;
+            this.method = method;
+        }
+    }
+
 
     @Override
     public void afterSingletonsInstantiated() {
@@ -58,11 +68,12 @@ public class JobRegistry implements SmartInitializingSingleton {
                 // 如果目标方法来自父类或接口，需要在调用时基于 bean 实例使用正确的 Method
                 // 这里我们从 userClass 找到实际的 Method 对象（已是 candidate）
 
-                Method existing = registry.putIfAbsent(key, method);
-                if (existing != null) {
-                    throw new IllegalStateException("Duplicate JobRegister value '" + key + "' found. " +
-                            "Existing: " + existing + ", New: " + method);
+                MethodHolder holder = new MethodHolder(bean, method);
+                MethodHolder prev = registry.putIfAbsent(key, holder);
+                if (prev != null) {
+                    throw new IllegalStateException("Duplicate JobRegister value '" + key + "'");
                 }
+
             }
         }
     }
@@ -73,7 +84,17 @@ public class JobRegistry implements SmartInitializingSingleton {
      * 方便直接调用
      */
     public Object invoke(String key, Object... args) throws Exception {
+        MethodHolder holder = registry.get(key);
+        if (holder == null) {
+            throw new IllegalArgumentException("No job registered for key: " + key);
+        }
 
+        Method method = holder.method;
+        Object bean = holder.bean;
+
+        Class<?>[] parameterTypes = method.getParameterTypes();
+
+        return Reflects.fastInvoke(bean, method.getName(), parameterTypes, args);
     }
 
 }
