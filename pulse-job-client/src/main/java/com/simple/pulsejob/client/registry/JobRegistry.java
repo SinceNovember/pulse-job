@@ -2,20 +2,24 @@ package com.simple.pulsejob.client.registry;
 
 import com.simple.pulsejob.client.annonation.JobRegister;
 import com.simple.pulsejob.common.util.Reflects;
+import com.simple.pulsejob.common.util.StringUtil;
+import com.simple.pulsejob.common.util.Strings;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.BridgeMethodResolver;
 import org.springframework.core.MethodIntrospector;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
 public class JobRegistry implements SmartInitializingSingleton {
-
 
     private final Map<String, MethodHolder> registry = new ConcurrentHashMap<>();
 
@@ -58,35 +62,46 @@ public class JobRegistry implements SmartInitializingSingleton {
                     (Method candidate) -> AnnotationUtils.findAnnotation(candidate, JobRegister.class));
 
             for (Map.Entry<Method, JobRegister> entry : methods.entrySet()) {
-                Method method = entry.getKey();
+                Method method = BridgeMethodResolver.findBridgedMethod(entry.getKey());
                 JobRegister ann = entry.getValue();
-                String key = ann.value();
-                if (key == null || key.trim().isEmpty()) {
+                String key = generateJobName(method, ann);
+                if (StringUtil.isBlank(key)) {
                     throw new IllegalStateException("JobRegister value must not be empty, bean=" + beanName + ", method=" + method);
                 }
 
                 // 如果目标方法来自父类或接口，需要在调用时基于 bean 实例使用正确的 Method
                 // 这里我们从 userClass 找到实际的 Method 对象（已是 candidate）
-
-                MethodHolder holder = new MethodHolder(bean, method);
-                MethodHolder prev = registry.putIfAbsent(key, holder);
-                if (prev != null) {
-                    throw new IllegalStateException("Duplicate JobRegister value '" + key + "'");
-                }
+                registry.compute(key, (k, v) -> {
+                    if (v != null) {
+                        throw new IllegalStateException("Duplicate JobRegister value '" + key + "'");
+                    }
+                    return new MethodHolder(bean, method);
+                });
 
             }
         }
     }
 
+    private String generateJobName(Method method, JobRegister jobRegister) {
+        String value = jobRegister.value();
+        if (StringUtil.isNotBlank(value)) {
+            return value;
+        }
 
+        return method.getDeclaringClass().getSimpleName()
+            + Strings.HASH_SYMBOL + method.getName()
+            + Arrays.stream(method.getParameterTypes())
+            .map(Class::getSimpleName)
+            .collect(Collectors.joining(Strings.COMMA, Strings.LEFT_PAREN, Strings.RIGHT_PAREN));
+    }
 
     /**
      * 方便直接调用
      */
-    public Object invoke(String key, Object... args) throws Exception {
-        MethodHolder holder = registry.get(key);
+    public Object invoke(String jobName, Object... args) throws Exception {
+        MethodHolder holder = registry.get(jobName);
         if (holder == null) {
-            throw new IllegalArgumentException("No job registered for key: " + key);
+            throw new IllegalArgumentException("No job registered for name: " + jobName);
         }
 
         Method method = holder.method;

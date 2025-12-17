@@ -10,7 +10,7 @@ public class JobContext {
     private final JChannel channel;
     private final JRequest request;
 
-    private final JobBeanDefinition jobBeanDefinition;
+    private String handlerName;
 
     private final String args;                  // 目标方法参数
 
@@ -19,23 +19,23 @@ public class JobContext {
     private Throwable cause;
 
     public JobContext(JChannel channel, JRequest request,
-                      MessageWrapper messageWrapper, JobBeanDefinition jobBeanDefinition) {
+                      MessageWrapper messageWrapper) {
         this.channel = channel;
         this.request = request;
+        this.handlerName = messageWrapper.getHandlerName();
         this.args = messageWrapper.getArgs();
-        this.jobBeanDefinition = jobBeanDefinition;
     }
 
-    public Object targetBean() {
-        return jobBeanDefinition.getTargetBean();
+    public String getHandlerName() {
+        return handlerName;
     }
 
-    public String targetMethodName() {
-        return jobBeanDefinition.getTargetMethod().getName();
+    public void setHandlerName(String handlerName) {
+        this.handlerName = handlerName;
     }
 
-    public Class<?>[] parameterTypes() {
-        return jobBeanDefinition.getTargetMethod().getParameterTypes();
+    public String getArgs() {
+        return args;
     }
 
     public String args() {
@@ -44,14 +44,6 @@ public class JobContext {
 
     public long invokeId() {
         return request.invokeId();
-    }
-
-    public String targetInitMethodName() {
-        return jobBeanDefinition.getTargetInitMethodName();
-    }
-
-    public String targetDestroyMethodName() {
-        return jobBeanDefinition.getTargetDestroyMethodName();
     }
 
     public JChannel channel() {

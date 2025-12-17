@@ -66,7 +66,7 @@ public class MessageTask implements RejectedRunnable {
 //            return;
 //        }
 
-        JobContext jobContext = new JobContext(channel, request, messageWrapper, null);
+        JobContext jobContext = new JobContext(channel, request, messageWrapper);
         process(jobContext);
 
     }

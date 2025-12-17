@@ -99,6 +99,7 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
     }
 
     public Object invoke(JobContext jobContext) {
+
         return invoker.invoke(jobContext);
     }
 

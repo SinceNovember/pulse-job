@@ -11,6 +11,7 @@ import com.simple.pulsejob.client.log.CustomLogAppenderInitializer;
 import com.simple.pulsejob.client.processor.DefaultClientProcessor;
 import com.simple.pulsejob.client.registry.JobAutoRegister;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionRegistry;
+import com.simple.pulsejob.client.registry.JobRegistry;
 import com.simple.pulsejob.common.concurrent.executor.CloseableExecutor;
 import com.simple.pulsejob.common.concurrent.executor.ExecutorFactory;
 import com.simple.pulsejob.serialization.hessian.HessianSerializer;
@@ -26,7 +27,7 @@ import org.springframework.context.annotation.Import;
 
 @Configuration
 @RequiredArgsConstructor
-@Import({JobAutoRegister.class, CustomLogAppenderInitializer.class})
+@Import({JobRegistry.class, CustomLogAppenderInitializer.class})
 @EnableConfigurationProperties(PulseJobClientProperties.class)
 public class PulseJobClientConfiguration {
 
@@ -47,8 +48,8 @@ public class PulseJobClientConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public Invoker invoker() {
-        return new DefaultInvoker();
+    public Invoker invoker(JobRegistry jobRegistry) {
+        return new DefaultInvoker(jobRegistry);
     }
 
     /**
@@ -74,7 +75,6 @@ public class PulseJobClientConfiguration {
     public DefaultClient defaultClient(PulseJobClientProperties properties,
                                        ConnectorProcessor connectorProcessor,
                                        Map<Byte, Serializer> serializerMap) {
-
         return new DefaultClient(properties, connectorProcessor, serializerMap);
     }
 
