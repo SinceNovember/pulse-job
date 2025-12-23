@@ -8,6 +8,7 @@ import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
+import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
 import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
 import com.simple.pulsejob.transport.JProtocolHeader;
@@ -36,11 +37,14 @@ public class BroadcastDispatcher extends AbstractDispatcher {
         JChannelGroup channelGroup = channelGroup(context.getExecutorKey());
         List<JChannel> channels = channelGroup.channels();
         SerializerType serializerType = context.getSerializerType();
-        for (JChannel channel : channels) {
+            DefaultInvokeFuture[] futures = new DefaultInvokeFuture[channels.size()];
+
+        for (int i = 0; i < channels.size(); i++) {
+            JChannel channel = channels.get(i);
             OutputBuf outputBuf =
                 serializer(serializerType).writeObject(channel.allocOutputBuf(), message);
             request.outputBuf(serializerType, JProtocolHeader.TRIGGER_JOB, outputBuf);
-            write(channel, request, type());
+            futures[i] = write(channel, request, type());
         }
         return null;
     }

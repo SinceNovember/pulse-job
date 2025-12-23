@@ -87,6 +87,7 @@ public class LowCopyProtocolDecoder extends ReplayingDecoder<LowCopyProtocolDeco
                         break;
                     case JProtocolHeader.REGISTER_EXECUTOR:
                     case JProtocolHeader.TRIGGER_JOB:
+                    case JProtocolHeader.JOB_LOG_MESSAGE:
                     case JProtocolHeader.REQUEST: {
                         int length = checkBodySize(header.bodySize());
 

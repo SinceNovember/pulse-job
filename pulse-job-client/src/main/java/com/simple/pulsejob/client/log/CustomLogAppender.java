@@ -1,50 +1,53 @@
 package com.simple.pulsejob.client.log;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import com.simple.pulsejob.transport.metadata.LogMessage;
+import lombok.Setter;
 
+/**
+ * 将带 taskId(invokeId) 的日志推送到 admin。
+ */
 public class CustomLogAppender extends AppenderBase<ILoggingEvent> {
 
-    private String logDirectory = "D://logs";
+    @Setter
+    private JobLogSender jobLogSender;
 
     @Override
     protected void append(ILoggingEvent event) {
-        try {
-            String logMessage = event.getTimeStamp() + " [" + event.getLevel() + "] " + event.getLoggerName() + " - " + event.getFormattedMessage();
-            writeToLocalFile(event.getMDCPropertyMap().get("taskId"), logMessage);
-        } catch (Exception e) {
-            addError("Failed to write log", e);
+        if (jobLogSender == null) {
+            return;
         }
+
+        String taskId = event.getMDCPropertyMap().get(LogMDCScope.TASK_ID);
+        if (taskId == null) {
+            return; // 仅转发带任务上下文的日志
+        }
+
+        LogMessage logMessage = new LogMessage();
+        try {
+            logMessage.setInvokeId(Long.parseLong(taskId));
+        } catch (NumberFormatException ignored) {
+            return;
+        }
+        logMessage.setLevel(mapLevel(event.getLevel()));
+        logMessage.setContent(event.getFormattedMessage());
+        // timestamp/sequence 由 JobLogSender 填充
+
+        jobLogSender.sendAsync(logMessage);
     }
 
-    private void writeToLocalFile(String taskId, String logMessage) {
-        if (taskId == null) return;  // 只处理带有 taskId 的日志
-
-        String logFilePath = logDirectory + "/" + taskId + ".log";
-        File file = new File(logFilePath);
-
-        try {
-            // 确保目录存在
-            File parentDir = file.getParentFile();
-            if (!parentDir.exists()) {
-                parentDir.mkdirs();
-            }
-
-            // 确保日志文件存在
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-
-            // 追加写入日志
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
-                writer.write(logMessage + "\n");
-            }
-        } catch (IOException e) {
-            addError("Failed to write log file", e);
+    private LogMessage.LogLevel mapLevel(Level level) {
+        if (level == Level.ERROR) {
+            return LogMessage.LogLevel.ERROR;
         }
+        if (level == Level.WARN) {
+            return LogMessage.LogLevel.WARN;
+        }
+        if (level == Level.DEBUG || level == Level.TRACE) {
+            return LogMessage.LogLevel.DEBUG;
+        }
+        return LogMessage.LogLevel.INFO;
     }
 }

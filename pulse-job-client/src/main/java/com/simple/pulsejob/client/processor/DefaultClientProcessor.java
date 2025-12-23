@@ -1,6 +1,7 @@
 package com.simple.pulsejob.client.processor;
 
 import com.simple.plusejob.serialization.Serializer;
+import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.OutputBuf;
 import com.simple.pulsejob.client.JobContext;
 import com.simple.pulsejob.client.autoconfigure.PulseJobClientProperties;
@@ -25,6 +26,7 @@ import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.ConnectorProcessor;
+import com.simple.pulsejob.client.log.JobLogSender;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
@@ -44,6 +46,8 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
 
     private final PulseJobClientProperties clientProperties;
 
+    private final JobLogSender jobLogSender;
+
     @Override
     public Serializer serializer(Byte code) {
         return serializerMap.get(code);
@@ -53,21 +57,22 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
     public void handleActive(JChannel channel) {
         //向管理端发起注册该执行器的消息
         sendRegisterExecutorRequest(channel);
+        jobLogSender.bindChannel(channel);
     }
 
     private void sendRegisterExecutorRequest(JChannel channel) {
         ExecutorKey executorWrapper = new ExecutorKey(clientProperties.getExecutorName());
 
-        Serializer serializer = serializerMap.get((byte)0x04);
+        Serializer serializer = serializerMap.get(SerializerType.JAVA.value());
 
         JRequestPayload requestPayload = new JRequestPayload();
         if (CodecConfig.isCodecLowCopy()) {
             OutputBuf outputBuf =
                 serializer.writeObject(channel.allocOutputBuf(), executorWrapper);
-            requestPayload.outputBuf((byte)0x04, JProtocolHeader.REGISTER_EXECUTOR, outputBuf);
+            requestPayload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.REGISTER_EXECUTOR, outputBuf);
         } else {
             byte[] bytes = serializer.writeObject(executorWrapper);
-            requestPayload.bytes((byte)0x04, JProtocolHeader.REGISTER_EXECUTOR, bytes);
+            requestPayload.bytes(SerializerType.JAVA.value(), JProtocolHeader.REGISTER_EXECUTOR, bytes);
         }
         channel.write(requestPayload);
     }

@@ -6,6 +6,7 @@ import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
+import com.simple.pulsejob.transport.metadata.LogMessage;
 import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import lombok.extern.slf4j.Slf4j;
 

@@ -15,7 +15,6 @@ import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.admin.scheduler.future.LogMessage;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.JProtocolHeader;
@@ -24,6 +23,7 @@ import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
+import com.simple.pulsejob.transport.metadata.LogMessage;
 import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
@@ -55,6 +55,30 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
 
     @Override
     public void handleResponse(JChannel channel, JResponsePayload response) {
+        Serializer serializer = serializerFactory.get(SerializerType.JAVA);
+        if (serializer == null) {
+            log.error("No serializer found for code={}", response.serializerCode());
+            return;
+        }
+
+        final InputBuf inputBuf = response.inputBuf();
+        switch (response.messageCode()) {
+            case JOB_LOG_MESSAGE:
+                // ✅ 接收日志流 - 转发到对应的 Future
+                LogMessage logMessage = serializer.readObject(inputBuf, LogMessage.class);
+                handleJobLog(channel, logMessage.getInvokeId(), logMessage);
+                break;
+
+            case JOB_RESULT:
+                // ✅ 接收任务结果 - 转发到对应的 Future
+//                handleJobResult(channel, response, serializer);
+                break;
+
+            default:
+//                log.warn("Unknown message code: {}", request.messageCode());
+                break;
+        }
+        System.out.println(response);
     }
 
     /**

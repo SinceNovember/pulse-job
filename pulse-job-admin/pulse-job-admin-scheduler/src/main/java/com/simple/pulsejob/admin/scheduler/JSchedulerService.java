@@ -45,7 +45,7 @@ public class JSchedulerService {
      */
     public void scheduleJobs() {
         try {
-            invoker.invoke("my-executor", "TestJob2#testJob1()", null);
+            invoker.invoke("my-executor", "TestJob1#testJob1()", null);
         } catch (Throwable e) {
             e.printStackTrace();
         }

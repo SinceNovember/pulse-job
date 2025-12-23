@@ -31,7 +31,7 @@ public class ScheduleContext {
         this.executorKey = executorKey;
         this.invoker = invoker;
         this.sync = sync;
-        this.dispatchType = Dispatcher.Type.BROADCAST;
+        this.dispatchType = Dispatcher.Type.ROUND;
         this.loadBalanceType = LoadBalancer.Type.RANDOM;
         this.serializerType = SerializerType.JAVA;
         this.retries = 1;

@@ -74,7 +74,7 @@ public class MessageTask implements RejectedRunnable {
     public void process(JobContext jobContext) {
         try {
             Object invokeResult = processor.invoke(jobContext);
-            doProcess(invokeResult);
+//            doProcess(invokeResult);
         }  catch (Throwable t) {
             log.error("error", t);
             handleFail(jobContext, t);
@@ -83,7 +83,7 @@ public class MessageTask implements RejectedRunnable {
 
     private void doProcess(Object realResult) {
         ResultWrapper result = new ResultWrapper();
-        result.setResult(result);
+        result.setResult(realResult);
         byte s_code = request.serializerCode();
         Serializer serializer = processor.serializer(s_code);
 
