@@ -3,14 +3,16 @@ package com.simple.pulsejob.client.log;
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.OutputBuf;
-import com.simple.pulsejob.common.util.SystemClock;
 import com.simple.pulsejob.transport.CodecConfig;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.LogMessage;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +34,10 @@ import org.springframework.stereotype.Component;
 public class JobLogSender {
 
     private final Map<Byte, Serializer> serializerMap;
+
+    private static final int BATCH_MAX_SIZE = 50;
+    private static final int BATCH_MAX_BYTES = 16 * 1024;
+    private static final long FLUSH_INTERVAL_MS = 300;
 
     private final BlockingQueue<LogMessage> queue = new LinkedBlockingQueue<>(4096);
     private final ExecutorService worker =
@@ -69,11 +75,37 @@ public class JobLogSender {
     }
 
     private void drainLoop() {
+        List<LogMessage> batch = new ArrayList<>(BATCH_MAX_SIZE);
+        Long currentInvokeId = null;
+        int batchBytes = 0;
+        long lastActivity = System.currentTimeMillis();
+
         while (started.get()) {
             try {
-                LogMessage msg = queue.poll(5, TimeUnit.SECONDS);
+                LogMessage msg = queue.poll(FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                long now = System.currentTimeMillis();
                 if (msg != null) {
-                    doSend(msg);
+                    // 若遇到不同 invokeId，先刷掉已有批次
+                    if (currentInvokeId != null && !currentInvokeId.equals(msg.getInvokeId())) {
+                        flushBatch(currentInvokeId, batch);
+                        batch = new ArrayList<>(BATCH_MAX_SIZE);
+                        batchBytes = 0;
+                    }
+                    currentInvokeId = currentInvokeId == null ? msg.getInvokeId() : currentInvokeId;
+                    batch.add(msg);
+                    batchBytes += estimateSize(msg);
+                    lastActivity = now;
+                }
+
+                boolean timeout = !batch.isEmpty() && (now - lastActivity) >= FLUSH_INTERVAL_MS;
+                boolean reachSize = batch.size() >= BATCH_MAX_SIZE || batchBytes >= BATCH_MAX_BYTES;
+                boolean lastLog = msg != null && msg.isLast();
+
+                if (!batch.isEmpty() && (reachSize || timeout || lastLog)) {
+                    flushBatch(currentInvokeId, batch);
+                    batch = new ArrayList<>(BATCH_MAX_SIZE);
+                    batchBytes = 0;
+                    currentInvokeId = null;
                 }
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
@@ -82,9 +114,25 @@ public class JobLogSender {
                 log.warn("发送日志时异常", t);
             }
         }
+
+        if (!batch.isEmpty() && currentInvokeId != null) {
+            flushBatch(currentInvokeId, batch);
+        }
     }
 
-    private void doSend(LogMessage msg) {
+    private int estimateSize(LogMessage msg) {
+        int size = 32; // base overhead
+        if (msg.getContent() != null) {
+            size += msg.getContent().getBytes(StandardCharsets.UTF_8).length;
+        }
+        return size;
+    }
+
+    private void flushBatch(Long invokeId, List<LogMessage> batch) {
+        if (invokeId == null || batch.isEmpty()) {
+            return;
+        }
+
         JChannel current = channel;
         if (current == null || !current.isActive()) {
             // 无可用连接，直接忽略（可按需落盘）
@@ -97,25 +145,23 @@ public class JobLogSender {
             return;
         }
 
-        JRequestPayload payload = new JRequestPayload(msg.getInvokeId());
+        JRequestPayload payload = new JRequestPayload(invokeId);
         if (CodecConfig.isCodecLowCopy()) {
-            OutputBuf outputBuf = serializer.writeObject(current.allocOutputBuf(), msg);
+            OutputBuf outputBuf = serializer.writeObject(current.allocOutputBuf(), batch);
             payload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.JOB_LOG_MESSAGE, outputBuf);
         } else {
-            byte[] bytes = serializer.writeObject(msg);
+            byte[] bytes = serializer.writeObject(batch);
             payload.bytes(SerializerType.JAVA.value(), JProtocolHeader.JOB_LOG_MESSAGE, bytes);
         }
         current.write(payload, new JFutureListener<>() {
             @Override
             public void operationSuccess(JChannel channel) {
-                log.info("Response sent success");
+                // 日志发送成功无需频繁打印，避免刷屏
             }
 
             @Override
             public void operationFailure(JChannel channel, Throwable cause) {
-                long duration = SystemClock.millisClock().now();
-                log.error("Response sent failed, duration: {} millis, channel: {}, cause: {}.",
-                    duration, channel, cause);
+                log.warn("日志批次发送失败 invokeId={}, size={}", invokeId, batch.size(), cause);
             }
         });
     }

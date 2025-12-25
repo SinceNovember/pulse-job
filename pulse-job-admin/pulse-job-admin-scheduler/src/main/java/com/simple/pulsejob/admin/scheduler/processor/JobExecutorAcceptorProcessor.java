@@ -65,8 +65,8 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
         switch (response.messageCode()) {
             case JOB_LOG_MESSAGE:
                 // ✅ 接收日志流 - 转发到对应的 Future
-                LogMessage logMessage = serializer.readObject(inputBuf, LogMessage.class);
-                handleJobLog(channel, logMessage.getInvokeId(), logMessage);
+                Object payload = serializer.readObject(inputBuf, Object.class);
+                dispatchLogPayload(channel, response.id(), payload);
                 break;
 
             case JOB_RESULT:
@@ -78,7 +78,6 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
 //                log.warn("Unknown message code: {}", request.messageCode());
                 break;
         }
-        System.out.println(response);
     }
 
     /**
@@ -104,8 +103,8 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
                 
             case JOB_LOG_MESSAGE:
                 // ✅ 接收日志流 - 转发到对应的 Future
-                LogMessage logMessage = serializer.readObject(inputBuf, LogMessage.class);
-                handleJobLog(channel, request.invokeId(), logMessage);
+                Object payload = serializer.readObject(inputBuf, Object.class);
+                dispatchLogPayload(channel, request.invokeId(), payload);
                 break;
                 
             case JOB_RESULT:
@@ -129,6 +128,27 @@ public class JobExecutorAcceptorProcessor implements AcceptorProcessor {
         
         // 转发日志到对应的 Future
         DefaultInvokeFuture.receivedLog(channel, invokeId, logMessage);
+    }
+
+    /**
+     * 兼容单条/批量日志
+     */
+    @SuppressWarnings("unchecked")
+    private void dispatchLogPayload(JChannel channel, long invokeId, Object payload) {
+        if (payload instanceof LogMessage) {
+            handleJobLog(channel, invokeId, (LogMessage) payload);
+            return;
+        }
+        if (payload instanceof List<?>) {
+            for (Object obj : (List<?>) payload) {
+                if (obj instanceof LogMessage lm) {
+                    long id = lm.getInvokeId() != null ? lm.getInvokeId() : invokeId;
+                    handleJobLog(channel, id, lm);
+                }
+            }
+            return;
+        }
+        log.warn("Unknown log payload type: {}", payload);
     }
     
     /**
