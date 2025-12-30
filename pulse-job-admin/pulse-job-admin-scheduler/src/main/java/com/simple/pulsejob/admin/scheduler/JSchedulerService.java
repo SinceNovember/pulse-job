@@ -1,14 +1,5 @@
 package com.simple.pulsejob.admin.scheduler;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.scheduler.invoker.Invoker;
 import com.simple.pulsejob.admin.scheduler.timer.Timeout;
@@ -18,6 +9,12 @@ import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
 
 @Slf4j
 @Service
@@ -56,6 +53,15 @@ public class JSchedulerService {
 //                e.printStackTrace(); // 捕获异常避免任务中断
 //            }
 //        }, 0, 5, TimeUnit.SECONDS); // 初始延迟0秒，每5秒执行一次
+
+    }
+
+    public void scheduleJobs1() {
+        try {
+            invoker.invoke("my-executor", "TestJob2#testJob1()", null);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
 
     }
 

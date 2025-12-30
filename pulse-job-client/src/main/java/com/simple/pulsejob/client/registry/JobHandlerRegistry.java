@@ -1,9 +1,8 @@
 package com.simple.pulsejob.client.registry;
 
 import com.simple.pulsejob.client.annonation.JobRegister;
-import com.simple.pulsejob.common.util.Reflects;
+import com.simple.pulsejob.common.util.JobNameResolver;
 import com.simple.pulsejob.common.util.StringUtil;
-import com.simple.pulsejob.common.util.Strings;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.BridgeMethodResolver;
@@ -13,10 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Component
 public class JobHandlerRegistry implements SmartInitializingSingleton {
@@ -60,38 +57,23 @@ public class JobHandlerRegistry implements SmartInitializingSingleton {
 
                 JobRegister jobRegister = methodEntry.getValue();
 
-                String jobHandlerName = resolveJobName(targetMethod, jobRegister);
+                // 使用框架级命名解析器
+                String jobHandlerName = JobNameResolver.resolve(targetMethod, jobRegister.value());
                 if (StringUtil.isBlank(jobHandlerName)) {
                     throw new IllegalStateException(
-                        "JobRegister value must not be empty, bean=" + beanName + ", method=" + targetMethod
-                    );
+                        "JobRegister value must not be empty, bean=" + beanName + ", method=" + targetMethod);
                 }
 
                 handlerMap.compute(jobHandlerName, (name, existing) -> {
                     if (existing != null) {
                         throw new IllegalStateException(
-                            "Duplicate JobRegister value '" + name + "'"
-                        );
+                            "Duplicate JobRegister value '" + name + "'");
                     }
                     return new JobHandlerHolder(targetBean, targetMethod);
                 });
             }
         }
     }
-
-    private String resolveJobName(Method method, JobRegister jobRegister) {
-        String value = jobRegister.value();
-        if (StringUtil.isNotBlank(value)) {
-            return value;
-        }
-
-        return method.getDeclaringClass().getSimpleName()
-            + Strings.HASH_SYMBOL + method.getName()
-            + Arrays.stream(method.getParameterTypes())
-            .map(Class::getSimpleName)
-            .collect(Collectors.joining(Strings.COMMA, Strings.LEFT_PAREN, Strings.RIGHT_PAREN));
-    }
-
 
     public JobHandlerHolder getJobHandlerHolder(String jobHandlerName) {
         return handlerMap.get(jobHandlerName);

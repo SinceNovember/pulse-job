@@ -36,7 +36,17 @@ public interface ConnectorProcessor {
      */
     Serializer serializer(Byte code);
 
+    /**
+     * 处理连接建立
+     */
     void handleActive(JChannel channel);
+
+    /**
+     * 处理连接断开
+     */
+    default void handleInactive(JChannel channel) {
+        // 默认空实现
+    }
 
     /**
      * 处理正常请求

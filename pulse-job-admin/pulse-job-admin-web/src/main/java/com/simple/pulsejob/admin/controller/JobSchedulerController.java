@@ -55,4 +55,15 @@ public class JobSchedulerController {
             return ResponseResult.error("手动触发任务调度失败: " + e.getMessage());
         }
     }
+
+    @PostMapping("/trigger1")
+    public ResponseResult<Void> triggerScheduling1() {
+        try {
+            jobSchedulerService.scheduleJobs1();
+            return ResponseResult.ok();
+        } catch (Exception e) {
+            log.error("手动触发任务调度失败", e);
+            return ResponseResult.error("手动触发任务调度失败: " + e.getMessage());
+        }
+    }
 } 

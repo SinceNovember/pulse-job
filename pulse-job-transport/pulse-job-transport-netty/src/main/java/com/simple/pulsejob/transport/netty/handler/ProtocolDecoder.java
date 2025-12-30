@@ -1,6 +1,5 @@
 package com.simple.pulsejob.transport.netty.handler;
 
-import java.util.List;
 import com.simple.pulsejob.common.util.Signal;
 import com.simple.pulsejob.common.util.SystemClock;
 import com.simple.pulsejob.common.util.SystemPropertyUtil;
@@ -11,6 +10,8 @@ import com.simple.pulsejob.transport.payload.JResponsePayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+
+import java.util.List;
 
 /**
  * <pre>
@@ -77,6 +78,7 @@ public class ProtocolDecoder extends ReplayingDecoder<ProtocolDecoder.State> {
                     case JProtocolHeader.HEARTBEAT:
                         break;
                     case JProtocolHeader.JOB_LOG_MESSAGE:
+                    case JProtocolHeader.JOB_BATCH_LOG_MESSAGE:
                     case JProtocolHeader.REQUEST: {
                         int length = checkBodySize(header.bodySize());
                         byte[] bytes = new byte[length];

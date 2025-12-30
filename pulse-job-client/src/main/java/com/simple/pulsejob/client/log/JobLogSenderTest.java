@@ -9,21 +9,18 @@ import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.LogMessage;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 /**
  * 将客户端日志流式推送给 admin。
@@ -31,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JobLogSender {
+public class JobLogSenderTest {
 
     private final Map<Byte, Serializer> serializerMap;
 

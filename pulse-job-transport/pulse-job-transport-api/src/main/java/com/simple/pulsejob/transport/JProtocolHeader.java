@@ -42,6 +42,7 @@ public class JProtocolHeader {
     public static final byte JOB_LOG_MESSAGE            = 0x06;     // 任务执行日志（流式）
     public static final byte JOB_RESULT                 = 0x07;     // 任务执行结果
     public static final byte HEARTBEAT                  = 0x08;     // Heartbeat
+    public static final byte JOB_BATCH_LOG_MESSAGE      = 0x09;     // 批量任务日志（高效批量传输）
 
     private byte messageCode; // sign 低地址4位
 

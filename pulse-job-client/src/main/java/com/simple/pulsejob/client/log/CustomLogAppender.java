@@ -8,6 +8,12 @@ import lombok.Setter;
 
 /**
  * 将带 taskId(invokeId) 的日志推送到 admin。
+ * 
+ * <p>支持两种发送模式：</p>
+ * <ul>
+ *   <li>单条发送 - 使用 {@link JobLogSenderTest}</li>
+ *   <li>批量发送 - 使用 {@link JobLogSender}（推荐，更高效）</li>
+ * </ul>
  */
 public class CustomLogAppender extends AppenderBase<ILoggingEvent> {
 
@@ -16,10 +22,6 @@ public class CustomLogAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent event) {
-        if (jobLogSender == null) {
-            return;
-        }
-
         String taskId = event.getMDCPropertyMap().get(LogMDCScope.TASK_ID);
         if (taskId == null) {
             return; // 仅转发带任务上下文的日志
@@ -33,9 +35,8 @@ public class CustomLogAppender extends AppenderBase<ILoggingEvent> {
         }
         logMessage.setLevel(mapLevel(event.getLevel()));
         logMessage.setContent(event.getFormattedMessage());
-        // timestamp/sequence 由 JobLogSender 填充
-
         jobLogSender.sendAsync(logMessage);
+
     }
 
     private LogMessage.LogLevel mapLevel(Level level) {

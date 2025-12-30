@@ -30,6 +30,12 @@ public class LogMessage implements Serializable {
     /** 序号, 便于前端排序 */
     private Integer sequence;
 
+    /** 线程名称 */
+    private String threadName;
+
+    /** 日志来源（类名或 logger 名称） */
+    private String loggerName;
+
     /** 是否最后一条日志 */
     private boolean last;
 

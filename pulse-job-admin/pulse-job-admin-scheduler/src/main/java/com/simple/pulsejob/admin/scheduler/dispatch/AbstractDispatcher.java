@@ -1,7 +1,5 @@
 package com.simple.pulsejob.admin.scheduler.dispatch;
 
-import java.util.List;
-
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
@@ -19,10 +17,10 @@ import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.net.DispatchType;
 import org.springframework.util.CollectionUtils;
+
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -62,8 +60,8 @@ public abstract class AbstractDispatcher implements Dispatcher {
             .interceptors(interceptors);
 
         if (!CollectionUtils.isEmpty(interceptors)) {
-            for (int i = 0; i < interceptors.size(); i++) {
-                interceptors.get(i).beforeInvoke(request, channel);
+            for (JobInterceptor interceptor : interceptors) {
+                interceptor.beforeInvoke(request, channel);
             }
         }
 

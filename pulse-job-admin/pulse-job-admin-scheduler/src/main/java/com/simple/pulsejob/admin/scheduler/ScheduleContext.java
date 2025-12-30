@@ -27,8 +27,8 @@ public class ScheduleContext {
     private Object result;
 
 
-    public ScheduleContext(ExecutorKey executorKey, ClusterInvoker invoker, boolean sync) {
-        this.executorKey = executorKey;
+    public ScheduleContext(String executorName, ClusterInvoker invoker, boolean sync) {
+        this.executorKey = ExecutorKey.of(executorName);
         this.invoker = invoker;
         this.sync = sync;
         this.dispatchType = Dispatcher.Type.ROUND;
@@ -36,4 +36,5 @@ public class ScheduleContext {
         this.serializerType = SerializerType.JAVA;
         this.retries = 1;
     }
+
 }

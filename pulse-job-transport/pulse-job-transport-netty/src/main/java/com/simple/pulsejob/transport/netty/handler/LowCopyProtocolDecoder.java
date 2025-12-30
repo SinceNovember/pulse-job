@@ -1,8 +1,5 @@
 package com.simple.pulsejob.transport.netty.handler;
 
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.List;
 import com.simple.plusejob.serialization.io.InputBuf;
 import com.simple.pulsejob.common.util.Signal;
 import com.simple.pulsejob.common.util.SystemClock;
@@ -15,6 +12,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.List;
 
 /**
  * <pre>
@@ -88,6 +89,7 @@ public class LowCopyProtocolDecoder extends ReplayingDecoder<LowCopyProtocolDeco
                     case JProtocolHeader.REGISTER_EXECUTOR:
                     case JProtocolHeader.TRIGGER_JOB:
                     case JProtocolHeader.JOB_LOG_MESSAGE:
+                    case JProtocolHeader.JOB_BATCH_LOG_MESSAGE:
                     case JProtocolHeader.REQUEST: {
                         int length = checkBodySize(header.bodySize());
 

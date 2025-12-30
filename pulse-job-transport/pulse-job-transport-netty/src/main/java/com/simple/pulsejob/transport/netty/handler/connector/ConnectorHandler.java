@@ -35,6 +35,12 @@ public class ConnectorHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        processor.handleInactive(NettyChannel.attachChannel(ctx.channel()));
+        ctx.fireChannelInactive();
+    }
+
+    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel ch = ctx.channel();
 

@@ -14,7 +14,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 /**
@@ -29,6 +33,14 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private static final ConcurrentMap<String, DefaultInvokeFuture> broadcastFutures =
             Maps.newConcurrentMap(1024);
 
+    /** 超时调度器（守护线程，共享） */
+    private static final ScheduledExecutorService TIMEOUT_SCHEDULER =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "invoke-future-timeout");
+                t.setDaemon(true);
+                return t;
+            });
+
     private final long invokeId;
     private final JChannel channel;
     private final Class<?> returnType;
@@ -37,6 +49,9 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private volatile boolean sent = false;
 
     private List<JobInterceptor> interceptors;
+
+    /** 超时清理任务 */
+    private volatile ScheduledFuture<?> timeoutTask;
     
     // ✅ 日志监听器列表（支持多个监听器）
     private final CopyOnWriteArrayList<Consumer<LogMessage>> logListeners = new CopyOnWriteArrayList<>();
@@ -53,7 +68,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
             long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
         this.invokeId = invokeId;
         this.channel = channel;
-        this.timeout = timeoutMillis > 0 ? TimeUnit.MILLISECONDS.toNanos(timeoutMillis) : 500;
+        this.timeout = timeoutMillis > 0 ? timeoutMillis : 30000; // 默认 30 秒
         this.returnType = returnType;
         this.dispatchType = dispatchType;
 
@@ -68,6 +83,22 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
             default:
                 throw new IllegalArgumentException("Unsupported " + dispatchType);
         }
+
+        // ✅ 注册超时任务
+//        scheduleTimeout();
+    }
+
+    /**
+     * 注册超时清理任务
+     */
+    private void scheduleTimeout() {
+        this.timeoutTask = TIMEOUT_SCHEDULER.schedule(() -> {
+            if (!isDone()) {
+                log.warn("Future 超时: invokeId={}, timeout={}ms", invokeId, timeout);
+                completeExceptionally(new TimeoutException("Invoke timeout after " + timeout + "ms"));
+                cleanup();
+            }
+        }, timeout, TimeUnit.MILLISECONDS);
     }
 
     public JChannel channel() {
@@ -204,6 +235,12 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
      * 清理资源
      */
     private void cleanup() {
+        // ✅ 取消超时任务
+        ScheduledFuture<?> task = this.timeoutTask;
+        if (task != null && !task.isDone()) {
+            task.cancel(false);
+        }
+
         // 从缓存中移除
         switch (dispatchType) {
             case ROUND:
@@ -214,9 +251,8 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
                 break;
         }
         
-        // 清理日志缓存（可选，保留一段时间供查询）
-        // logHistory.clear();
-        // logListeners.clear();
+        // 清理日志监听器
+        logListeners.clear();
     }
 
     @Override
