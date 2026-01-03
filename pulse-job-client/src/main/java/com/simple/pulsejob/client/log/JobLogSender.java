@@ -14,7 +14,6 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,19 +30,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class JobLogSender implements SmartLifecycle {
 
-    /** 批量大小阈值 */
+    /**
+     * 批量大小阈值
+     */
     @Value("${pulse-job.log.batch.size:200}")
     private int batchSize;
 
-    /** 最大等待时间（毫秒），超过则发送当前批次 */
+    /**
+     * 最大等待时间（毫秒），超过则发送当前批次
+     */
     @Value("${pulse-job.log.batch.max-wait-ms:1000}")
     private long maxWaitMs;
 
-    /** 队列最大容量 */
+    /**
+     * 队列最大容量
+     */
     @Value("${pulse-job.log.batch.queue-capacity:8192}")
     private int queueCapacity;
 
-    /** 日志缓冲队列 */
+    /**
+     * 日志缓冲队列
+     */
     private BlockingQueue<LogMessage> queue;
 
     private final Object lock = new Object();
@@ -56,14 +63,20 @@ public class JobLogSender implements SmartLifecycle {
     private ExecutorService sender; // 专门负责发送
 
     private final List<LogMessage> buffer = new ArrayList<>();
-    /** 状态控制 */
+    /**
+     * 状态控制
+     */
     private final AtomicBoolean started = new AtomicBoolean(false);
     private volatile boolean running = false;
 
-    /** 全局序号生成器 */
+    /**
+     * 全局序号生成器
+     */
     private final AtomicInteger globalSequence = new AtomicInteger(0);
 
-    /** 当前活跃的 Channel */
+    /**
+     * 当前活跃的 Channel
+     */
     private volatile JChannel channel;
 
     @PostConstruct
@@ -73,12 +86,6 @@ public class JobLogSender implements SmartLifecycle {
         if (queueCapacity <= 0) queueCapacity = 8192;
 
         queue = new LinkedBlockingQueue<>(queueCapacity);
-
-        worker = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "pulse-log-sender");
-            t.setDaemon(true);
-            return t;
-        });
 
         this.worker = Executors.newSingleThreadExecutor(
                 r -> new Thread(r, "log-consumer"));
@@ -123,8 +130,7 @@ public class JobLogSender implements SmartLifecycle {
                 this::flushSafely,
                 maxWaitMs,
                 maxWaitMs,
-                TimeUnit.MILLISECONDS
-        );
+                TimeUnit.MILLISECONDS);
 
         // 2. 消费线程
         worker.submit(this::consumeLoop);
@@ -188,42 +194,20 @@ public class JobLogSender implements SmartLifecycle {
 
     public void shutdown() {
         running = false;
+
+        // 1. 停止生产 & 消费
         worker.shutdownNow();
         scheduler.shutdownNow();
 
+        // 2. 主线程兜底 flush
         flushSafely();
 
+        // 3. 等待 sender 把已提交任务发完
         sender.shutdown();
-    }
-
-    @PreDestroy
-    public void destroy() {
-        running = false;
-        started.set(false);
-
-        if (worker != null) {
-            worker.shutdown();
-            try {
-                if (!worker.awaitTermination(5, TimeUnit.SECONDS)) {
-                    worker.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                worker.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // 关闭前发送剩余日志
-        List<LogMessage> remaining = new ArrayList<>();
-        queue.drainTo(remaining);
-        if (!remaining.isEmpty()) {
-            doSendBatch(remaining);
-        }
     }
 
     public void bindChannel(JChannel channel) {
         this.channel = channel;
-        startIfNeeded();
     }
 
     public void sendAsync(LogMessage logMessage) {
@@ -238,58 +222,6 @@ public class JobLogSender implements SmartLifecycle {
         }
     }
 
-    private void startIfNeeded() {
-        if (started.compareAndSet(false, true)) {
-            running = true;
-            worker.submit(this::processLoop);
-        }
-    }
-
-    /**
-     * 日志处理主循环
-     */
-    private void processLoop() {
-        List<LogMessage> batch = new ArrayList<>(batchSize);
-
-        long lastFlushTime = System.currentTimeMillis();
-
-        while (running) {
-            try {
-                long waitTime = maxWaitMs - (System.currentTimeMillis() - lastFlushTime);
-                if (waitTime <= 0) {
-                    waitTime = maxWaitMs;
-                }
-
-                LogMessage msg = queue.poll(waitTime, TimeUnit.MILLISECONDS);
-                long now = System.currentTimeMillis();
-
-                if (msg != null) {
-                    batch.add(msg);
-                    queue.drainTo(batch, batchSize - batch.size());
-                }
-
-                boolean shouldFlush =
-                        !batch.isEmpty() && (batch.size() >= batchSize || now - lastFlushTime >= maxWaitMs);
-
-                if (shouldFlush) {
-                    doSendBatch(batch);
-                    batch.clear();
-                    lastFlushTime = now;
-                }
-
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Throwable t) {
-                log.warn("处理日志异常", t);
-                batch.clear();
-            } finally {
-                if (!batch.isEmpty()) {
-                    doSendBatch(batch);
-                }
-            }
-        }
-    }
 
     private void doSendBatch(List<LogMessage> logs) {
         if (logs.isEmpty()) {
