@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Job 执行上下文.
  *
@@ -17,6 +20,7 @@ import lombok.Setter;
  *   <li>请求信息</li>
  *   <li>处理器名称</li>
  *   <li>执行参数与结果</li>
+ *   <li>扩展属性（供拦截器使用）</li>
  * </ul>
  */
 @Getter
@@ -35,6 +39,9 @@ public class JobContext {
 
     @Setter
     private Throwable cause;
+
+    /** 扩展属性（供拦截器等组件使用） */
+    private Map<String, Object> attributes;
 
     // ==================== 静态工厂方法 ====================
 
@@ -79,6 +86,59 @@ public class JobContext {
      */
     public boolean hasResult() {
         return result != null;
+    }
+
+    // ==================== 扩展属性 ====================
+
+    /**
+     * 设置扩展属性
+     */
+    public void setAttribute(String key, Object value) {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        attributes.put(key, value);
+    }
+
+    /**
+     * 获取扩展属性
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getAttribute(String key) {
+        if (attributes == null) {
+            return null;
+        }
+        return (T) attributes.get(key);
+    }
+
+    /**
+     * 获取扩展属性（带默认值）
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getAttribute(String key, T defaultValue) {
+        if (attributes == null) {
+            return defaultValue;
+        }
+        T value = (T) attributes.get(key);
+        return value != null ? value : defaultValue;
+    }
+
+    /**
+     * 移除扩展属性
+     */
+    public void removeAttribute(String key) {
+        if (attributes != null) {
+            attributes.remove(key);
+        }
+    }
+
+    /**
+     * 清空所有扩展属性
+     */
+    public void clearAttributes() {
+        if (attributes != null) {
+            attributes.clear();
+        }
     }
 
     @Override

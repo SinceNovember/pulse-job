@@ -8,7 +8,7 @@ import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -28,7 +28,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
 
     protected final ExecutorChannelGroupManager channelGroupManager;
 
-    protected final List<JobInterceptor> interceptors;
+    protected final List<SchedulerInterceptor> interceptors;
 
     protected final LoadBalancerFactory loadBalancerFactory;
 
@@ -60,7 +60,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
             .interceptors(interceptors);
 
         if (!CollectionUtils.isEmpty(interceptors)) {
-            for (JobInterceptor interceptor : interceptors) {
+            for (SchedulerInterceptor interceptor : interceptors) {
                 interceptor.beforeInvoke(request, channel);
             }
         }

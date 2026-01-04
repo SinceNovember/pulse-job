@@ -63,6 +63,8 @@ public class MessageTask implements RejectedRunnable {
             request.setMessage(messageWrapper);
         } catch (Throwable t) {
             log.error("Failed to deserialize request from {}: {}", channel.remoteAddress(), t.getMessage(), t);
+            // 反序列化失败也要及时回报给管理端
+            processor.handleRequestException(channel, request, Status.DESERIALIZATION_FAIL, t);
             return;
         }
 

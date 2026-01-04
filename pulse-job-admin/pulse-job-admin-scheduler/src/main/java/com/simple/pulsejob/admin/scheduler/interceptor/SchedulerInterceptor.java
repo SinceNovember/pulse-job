@@ -4,7 +4,7 @@ import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.channel.JChannel;
 
-public interface JobInterceptor {
+public interface SchedulerInterceptor {
 
     void beforeInvoke(JRequest request, JChannel channel);
 

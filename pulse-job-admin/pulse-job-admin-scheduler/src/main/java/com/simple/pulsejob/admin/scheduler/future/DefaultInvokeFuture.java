@@ -1,7 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.future;
 
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.interceptor.JobInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
 import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.Status;
@@ -48,7 +48,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final Dispatcher.Type dispatchType;
     private volatile boolean sent = false;
 
-    private List<JobInterceptor> interceptors;
+    private List<SchedulerInterceptor> interceptors;
 
     /** 超时清理任务 */
     private volatile ScheduledFuture<?> timeoutTask;
@@ -150,18 +150,22 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
      */
     private void doReceived(JResponse response) {
         byte status = response.status();
-        
+        ResultWrapper wrapper = response.result();
+
         if (status == Status.OK.value()) {
-            ResultWrapper wrapper = response.result();
-            complete(wrapper.getResult());
+            // 正常完成
+            complete(wrapper != null ? wrapper.getResult() : null);
         } else {
-            // 任务执行失败
-            ResultWrapper wrapper = response.result();
-//            completeExceptionally(wrapper.getError());
+            // 任务执行失败，向上游回传异常
+            Object result = wrapper != null ? wrapper.getResult() : null;
+            Throwable cause = (result instanceof Throwable)
+                    ? (Throwable) result
+                    : new RuntimeException("任务执行失败, status=" + Status.parse(status) + ", result=" + result);
+            completeExceptionally(cause);
         }
 
         // 拦截器后置处理
-        List<JobInterceptor> interceptors = this.interceptors;
+        List<SchedulerInterceptor> interceptors = this.interceptors;
         if (interceptors != null) {
             for (int i = interceptors.size() - 1; i >= 0; i--) {
                 interceptors.get(i).afterInvoke(response, channel);
@@ -269,7 +273,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         sent = true;
     }
 
-    public DefaultInvokeFuture interceptors(List<JobInterceptor> interceptors) {
+    public DefaultInvokeFuture interceptors(List<SchedulerInterceptor> interceptors) {
         this.interceptors = interceptors;
         return this;
     }
