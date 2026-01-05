@@ -73,7 +73,7 @@ public class ProtocolEncoder extends MessageToByteEncoder<PayloadHolder> {
     }
 
     private void doEncodeResponse(JResponsePayload response, ByteBuf out) {
-        byte sign = JProtocolHeader.toSign(response.serializerCode(), JProtocolHeader.RESPONSE);
+        byte sign = JProtocolHeader.toSign(response.serializerCode(), response.messageCode());
         byte status = response.status();
         long invokeId = response.id();
         byte[] bytes = response.bytes();

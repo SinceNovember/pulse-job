@@ -84,17 +84,13 @@ public class MessageTask implements RejectedRunnable {
     private void process(JobContext jobContext) {
         try {
             Object invokeResult = processor.invoke(jobContext);
-            sendSuccessResponse(invokeResult);
+            doProcess(invokeResult);
         } catch (Throwable t) {
-            log.error("Job invoke error, invokeId: {}", request.invokeId(), t);
-            processor.handleRequestException(channel, request, Status.SERVER_ERROR, t);
+            handleFail(jobContext, t);
         }
     }
 
-    /**
-     * 发送成功响应
-     */
-    private void sendSuccessResponse(Object result) {
+    private void doProcess(Object result) {
         ResultWrapper wrapper = new ResultWrapper();
         wrapper.setResult(result);
 
@@ -104,7 +100,7 @@ public class MessageTask implements RejectedRunnable {
                 .channel(channel)
                 .type(type != null ? type : SerializerType.JAVA)
                 .message(wrapper)
-                .messageCode(JProtocolHeader.RESPONSE)
+                .messageCode(JProtocolHeader.JOB_RESULT)
                 .build();
 
         response.status(Status.OK.value());
@@ -112,6 +108,11 @@ public class MessageTask implements RejectedRunnable {
         channel.write(response, ResponseListener.INSTANCE);
     }
 
+
+    private void handleFail(JobContext jobContext, Throwable t) {
+        processor.handleRequestException(channel, request, Status.CLIENT_ERROR, t);
+
+    }
     /**
      * 响应发送监听器（单例复用）
      */

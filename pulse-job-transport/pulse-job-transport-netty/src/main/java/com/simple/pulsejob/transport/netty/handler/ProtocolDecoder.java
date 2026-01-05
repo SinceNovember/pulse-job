@@ -77,8 +77,12 @@ public class ProtocolDecoder extends ReplayingDecoder<ProtocolDecoder.State> {
                 switch (header.messageCode()) {
                     case JProtocolHeader.HEARTBEAT:
                         break;
+                    // 请求类消息 -> JRequestPayload
                     case JProtocolHeader.JOB_LOG_MESSAGE:
                     case JProtocolHeader.JOB_BATCH_LOG_MESSAGE:
+                    case JProtocolHeader.REGISTER_EXECUTOR:
+                    case JProtocolHeader.TRIGGER_JOB:
+                    case JProtocolHeader.JOB_RESULT:
                     case JProtocolHeader.REQUEST: {
                         int length = checkBodySize(header.bodySize());
                         byte[] bytes = new byte[length];
@@ -91,6 +95,7 @@ public class ProtocolDecoder extends ReplayingDecoder<ProtocolDecoder.State> {
                         out.add(request);
                         break;
                     }
+                    // 响应类消息 -> JResponsePayload
                     case JProtocolHeader.RESPONSE: {
                         int length = checkBodySize(header.bodySize());
                         byte[] bytes = new byte[length];

@@ -101,7 +101,7 @@ public class LowCopyProtocolEncoder extends ChannelOutboundHandlerAdapter {
     }
 
     private ByteBuf doEncodeResponse(JResponsePayload response) {
-        byte sign = JProtocolHeader.toSign(response.serializerCode(), JProtocolHeader.RESPONSE);
+        byte sign = JProtocolHeader.toSign(response.serializerCode(), response.messageCode());
         byte status = response.status();
         long invokeId = response.id();
         //使用存在消息体的ByteBuf,创建的时候已经保留好标题所需的字节，后续直接填充表头即可
