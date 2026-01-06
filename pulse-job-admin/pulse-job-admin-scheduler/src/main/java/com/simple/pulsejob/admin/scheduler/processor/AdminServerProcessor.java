@@ -63,15 +63,15 @@ public class AdminServerProcessor implements AcceptorProcessor {
             case REGISTER_EXECUTOR:
                 handleRegisterExecutor(channel, serializer, inputBuf);
                 break;
-            case JOB_LOG_MESSAGE:
-                handleLogMessage(channel, request.invokeId(), serializer, inputBuf);
-                break;
-            case JOB_BATCH_LOG_MESSAGE:
-                handleBatchLogMessage(channel, serializer, inputBuf);
-                break;
-            case JOB_RESULT:
-                handleJobResult(channel, request.invokeId(), serializer, inputBuf);
-                break;
+//            case JOB_LOG_MESSAGE:
+//                handleLogMessage(channel, request.invokeId(), serializer, inputBuf);
+//                break;
+//            case JOB_BATCH_LOG_MESSAGE:
+//                handleBatchLogMessage(channel, serializer, inputBuf);
+//                break;
+//            case JOB_RESULT:
+//                handleJobResult(channel, request.invokeId(), serializer, inputBuf);
+//                break;
             default:
                 log.warn("Unknown request message code: {}", messageCode);
                 break;
@@ -90,11 +90,14 @@ public class AdminServerProcessor implements AcceptorProcessor {
         byte messageCode = response.messageCode();
 
         switch (messageCode) {
+            case JOB_BATCH_LOG_MESSAGE:
+                handleBatchLogMessage(channel, serializer, inputBuf);
+                break;
             case JOB_LOG_MESSAGE:
                 handleLogMessage(channel, response.id(), serializer, inputBuf);
                 break;
             case JOB_RESULT:
-                handleJobResult(channel, response.id(), serializer, inputBuf);
+                handleJobResult(channel, response, serializer, inputBuf);
                 break;
             default:
                 log.debug("Unhandled response message code: {}", messageCode);
@@ -176,10 +179,9 @@ public class AdminServerProcessor implements AcceptorProcessor {
     /**
      * 处理任务执行结果
      */
-    private void handleJobResult(JChannel channel, long invokeId, Serializer serializer, InputBuf inputBuf) {
+    private void handleJobResult(JChannel channel, JResponsePayload payload, Serializer serializer, InputBuf inputBuf) {
         ResultWrapper resultWrapper = serializer.readObject(inputBuf, ResultWrapper.class);
-
-        JResponse response = new JResponse(invokeId);
+        JResponse response = new JResponse(payload);
         response.result(resultWrapper);
 
         DefaultInvokeFuture.received(channel, response);

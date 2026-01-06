@@ -153,6 +153,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         ResultWrapper wrapper = response.result();
 
         if (status == Status.OK.value()) {
+            log.info("任务id:{}, 执行完成", response.id());
             // 正常完成
             complete(wrapper != null ? wrapper.getResult() : null);
         } else {

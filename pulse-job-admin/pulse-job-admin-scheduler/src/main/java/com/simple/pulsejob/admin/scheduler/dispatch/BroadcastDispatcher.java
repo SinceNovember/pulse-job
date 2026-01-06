@@ -34,7 +34,7 @@ public class BroadcastDispatcher extends AbstractDispatcher {
         JChannelGroup channelGroup = channelGroup(context.getExecutorKey());
         List<JChannel> channels = channelGroup.channels();
         SerializerType serializerType = context.getSerializerType();
-            DefaultInvokeFuture[] futures = new DefaultInvokeFuture[channels.size()];
+        DefaultInvokeFuture[] futures = new DefaultInvokeFuture[channels.size()];
 
         for (int i = 0; i < channels.size(); i++) {
             JChannel channel = channels.get(i);

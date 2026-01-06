@@ -2,11 +2,13 @@ package com.simple.pulsejob.client.log;
 
 import com.simple.plusejob.serialization.SerializerType;
 import com.simple.pulsejob.transport.JProtocolHeader;
+import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.BatchLogMessage;
 import com.simple.pulsejob.transport.metadata.LogMessage;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
+import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.payload.PayloadSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -235,7 +237,7 @@ public class JobLogSender implements SmartLifecycle {
         }
 
         try {
-            JRequestPayload payload = PayloadSerializer.request()
+            JResponsePayload payload = PayloadSerializer.response()
                     .channel(current)
                     .type(SerializerType.JAVA)
                     .message(BatchLogMessage.of(logs))
