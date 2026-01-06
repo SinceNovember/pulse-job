@@ -38,6 +38,7 @@ public class JRequestPayload extends PayloadHolder {
     private static final LongSequence sequence = new LongSequence();
 
     // 用于映射 <id, request, response> 三元组
+    // invokeId 来自数据库 job_instance.id，用于任务追踪和日志关联
     private final long invokeId;
     // jupiter-transport层会在协议解析完成后打上一个时间戳, 用于后续监控对该请求的处理时间
     private transient long timestamp;

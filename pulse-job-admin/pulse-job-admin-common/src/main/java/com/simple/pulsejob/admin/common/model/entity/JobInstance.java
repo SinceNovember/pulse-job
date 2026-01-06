@@ -1,10 +1,11 @@
 package com.simple.pulsejob.admin.common.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import lombok.Data;
 
 /**
  * 调度实例记录.
@@ -30,7 +31,7 @@ public class JobInstance implements Serializable {
     @Column(name = "executor_id", nullable = false)
     private Long executorId;
 
-    @Column(name = "trigger_time", nullable = false)
+//    @Column(name = "trigger_time", nullable = false)
     private LocalDateTime triggerTime;
 
     @Column(name = "start_time")

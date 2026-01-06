@@ -42,7 +42,8 @@ public class JSchedulerService {
      */
     public void scheduleJobs() {
         try {
-            invoker.invoke("my-executor", "TestJob1#testJob1()", null);
+            // jobId=1, executorId=1 (需要替换为实际值)
+            invoker.invoke("my-executor", 1L, 1L, "TestJob1#testJob1()", null);
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -58,7 +59,8 @@ public class JSchedulerService {
 
     public void scheduleJobs1() {
         try {
-            invoker.invoke("my-executor", "TestJob2#testJob1()", null);
+            // jobId=2, executorId=1 (需要替换为实际值)
+            invoker.invoke("my-executor", 2L, 1L, "TestJob2#testJob1()", null);
         } catch (Throwable e) {
             e.printStackTrace();
         }

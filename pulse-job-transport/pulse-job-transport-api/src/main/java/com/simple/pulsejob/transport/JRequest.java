@@ -43,6 +43,15 @@ public class JRequest {
         this(new JRequestPayload());
     }
 
+    /**
+     * 使用指定的 invokeId 创建请求
+     *
+     * @param invokeId 调用ID（来自 job_instance.id）
+     */
+    public JRequest(long invokeId) {
+        this(new JRequestPayload(invokeId));
+    }
+
     public JRequest(JRequestPayload payload) {
         this.payload = payload;
     }

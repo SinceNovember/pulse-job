@@ -10,9 +10,24 @@ import lombok.Data;
 @Data
 public class ScheduleContext {
 
+    // ==================== 执行器相关 ====================
+
     private ExecutorKey executorKey;
 
     private ClusterInvoker invoker;
+
+    // ==================== 任务实例相关 ====================
+
+    /** 任务ID（JobInfo.id） */
+    private Long jobId;
+
+    /** 执行器ID（JobExecutor.id） */
+    private Long executorId;
+
+    /** 任务实例ID（JobInstance.id），同时作为 invokeId */
+    private Long instanceId;
+
+    // ==================== 调度配置 ====================
 
     private boolean sync;
 
@@ -24,8 +39,13 @@ public class ScheduleContext {
 
     private int retries;
 
+    // ==================== 结果 ====================
+
     private Object result;
 
+    private Throwable error;
+
+    // ==================== 构造函数 ====================
 
     public ScheduleContext(String executorName, ClusterInvoker invoker, boolean sync) {
         this.executorKey = ExecutorKey.of(executorName);
@@ -37,4 +57,47 @@ public class ScheduleContext {
         this.retries = 1;
     }
 
+    /**
+     * 完整构造函数（推荐）
+     */
+    public ScheduleContext(String executorName, Long jobId, Long executorId,
+                           ClusterInvoker invoker, boolean sync) {
+        this(executorName, invoker, sync);
+        this.jobId = jobId;
+        this.executorId = executorId;
+    }
+
+    /**
+     * 获取 invokeId（即 instanceId）
+     */
+    public Long getInvokeId() {
+        return instanceId;
+    }
+
+    /**
+     * 判断是否已创建实例
+     */
+    public boolean hasInstance() {
+        return instanceId != null;
+    }
+
+    /**
+     * 标记执行成功
+     */
+    public void markSuccess(Object result) {
+        this.result = result;
+        this.error = null;
+    }
+
+    /**
+     * 标记执行失败
+     */
+    public void markFailed(Throwable error) {
+        this.error = error;
+    }
+
+    public boolean isSuccess() {
+        return error == null;
+    }
 }
+
