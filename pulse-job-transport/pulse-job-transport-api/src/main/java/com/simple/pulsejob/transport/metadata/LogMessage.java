@@ -12,8 +12,8 @@ public class LogMessage implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 任务调用ID (= job_instance.id)，用于日志归属和追踪 */
-    private Long invokeId;
+    /** 任务调用ID (= job_instance.instanceId)，用于日志归属和追踪 */
+    private Long instanceId;
 
     /** 业务任务ID (可选) */
     private Integer jobId;

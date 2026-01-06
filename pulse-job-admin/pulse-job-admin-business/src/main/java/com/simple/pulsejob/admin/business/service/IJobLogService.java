@@ -38,19 +38,19 @@ public interface IJobLogService {
     /**
      * 根据调用ID查询日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 日志列表（按序号排序）
      */
-    List<JobLog> findByInvokeId(Long invokeId);
+    List<JobLog> findByInstanceId(Long instanceId);
 
     /**
      * 分页查询指定调用ID的日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @param pageable 分页参数
      * @return 日志分页结果
      */
-    Page<JobLog> findByInvokeId(Long invokeId, Pageable pageable);
+    Page<JobLog> findByInstanceId(Long instanceId, Pageable pageable);
 
     /**
      * 根据任务ID查询日志
@@ -100,15 +100,15 @@ public interface IJobLogService {
     /**
      * 查询指定调用ID的错误日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 错误日志列表
      */
-    List<JobLog> findErrorLogs(Long invokeId);
+    List<JobLog> findErrorLogs(Long instanceId);
 
     /**
      * 复杂条件查询
      *
-     * @param invokeId     调用ID（可选）
+     * @param instanceId     调用ID（可选）
      * @param jobId        任务ID（可选）
      * @param executorName 执行器名称（可选）
      * @param logLevel     日志级别（可选）
@@ -117,7 +117,7 @@ public interface IJobLogService {
      * @param pageable     分页参数
      * @return 日志分页结果
      */
-    Page<JobLog> search(Long invokeId, Integer jobId, String executorName,
+    Page<JobLog> search(Long instanceId, Integer jobId, String executorName,
                         LogLevelEnum logLevel, LocalDateTime startTime,
                         LocalDateTime endTime, Pageable pageable);
 
@@ -126,10 +126,10 @@ public interface IJobLogService {
     /**
      * 统计指定调用ID的日志数量
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 日志数量
      */
-    long countByInvokeId(Long invokeId);
+    long countByInstanceId(Long instanceId);
 
     /**
      * 统计指定任务ID的日志数量
@@ -142,20 +142,20 @@ public interface IJobLogService {
     /**
      * 获取指定调用ID的最大序号
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 最大序号
      */
-    int getMaxSequence(Long invokeId);
+    int getMaxSequence(Long instanceId);
 
     // ==================== 删除/清理相关 ====================
 
     /**
      * 删除指定调用ID的日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 删除的记录数
      */
-    int deleteByInvokeId(Long invokeId);
+    int deleteByInstanceId(Long instanceId);
 
     /**
      * 删除指定任务ID的日志

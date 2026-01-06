@@ -17,7 +17,6 @@ package com.simple.pulsejob.transport;
 
 import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.OutputBuf;
-import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import lombok.Data;
@@ -39,17 +38,13 @@ public class JRequest {
 
     private MessageWrapper message;          // 请求对象
 
-    public JRequest() {
-        this(new JRequestPayload());
-    }
-
     /**
-     * 使用指定的 invokeId 创建请求
+     * 使用指定的 instanceId 创建请求
      *
-     * @param invokeId 调用ID（来自 job_instance.id）
+     * @param instanceId 实例ID（来自 job_instance.instanceId）
      */
-    public JRequest(long invokeId) {
-        this(new JRequestPayload(invokeId));
+    public JRequest(long instanceId) {
+        this(new JRequestPayload(instanceId));
     }
 
     public JRequest(JRequestPayload payload) {
@@ -60,8 +55,8 @@ public class JRequest {
         return payload;
     }
 
-    public long invokeId() {
-        return payload.invokeId();
+    public long instanceId() {
+        return payload.instanceId();
     }
 
     public byte serializerCode() {

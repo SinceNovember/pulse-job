@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
@@ -24,16 +25,24 @@ public class ScheduleContext {
     /** 执行器ID（JobExecutor.id） */
     private Long executorId;
 
-    /** 任务实例ID（JobInstance.id），同时作为 invokeId */
+    /** 任务实例ID（JobInstance.id），同时作为 instanceId */
     private Long instanceId;
 
     // ==================== 调度配置 ====================
+
+    /** 调度类型：CRON、FIXED_RATE、FIXED_DELAY、API */
+    private ScheduleTypeEnum scheduleType;
+
+    /** 调度表达式（CRON表达式或固定间隔秒数） */
+    private String scheduleExpression;
 
     private boolean sync;
 
     private Dispatcher.Type dispatchType;
 
     private LoadBalancer.Type loadBalanceType;
+
+    private ClusterInvoker.Strategy invokeStrategy;
 
     private SerializerType serializerType;
 
@@ -46,6 +55,10 @@ public class ScheduleContext {
     private Throwable error;
 
     // ==================== 构造函数 ====================
+
+    public ScheduleContext() {
+        // 默认构造函数
+    }
 
     public ScheduleContext(String executorName, ClusterInvoker invoker, boolean sync) {
         this.executorKey = ExecutorKey.of(executorName);
@@ -68,9 +81,9 @@ public class ScheduleContext {
     }
 
     /**
-     * 获取 invokeId（即 instanceId）
+     * 获取 instanceId（即 instanceId）
      */
-    public Long getInvokeId() {
+    public Long getInstanceId() {
         return instanceId;
     }
 

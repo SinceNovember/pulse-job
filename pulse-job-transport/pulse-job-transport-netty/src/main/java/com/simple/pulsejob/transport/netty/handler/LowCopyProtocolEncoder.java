@@ -29,7 +29,7 @@ import io.netty.handler.codec.EncoderException;
  * = 2 // magic = (short) 0xbabe
  * + 1 // 消息标志位, 低地址4位用来表示消息类型request/response/heartbeat等, 高地址4位用来表示序列化类型
  * + 1 // 状态位, 设置请求响应状态
- * + 8 // 消息 id, long 类型, 未来jupiter可能将id限制在48位, 留出高地址的16位作为扩展字段
+ * + 8 // 消息 instanceId, long 类型, 未来jupiter可能将id限制在48位, 留出高地址的16位作为扩展字段
  * + 4 // 消息体 body 长度, int 类型
  * </pre>
  *
@@ -77,7 +77,7 @@ public class LowCopyProtocolEncoder extends ChannelOutboundHandlerAdapter {
 
     private ByteBuf doEncodeRequest(JRequestPayload request) {
         byte sign = JProtocolHeader.toSign(request.serializerCode(), request.messageCode());
-        long invokeId = request.invokeId();
+        long instanceId = request.instanceId();
         ByteBuf byteBuf = (ByteBuf) request.outputBuf().backingObject();
         int length = byteBuf.readableBytes();
 
@@ -91,7 +91,7 @@ public class LowCopyProtocolEncoder extends ChannelOutboundHandlerAdapter {
         byteBuf.writeShort(JProtocolHeader.MAGIC)
             .writeByte(sign)
             .writeByte(0x00)
-            .writeLong(invokeId)
+            .writeLong(instanceId)
             .writeInt(length - JProtocolHeader.HEADER_SIZE);
 
         //恢复到消息的body末尾
@@ -103,7 +103,7 @@ public class LowCopyProtocolEncoder extends ChannelOutboundHandlerAdapter {
     private ByteBuf doEncodeResponse(JResponsePayload response) {
         byte sign = JProtocolHeader.toSign(response.serializerCode(), response.messageCode());
         byte status = response.status();
-        long invokeId = response.id();
+        long instanceId = response.instanceId();
         //使用存在消息体的ByteBuf,创建的时候已经保留好标题所需的字节，后续直接填充表头即可
         ByteBuf byteBuf = (ByteBuf) response.outputBuf().backingObject();
         int length = byteBuf.readableBytes();
@@ -115,7 +115,7 @@ public class LowCopyProtocolEncoder extends ChannelOutboundHandlerAdapter {
         byteBuf.writeShort(JProtocolHeader.MAGIC)
             .writeByte(sign)
             .writeByte(status)
-            .writeLong(invokeId)
+            .writeLong(instanceId)
             .writeInt(length - JProtocolHeader.HEADER_SIZE);
 
         byteBuf.resetWriterIndex();

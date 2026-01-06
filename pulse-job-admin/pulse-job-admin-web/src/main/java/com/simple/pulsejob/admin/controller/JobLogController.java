@@ -33,30 +33,30 @@ public class JobLogController {
     /**
      * 根据调用ID查询日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 日志列表
      */
-    @GetMapping("/invoke/{invokeId}")
-    public ResponseResult<List<JobLog>> findByInvokeId(@PathVariable Long invokeId) {
-        List<JobLog> logs = jobLogService.findByInvokeId(invokeId);
+    @GetMapping("/invoke/{instanceId}")
+    public ResponseResult<List<JobLog>> findByInstanceId(@PathVariable Long instanceId) {
+        List<JobLog> logs = jobLogService.findByInstanceId(instanceId);
         return ResponseResult.ok(logs);
     }
 
     /**
      * 分页查询指定调用ID的日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @param page     页码（从0开始）
      * @param size     每页大小
      * @return 日志分页结果
      */
-    @GetMapping("/invoke/{invokeId}/page")
-    public ResponseResult<Page<JobLog>> findByInvokeIdPage(
-            @PathVariable Long invokeId,
+    @GetMapping("/invoke/{instanceId}/page")
+    public ResponseResult<Page<JobLog>> findByInstanceIdPage(
+            @PathVariable Long instanceId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sequence"));
-        Page<JobLog> logs = jobLogService.findByInvokeId(invokeId, pageRequest);
+        Page<JobLog> logs = jobLogService.findByInstanceId(instanceId, pageRequest);
         return ResponseResult.ok(logs);
     }
 
@@ -93,19 +93,19 @@ public class JobLogController {
     /**
      * 查询指定调用ID的错误日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 错误日志列表
      */
-    @GetMapping("/invoke/{invokeId}/errors")
-    public ResponseResult<List<JobLog>> findErrorLogs(@PathVariable Long invokeId) {
-        List<JobLog> logs = jobLogService.findErrorLogs(invokeId);
+    @GetMapping("/invoke/{instanceId}/errors")
+    public ResponseResult<List<JobLog>> findErrorLogs(@PathVariable Long instanceId) {
+        List<JobLog> logs = jobLogService.findErrorLogs(instanceId);
         return ResponseResult.ok(logs);
     }
 
     /**
      * 综合条件搜索日志
      *
-     * @param invokeId     调用ID（可选）
+     * @param instanceId     调用ID（可选）
      * @param jobId        任务ID（可选）
      * @param executorName 执行器名称（可选）
      * @param logLevel     日志级别（可选）
@@ -117,7 +117,7 @@ public class JobLogController {
      */
     @GetMapping("/search")
     public ResponseResult<Page<JobLog>> search(
-            @RequestParam(required = false) Long invokeId,
+            @RequestParam(required = false) Long instanceId,
             @RequestParam(required = false) Integer jobId,
             @RequestParam(required = false) String executorName,
             @RequestParam(required = false) LogLevelEnum logLevel,
@@ -126,19 +126,19 @@ public class JobLogController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createTime"));
-        Page<JobLog> logs = jobLogService.search(invokeId, jobId, executorName, logLevel, startTime, endTime, pageRequest);
+        Page<JobLog> logs = jobLogService.search(instanceId, jobId, executorName, logLevel, startTime, endTime, pageRequest);
         return ResponseResult.ok(logs);
     }
 
     /**
      * 统计指定调用ID的日志数量
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 日志数量
      */
-    @GetMapping("/invoke/{invokeId}/count")
-    public ResponseResult<Long> countByInvokeId(@PathVariable Long invokeId) {
-        long count = jobLogService.countByInvokeId(invokeId);
+    @GetMapping("/invoke/{instanceId}/count")
+    public ResponseResult<Long> countByInstanceId(@PathVariable Long instanceId) {
+        long count = jobLogService.countByInstanceId(instanceId);
         return ResponseResult.ok(count);
     }
 
@@ -157,12 +157,12 @@ public class JobLogController {
     /**
      * 删除指定调用ID的日志
      *
-     * @param invokeId 调用ID
+     * @param instanceId 调用ID
      * @return 删除的记录数
      */
-    @DeleteMapping("/invoke/{invokeId}")
-    public ResponseResult<Integer> deleteByInvokeId(@PathVariable Long invokeId) {
-        int count = jobLogService.deleteByInvokeId(invokeId);
+    @DeleteMapping("/invoke/{instanceId}")
+    public ResponseResult<Integer> deleteByInstanceId(@PathVariable Long instanceId) {
+        int count = jobLogService.deleteByInstanceId(instanceId);
         return ResponseResult.ok(count);
     }
 

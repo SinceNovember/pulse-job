@@ -22,7 +22,7 @@ public class LoggingJobInterceptor implements JobExecutionInterceptor {
     @Override
     public boolean preHandle(JobContext context) {
         log.info("[Job-{}] 开始执行: handler={}", 
-                context.invokeId(), context.getHandlerName());
+                context.instanceId(), context.getHandlerName());
         
         // 记录开始时间（存到 context 的扩展属性中）
         context.setAttribute(START_TIME_KEY, System.currentTimeMillis());
@@ -36,22 +36,22 @@ public class LoggingJobInterceptor implements JobExecutionInterceptor {
         
         if (context.isSuccess()) {
             log.info("[Job-{}] 执行成功: handler={}, 耗时={}ms, result={}", 
-                    context.invokeId(), context.getHandlerName(), duration, context.getResult());
+                    context.instanceId(), context.getHandlerName(), duration, context.getResult());
         } else {
             log.warn("[Job-{}] 执行失败: handler={}, 耗时={}ms", 
-                    context.invokeId(), context.getHandlerName(), duration);
+                    context.instanceId(), context.getHandlerName(), duration);
         }
     }
 
     @Override
     public void onException(JobContext context, Throwable ex) {
         log.error("[Job-{}] 执行异常: handler={}, error={}", 
-                context.invokeId(), context.getHandlerName(), ex.getMessage(), ex);
+                context.instanceId(), context.getHandlerName(), ex.getMessage(), ex);
     }
 
     @Override
     public void afterCompletion(JobContext context) {
-        log.debug("[Job-{}] 执行完成（清理资源）", context.invokeId());
+        log.debug("[Job-{}] 执行完成（清理资源）", context.instanceId());
     }
 
     @Override

@@ -73,7 +73,7 @@ public class MessageTask implements RejectedRunnable {
 
     @Override
     public void rejected() {
-        log.warn("Task rejected, invokeId: {}, channel: {}", request.invokeId(), channel.remoteAddress());
+        log.warn("Task rejected, instanceId: {}, channel: {}", request.instanceId(), channel.remoteAddress());
         processor.handleRequestException(channel, request, Status.SERVER_BUSY,
                 new RuntimeException("Server busy, task rejected"));
     }
@@ -96,7 +96,7 @@ public class MessageTask implements RejectedRunnable {
 
         SerializerType type = SerializerType.parse(request.serializerCode());
         JResponsePayload response = PayloadSerializer.response()
-                .invokeId(request.invokeId())
+                .instanceId(request.instanceId())
                 .channel(channel)
                 .type(type != null ? type : SerializerType.JAVA)
                 .message(wrapper)

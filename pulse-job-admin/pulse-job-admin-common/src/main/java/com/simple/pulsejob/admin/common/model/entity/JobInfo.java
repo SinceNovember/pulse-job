@@ -64,6 +64,13 @@ public class JobInfo implements Serializable {
     private Integer executorId;
 
     /**
+     * 执行器名称
+     * 用于标识执行器，与执行器注册时的名称一致
+     */
+    @Column(name = "executor_name", length = 100)
+    private String executorName;
+
+    /**
      * 任务状态
      * 0-禁用：任务暂停执行
      * 1-启用：任务正常执行

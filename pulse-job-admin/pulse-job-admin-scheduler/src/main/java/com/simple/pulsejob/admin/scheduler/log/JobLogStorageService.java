@@ -180,7 +180,7 @@ public class JobLogStorageService {
      * @param logMessage 日志消息
      */
     public void store(LogMessage logMessage) {
-        if (logMessage == null || logMessage.getInvokeId() == null) {
+        if (logMessage == null || logMessage.getInstanceId() == null) {
             return;
         }
 
@@ -360,7 +360,7 @@ public class JobLogStorageService {
         sb.append(" | ");
         sb.append(String.format("%-5s", jobLog.getLogLevel()));
         sb.append(" | ");
-        sb.append("invokeId=").append(jobLog.getInvokeId());
+        sb.append("instanceId=").append(jobLog.getInstanceId());
         if (jobLog.getJobId() != null) {
             sb.append(", jobId=").append(jobLog.getJobId());
         }
@@ -425,7 +425,7 @@ public class JobLogStorageService {
      */
     private JobLog convertToJobLog(LogMessage logMessage) {
         return JobLog.builder()
-                .invokeId(logMessage.getInvokeId())
+                .instanceId(logMessage.getInstanceId())
                 .jobId(logMessage.getJobId())
                 .logLevel(LogLevelEnum.fromTransportLevel(logMessage.getLevel()))
                 .content(logMessage.getContent())
@@ -448,7 +448,7 @@ public class JobLogStorageService {
 //        int seq = 0;
 //        for (BatchLogMessage.LogEntry entry : entries) {
 //            JobLog jobLog = JobLog.builder()
-//                    .invokeId(batchLogMessage.getInvokeId())
+//                    .instanceId(batchLogMessage.getInstanceId())
 //                    .jobId(batchLogMessage.getJobId())
 //                    .executorName(batchLogMessage.getExecutorName())
 //                    .executorAddress(batchLogMessage.getExecutorAddress())

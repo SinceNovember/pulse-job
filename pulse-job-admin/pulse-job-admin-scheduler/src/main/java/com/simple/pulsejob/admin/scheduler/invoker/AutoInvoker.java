@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 /**
  * 自动调用器.
  *
- * <p>每次调度都会创建 JobInstance，使用 instanceId 作为 invokeId</p>
+ * <p>每次调度都会创建 JobInstance，使用 instanceId 作为请求标识</p>
  */
 @Component
 public class AutoInvoker extends AbstractInvoker {

@@ -17,7 +17,7 @@ import java.util.Objects;
 /**
  * 抽象调用器.
  *
- * <p>所有调度都必须创建 JobInstance，使用数据库生成的 instanceId 作为 invokeId</p>
+ * <p>所有调度都必须创建 JobInstance，使用数据库生成的 instanceId 作为请求标识</p>
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -41,13 +41,13 @@ public abstract class AbstractInvoker implements Invoker {
                               String handlerName, String args, boolean sync) throws Throwable {
         Objects.requireNonNull(jobInstanceManager, "JobInstanceManager is required");
 
-        // 1. 创建任务实例（必须，instanceId 即 invokeId）
+        // 1. 创建任务实例（必须）
         JobInstance instance = jobInstanceManager.createInstance(jobId, executorId);
         Long instanceId = instance.getId();
         log.info("Created job instance: instanceId={}, jobId={}, executorId={}",
                 instanceId, jobId, executorId);
 
-        // 2. 创建请求（使用 instanceId 作为 invokeId）
+        // 2. 创建请求（使用 instanceId）
         JRequest request = createRequest(instanceId, handlerName, args);
 
         // 3. 创建上下文
@@ -75,7 +75,7 @@ public abstract class AbstractInvoker implements Invoker {
     }
 
     /**
-     * 创建请求（使用 instanceId 作为 invokeId）
+     * 创建请求
      */
     private JRequest createRequest(long instanceId, String handlerName, String args) {
         MessageWrapper message = new MessageWrapper(handlerName, args);

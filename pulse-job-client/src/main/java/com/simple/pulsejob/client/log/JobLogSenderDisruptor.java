@@ -48,7 +48,7 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
     }
 
     public void sendAsync(LogMessage logMessage) {
-        if (logMessage == null || logMessage.getInvokeId() == null) {
+        if (logMessage == null || logMessage.getInstanceId() == null) {
             return;
         }
         if (logMessage.getTimestamp() == null) {
@@ -60,7 +60,7 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
         try {
             ringBuffer.publishEvent((event, seq) -> event.set(logMessage));
         } catch (Exception e) {
-            log.warn("日志发布失败 invokeId={}", logMessage.getInvokeId(), e);
+            log.warn("日志发布失败 instanceId={}", logMessage.getInstanceId(), e);
         }
     }
 
@@ -87,7 +87,7 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
 
     // 聚合批次
     private List<LogMessage> batch = new ArrayList<>(BATCH_MAX_SIZE);
-    private Long currentInvokeId = null;
+    private Long currentInstanceId = null;
     private int batchBytes = 0;
     private long lastActivity = System.currentTimeMillis();
 
@@ -99,11 +99,11 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
             return;
         }
 
-        // invokeId 切换则先刷旧批次
-        if (currentInvokeId != null && !currentInvokeId.equals(msg.getInvokeId())) {
+        // instanceId 切换则先刷旧批次
+        if (currentInstanceId != null && !currentInstanceId.equals(msg.getInstanceId())) {
             flushBatch();
         }
-        currentInvokeId = currentInvokeId == null ? msg.getInvokeId() : currentInvokeId;
+        currentInstanceId = currentInstanceId == null ? msg.getInstanceId() : currentInstanceId;
 
         batch.add(msg);
         batchBytes += estimateSize(msg);
@@ -127,7 +127,7 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
     }
 
     private void flushBatch() {
-        if (currentInvokeId == null || batch.isEmpty()) {
+        if (currentInstanceId == null || batch.isEmpty()) {
             resetBatch();
             return;
         }
@@ -146,7 +146,7 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
         }
 
         try {
-            JRequestPayload payload = new JRequestPayload(currentInvokeId);
+            JRequestPayload payload = new JRequestPayload(currentInstanceId);
             if (CodecConfig.isCodecLowCopy()) {
                 OutputBuf outputBuf = serializer.writeObject(current.allocOutputBuf(), batch);
                 payload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.JOB_LOG_MESSAGE, outputBuf);
@@ -161,11 +161,11 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
                 }
                 @Override
                 public void operationFailure(JChannel channel, Throwable cause) {
-                    log.warn("日志批次发送失败 invokeId={}, size={}", currentInvokeId, batch.size(), cause);
+                    log.warn("日志批次发送失败 instanceId={}, size={}", currentInstanceId, batch.size(), cause);
                 }
             });
         } catch (Throwable t) {
-            log.warn("日志批次发送异常 invokeId={}, size={}", currentInvokeId, batch.size(), t);
+            log.warn("日志批次发送异常 instanceId={}, size={}", currentInstanceId, batch.size(), t);
         } finally {
             resetBatch();
         }
@@ -174,7 +174,7 @@ public class JobLogSenderDisruptor implements InitializingBean, DisposableBean {
     private void resetBatch() {
         batch = new ArrayList<>(BATCH_MAX_SIZE);
         batchBytes = 0;
-        currentInvokeId = null;
+        currentInstanceId = null;
         lastActivity = System.currentTimeMillis();
     }
 

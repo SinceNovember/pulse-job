@@ -17,8 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * // 1. 初始化时注册序列化器（通常在启动时由 SerializerHolder 自动完成）
  * PayloadSerializer.register(new JavaSerializer());
  *
- * // 2. 使用时只需指定类型，invokeId 自动生成
+ * // 2. 使用时需指定 instanceId（来自数据库 job_instance.instanceId）
  * JRequestPayload payload = PayloadSerializer.request()
+ *     .instanceId(instanceId)
  *     .channel(channel)
  *     .type(SerializerType.JAVA)
  *     .message(data)
@@ -125,35 +126,37 @@ public final class PayloadSerializer {
     // ==================== 便捷创建方法 ====================
 
     /**
-     * 创建 Request Payload（invokeId 自动生成）
+     * 创建 Request Payload
      */
-    public static <T> JRequestPayload createRequest(JChannel channel,
+    public static <T> JRequestPayload createRequest(long instanceId,
+                                                    JChannel channel,
                                                     SerializerType type,
                                                     T message,
                                                     byte messageCode) {
-        JRequestPayload payload = new JRequestPayload();
+        JRequestPayload payload = new JRequestPayload(instanceId);
         serialize(payload, channel, type, message, messageCode);
         return payload;
     }
 
     /**
-     * 创建 Request Payload（使用默认序列化器，invokeId 自动生成）
+     * 创建 Request Payload（使用默认序列化器）
      */
-    public static <T> JRequestPayload createRequest(JChannel channel,
+    public static <T> JRequestPayload createRequest(long instanceId,
+                                                    JChannel channel,
                                                     T message,
                                                     byte messageCode) {
-        return createRequest(channel, defaultType, message, messageCode);
+        return createRequest(instanceId, channel, defaultType, message, messageCode);
     }
 
     /**
      * 创建 Response Payload
      */
-    public static <T> JResponsePayload createResponse(long invokeId,
+    public static <T> JResponsePayload createResponse(long instanceId,
                                                       JChannel channel,
                                                       SerializerType type,
                                                       T message,
                                                       byte messageCode) {
-        JResponsePayload payload = new JResponsePayload(invokeId);
+        JResponsePayload payload = new JResponsePayload(instanceId);
         serialize(payload, channel, type, message, messageCode);
         return payload;
     }
@@ -161,11 +164,11 @@ public final class PayloadSerializer {
     /**
      * 创建 Response Payload（使用默认序列化器）
      */
-    public static <T> JResponsePayload createResponse(long invokeId,
+    public static <T> JResponsePayload createResponse(long instanceId,
                                                       JChannel channel,
                                                       T message,
                                                       byte messageCode) {
-        return createResponse(invokeId, channel, defaultType, message, messageCode);
+        return createResponse(instanceId, channel, defaultType, message, messageCode);
     }
 
     // ==================== 链式构建器 ====================
@@ -185,13 +188,19 @@ public final class PayloadSerializer {
     }
 
     /**
-     * Request 构建器（invokeId 自动生成）
+     * Request 构建器（需要指定 instanceId）
      */
     public static class RequestBuilder {
+        private long instanceId;
         private JChannel channel;
         private SerializerType type = defaultType;
         private Object message;
         private byte messageCode;
+
+        public RequestBuilder instanceId(long instanceId) {
+            this.instanceId = instanceId;
+            return this;
+        }
 
         public RequestBuilder channel(JChannel channel) {
             this.channel = channel;
@@ -214,22 +223,22 @@ public final class PayloadSerializer {
         }
 
         public JRequestPayload build() {
-            return createRequest(channel, type, message, messageCode);
+            return createRequest(instanceId, channel, type, message, messageCode);
         }
     }
 
     /**
-     * Response 构建器（需要指定 invokeId 以匹配请求）
+     * Response 构建器（需要指定 instanceId 以匹配请求）
      */
     public static class ResponseBuilder {
-        private long invokeId;
+        private long instanceId;
         private JChannel channel;
         private SerializerType type = defaultType;
         private Object message;
         private byte messageCode;
 
-        public ResponseBuilder invokeId(long invokeId) {
-            this.invokeId = invokeId;
+        public ResponseBuilder instanceId(long instanceId) {
+            this.instanceId = instanceId;
             return this;
         }
 
@@ -254,7 +263,7 @@ public final class PayloadSerializer {
         }
 
         public JResponsePayload build() {
-            return createResponse(invokeId, channel, type, message, messageCode);
+            return createResponse(instanceId, channel, type, message, messageCode);
         }
     }
 }

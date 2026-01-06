@@ -25,17 +25,17 @@ package com.simple.pulsejob.transport.payload;
  */
 public class JResponsePayload extends PayloadHolder {
 
-    // 用于映射 <id, request, response> 三元组
-    // id = request.invokeId = job_instance.id
-    private final long id;
+    // 用于映射 <instanceId, request, response> 三元组
+    // instanceId = job_instance.instanceId
+    private final long instanceId;
     private byte status;
 
-    public JResponsePayload(long id) {
-        this.id = id;
+    public JResponsePayload(long instanceId) {
+        this.instanceId = instanceId;
     }
 
-    public long id() {
-        return id;
+    public long instanceId() {
+        return instanceId;
     }
 
     public byte status() {

@@ -41,7 +41,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
                 return t;
             });
 
-    private final long invokeId;
+    private final long instanceId;
     private final JChannel channel;
     private final Class<?> returnType;
     private final long timeout;
@@ -60,13 +60,13 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final CopyOnWriteArrayList<LogMessage> logHistory = new CopyOnWriteArrayList<>();
 
     public static DefaultInvokeFuture with(
-            long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
-        return new DefaultInvokeFuture(invokeId, channel, timeoutMillis, returnType, dispatchType);
+            long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
+        return new DefaultInvokeFuture(instanceId, channel, timeoutMillis, returnType, dispatchType);
     }
 
     public DefaultInvokeFuture(
-            long invokeId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
-        this.invokeId = invokeId;
+            long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
+        this.instanceId = instanceId;
         this.channel = channel;
         this.timeout = timeoutMillis > 0 ? timeoutMillis : 30000; // 默认 30 秒
         this.returnType = returnType;
@@ -74,11 +74,11 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
 
         switch (dispatchType) {
             case ROUND:
-                roundFutures.put(invokeId, this);
+                roundFutures.put(instanceId, this);
                 break;
             case BROADCAST:
                 String channelId = channel.id();
-                broadcastFutures.put(subInvokeId(channelId, invokeId), this);
+                broadcastFutures.put(subInstanceId(channelId, instanceId), this);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported " + dispatchType);
@@ -94,7 +94,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private void scheduleTimeout() {
         this.timeoutTask = TIMEOUT_SCHEDULER.schedule(() -> {
             if (!isDone()) {
-                log.warn("Future 超时: invokeId={}, timeout={}ms", invokeId, timeout);
+                log.warn("Future 超时: instanceId={}, timeout={}ms", instanceId, timeout);
                 completeExceptionally(new TimeoutException("Invoke timeout after " + timeout + "ms"));
                 cleanup();
             }
@@ -105,43 +105,43 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         return channel;
     }
 
-    private static String subInvokeId(String channelId, long invokeId) {
-        return channelId + invokeId;
+    private static String subInstanceId(String channelId, long instanceId) {
+        return channelId + instanceId;
     }
 
     /**
      * ✅ 接收最终响应（任务执行结果）
      */
     public static void received(JChannel channel, JResponse response) {
-        long invokeId = response.id();
+        long instanceId = response.instanceId();
 
-        DefaultInvokeFuture future = roundFutures.get(invokeId);
+        DefaultInvokeFuture future = roundFutures.get(instanceId);
 
         if (future == null) {
-            future = broadcastFutures.get(subInvokeId(channel.id(), invokeId));
+            future = broadcastFutures.get(subInstanceId(channel.id(), instanceId));
         }
 
         if (future != null) {
             future.doReceived(response);
         } else {
-            log.warn("未找到对应的 Future: invokeId={}", invokeId);
+            log.warn("未找到对应的 Future: instanceId={}", instanceId);
         }
     }
     
     /**
      * ✅ 接收流式日志消息（不会完成 Future）
      */
-    public static void receivedLog(JChannel channel, long invokeId, LogMessage logMessage) {
-        DefaultInvokeFuture future = roundFutures.get(invokeId);
+    public static void receivedLog(JChannel channel, long instanceId, LogMessage logMessage) {
+        DefaultInvokeFuture future = roundFutures.get(instanceId);
         
         if (future == null) {
-            future = broadcastFutures.get(subInvokeId(channel.id(), invokeId));
+            future = broadcastFutures.get(subInstanceId(channel.id(), instanceId));
         }
         
         if (future != null) {
             future.receiveLog(logMessage);
         } else {
-            log.warn("未找到对应的 Future: invokeId={}", invokeId);
+            log.warn("未找到对应的 Future: instanceId={}", instanceId);
         }
     }
 
@@ -153,7 +153,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         ResultWrapper wrapper = response.result();
 
         if (status == Status.OK.value()) {
-            log.info("任务id:{}, 执行完成", response.id());
+            log.info("任务id:{}, 执行完成", response.instanceId());
             // 正常完成
             complete(wrapper != null ? wrapper.getResult() : null);
         } else {
@@ -181,8 +181,8 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
      * ✅ 接收日志消息
      */
     public void receiveLog(LogMessage logMessage) {
-        log.debug("接收日志: invokeId={}, level={}, content={}", 
-            invokeId, logMessage.getLevel(), logMessage.getContent());
+        log.debug("接收日志: instanceId={}, level={}, content={}", 
+            instanceId, logMessage.getLevel(), logMessage.getContent());
         
         // 1. 缓存日志
         logHistory.add(logMessage);
@@ -198,7 +198,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         
         // 3. 如果是最后一条日志，可以标记为即将结束
         if (logMessage.isLast()) {
-            log.info("收到最后一条日志: invokeId={}", invokeId);
+            log.info("收到最后一条日志: instanceId={}", instanceId);
         }
     }
     
@@ -249,10 +249,10 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         // 从缓存中移除
         switch (dispatchType) {
             case ROUND:
-                roundFutures.remove(invokeId);
+                roundFutures.remove(instanceId);
                 break;
             case BROADCAST:
-                broadcastFutures.remove(subInvokeId(channel.id(), invokeId));
+                broadcastFutures.remove(subInstanceId(channel.id(), instanceId));
                 break;
         }
         

@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "job_log", indexes = {
-    @Index(name = "idx_invoke_id", columnList = "invoke_id"),
+    @Index(name = "idx_instance_id", columnList = "instance_id"),
     @Index(name = "idx_job_id", columnList = "job_id"),
     @Index(name = "idx_create_time", columnList = "create_time")
 })
@@ -27,9 +27,9 @@ public class JobLog implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 任务调用ID */
-    @Column(name = "invoke_id", nullable = false)
-    private Long invokeId;
+    /** 任务实例ID (= job_instance.instanceId) */
+    @Column(name = "instance_id", nullable = false)
+    private Long instanceId;
 
     /** 业务任务ID */
     @Column(name = "job_id")
@@ -52,7 +52,7 @@ public class JobLog implements Serializable {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    /** 日志序号（同一invokeId下的顺序） */
+    /** 日志序号（同一instanceId下的顺序） */
     @Column(name = "sequence")
     private Integer sequence;
 
@@ -86,9 +86,9 @@ public class JobLog implements Serializable {
     /**
      * 静态工厂方法
      */
-    public static JobLog of(Long invokeId, LogLevelEnum level, String content) {
+    public static JobLog of(Long instanceId, LogLevelEnum level, String content) {
         JobLog log = new JobLog();
-        log.setInvokeId(invokeId);
+        log.setInstanceId(instanceId);
         log.setLogLevel(level);
         log.setContent(content);
         log.setCreateTime(LocalDateTime.now());
@@ -105,8 +105,8 @@ public class JobLog implements Serializable {
     public static class Builder {
         private final JobLog log = new JobLog();
 
-        public Builder invokeId(Long invokeId) {
-            log.setInvokeId(invokeId);
+        public Builder instanceId(Long instanceId) {
+            log.setInstanceId(instanceId);
             return this;
         }
 

@@ -16,7 +16,6 @@
 package com.simple.pulsejob.transport;
 
 
-import com.simple.pulsejob.transport.Status;
 import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 
@@ -47,8 +46,9 @@ public class JResponse {
         return payload;
     }
 
-    public long id() {
-        return payload.id();
+    public long instanceId() {
+
+        return payload.instanceId();
     }
 
     public byte status() {
@@ -79,7 +79,7 @@ public class JResponse {
     public String toString() {
         return "JResponse{" +
                 "status=" + Status.parse(status()) +
-                ", id=" + id() +
+                ", instanceId=" + instanceId() +
                 ", result=" + result +
                 '}';
     }

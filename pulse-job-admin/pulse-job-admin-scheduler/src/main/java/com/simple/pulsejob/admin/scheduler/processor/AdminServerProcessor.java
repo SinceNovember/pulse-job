@@ -64,13 +64,13 @@ public class AdminServerProcessor implements AcceptorProcessor {
                 handleRegisterExecutor(channel, serializer, inputBuf);
                 break;
 //            case JOB_LOG_MESSAGE:
-//                handleLogMessage(channel, request.invokeId(), serializer, inputBuf);
+//                handleLogMessage(channel, request.instanceId(), serializer, inputBuf);
 //                break;
 //            case JOB_BATCH_LOG_MESSAGE:
 //                handleBatchLogMessage(channel, serializer, inputBuf);
 //                break;
 //            case JOB_RESULT:
-//                handleJobResult(channel, request.invokeId(), serializer, inputBuf);
+//                handleJobResult(channel, request.instanceId(), serializer, inputBuf);
 //                break;
             default:
                 log.warn("Unknown request message code: {}", messageCode);
@@ -94,7 +94,7 @@ public class AdminServerProcessor implements AcceptorProcessor {
                 handleBatchLogMessage(channel, serializer, inputBuf);
                 break;
             case JOB_LOG_MESSAGE:
-                handleLogMessage(channel, response.id(), serializer, inputBuf);
+                handleLogMessage(channel, response.instanceId() , serializer, inputBuf);
                 break;
             case JOB_RESULT:
                 handleJobResult(channel, response, serializer, inputBuf);
@@ -149,9 +149,9 @@ public class AdminServerProcessor implements AcceptorProcessor {
     /**
      * 处理单条日志消息
      */
-    private void handleLogMessage(JChannel channel, long invokeId, Serializer serializer, InputBuf inputBuf) {
+    private void handleLogMessage(JChannel channel, long instanceId, Serializer serializer, InputBuf inputBuf) {
         Object payload = serializer.readObject(inputBuf, Object.class);
-        dispatchLogPayload(channel, invokeId, payload);
+        dispatchLogPayload(channel, instanceId, payload);
     }
 
     /**
@@ -168,9 +168,9 @@ public class AdminServerProcessor implements AcceptorProcessor {
 
         // 处理每条日志（直接获取，无需转换）
         for (LogMessage logMessage : batch.getLogs()) {
-            Long invokeId = logMessage.getInvokeId();
-            if (invokeId != null) {
-                DefaultInvokeFuture.receivedLog(channel, invokeId, logMessage);
+            Long instanceId = logMessage.getInstanceId();
+            if (instanceId != null) {
+                DefaultInvokeFuture.receivedLog(channel, instanceId, logMessage);
             }
             jobLogStorageService.store(logMessage);
         }
@@ -190,9 +190,9 @@ public class AdminServerProcessor implements AcceptorProcessor {
     /**
      * 分发日志（单条）
      */
-    private void dispatchLogPayload(JChannel channel, long invokeId, Object payload) {
+    private void dispatchLogPayload(JChannel channel, long instanceId, Object payload) {
         if (payload instanceof LogMessage) {
-            processLogMessage(channel, invokeId, (LogMessage) payload);
+            processLogMessage(channel, instanceId, (LogMessage) payload);
             return;
         }
 
@@ -202,11 +202,11 @@ public class AdminServerProcessor implements AcceptorProcessor {
     /**
      * 处理单条日志
      */
-    private void processLogMessage(JChannel channel, long invokeId, LogMessage logMessage) {
-        log.debug("Received log: invokeId={}, level={}", invokeId, logMessage.getLevel());
+    private void processLogMessage(JChannel channel, long instanceId, LogMessage logMessage) {
+        log.debug("Received log: instanceId={}, level={}", instanceId, logMessage.getLevel());
 
         // 转发到 Future
-        DefaultInvokeFuture.receivedLog(channel, invokeId, logMessage);
+        DefaultInvokeFuture.receivedLog(channel, instanceId, logMessage);
 
         // 异步存储
         jobLogStorageService.store(logMessage);

@@ -50,7 +50,7 @@ public class JobLogSenderTest {
     }
 
     public void sendAsync(LogMessage logMessage) {
-        if (logMessage == null || logMessage.getInvokeId() == null) {
+        if (logMessage == null || logMessage.getInstanceId() == null) {
             return;
         }
         // 填充缺省字段
@@ -61,7 +61,7 @@ public class JobLogSenderTest {
             logMessage.setSequence(sequence.incrementAndGet());
         }
         if (!queue.offer(logMessage)) {
-            log.warn("日志队列已满，丢弃日志 invokeId={}", logMessage.getInvokeId());
+            log.warn("日志队列已满，丢弃日志 instanceId={}", logMessage.getInstanceId());
         }
     }
 
@@ -73,7 +73,7 @@ public class JobLogSenderTest {
 
     private void drainLoop() {
         List<LogMessage> batch = new ArrayList<>(BATCH_MAX_SIZE);
-        Long currentInvokeId = null;
+        Long currentInstanceId = null;
         int batchBytes = 0;
         long lastActivity = System.currentTimeMillis();
 
@@ -82,13 +82,13 @@ public class JobLogSenderTest {
                 LogMessage msg = queue.poll(FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 long now = System.currentTimeMillis();
                 if (msg != null) {
-                    // 若遇到不同 invokeId，先刷掉已有批次
-                    if (currentInvokeId != null && !currentInvokeId.equals(msg.getInvokeId())) {
-                        flushBatch(currentInvokeId, batch);
+                    // 若遇到不同 instanceId，先刷掉已有批次
+                    if (currentInstanceId != null && !currentInstanceId.equals(msg.getInstanceId())) {
+                        flushBatch(currentInstanceId, batch);
                         batch = new ArrayList<>(BATCH_MAX_SIZE);
                         batchBytes = 0;
                     }
-                    currentInvokeId = currentInvokeId == null ? msg.getInvokeId() : currentInvokeId;
+                    currentInstanceId = currentInstanceId == null ? msg.getInstanceId() : currentInstanceId;
                     batch.add(msg);
                     batchBytes += estimateSize(msg);
                     lastActivity = now;
@@ -99,10 +99,10 @@ public class JobLogSenderTest {
                 boolean lastLog = msg != null && msg.isLast();
 
                 if (!batch.isEmpty() && (reachSize || timeout || lastLog)) {
-                    flushBatch(currentInvokeId, batch);
+                    flushBatch(currentInstanceId, batch);
                     batch = new ArrayList<>(BATCH_MAX_SIZE);
                     batchBytes = 0;
-                    currentInvokeId = null;
+                    currentInstanceId = null;
                 }
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
@@ -112,8 +112,8 @@ public class JobLogSenderTest {
             }
         }
 
-        if (!batch.isEmpty() && currentInvokeId != null) {
-            flushBatch(currentInvokeId, batch);
+        if (!batch.isEmpty() && currentInstanceId != null) {
+            flushBatch(currentInstanceId, batch);
         }
     }
 
@@ -125,8 +125,8 @@ public class JobLogSenderTest {
         return size;
     }
 
-    private void flushBatch(Long invokeId, List<LogMessage> batch) {
-        if (invokeId == null || batch.isEmpty()) {
+    private void flushBatch(Long instanceId, List<LogMessage> batch) {
+        if (instanceId == null || batch.isEmpty()) {
             return;
         }
 
@@ -142,7 +142,7 @@ public class JobLogSenderTest {
             return;
         }
 
-        JRequestPayload payload = new JRequestPayload(invokeId);
+        JRequestPayload payload = new JRequestPayload(instanceId);
         if (CodecConfig.isCodecLowCopy()) {
             OutputBuf outputBuf = serializer.writeObject(current.allocOutputBuf(), batch);
             payload.outputBuf(SerializerType.JAVA.value(), JProtocolHeader.JOB_LOG_MESSAGE, outputBuf);
@@ -158,7 +158,7 @@ public class JobLogSenderTest {
 
             @Override
             public void operationFailure(JChannel channel, Throwable cause) {
-                log.warn("日志批次发送失败 invokeId={}, size={}", invokeId, batch.size(), cause);
+                log.warn("日志批次发送失败 instanceId={}, size={}", instanceId, batch.size(), cause);
             }
         });
     }

@@ -95,7 +95,7 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
     public void handleException(JChannel channel, JRequestPayload request, Status status, Throwable cause) {
         logger.error("Exception while handling request from {}: {}",
                 channel.remoteAddress(), cause.getMessage());
-        doHandleException(channel, request.invokeId(), request.serializerCode(), status, cause, false);
+        doHandleException(channel, request.instanceId(), request.serializerCode(), status, cause, false);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
     public void handleRequestException(JChannel channel, JRequest request, Status status, Throwable cause) {
         logger.error("Exception while processing request: {}, {}",
                 channel.remoteAddress(), StackTraceUtil.stackTrace(cause));
-        doHandleException(channel, request.invokeId(), request.serializerCode(), status, cause, false);
+        doHandleException(channel, request.instanceId(), request.serializerCode(), status, cause, false);
     }
 
     /**
@@ -161,14 +161,14 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
     /**
      * 发送错误响应
      */
-    private void doHandleException(JChannel channel, long invokeId, byte serializerCode,
+    private void doHandleException(JChannel channel, long instanceId, byte serializerCode,
                                    Status status, Throwable cause, boolean closeChannel) {
         ResultWrapper result = new ResultWrapper();
         result.setError(ThrowUtil.cutCause(cause));
 
         SerializerType type = SerializerType.parse(serializerCode);
         JResponsePayload response = PayloadSerializer.response()
-                .invokeId(invokeId)
+                .instanceId(instanceId)
                 .channel(channel)
                 .type(type != null ? type : SerializerType.JAVA)
                 .message(result)

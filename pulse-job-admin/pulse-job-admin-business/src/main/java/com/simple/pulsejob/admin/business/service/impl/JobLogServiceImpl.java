@@ -45,13 +45,13 @@ public class JobLogServiceImpl implements IJobLogService {
     // ==================== 查询相关 ====================
 
     @Override
-    public List<JobLog> findByInvokeId(Long invokeId) {
-        return jobLogMapper.findByInvokeIdOrderBySequenceAsc(invokeId);
+    public List<JobLog> findByInstanceId(Long instanceId) {
+        return jobLogMapper.findByInstanceIdOrderBySequenceAsc(instanceId);
     }
 
     @Override
-    public Page<JobLog> findByInvokeId(Long invokeId, Pageable pageable) {
-        return jobLogMapper.findByInvokeId(invokeId, pageable);
+    public Page<JobLog> findByInstanceId(Long instanceId, Pageable pageable) {
+        return jobLogMapper.findByInstanceId(instanceId, pageable);
     }
 
     @Override
@@ -80,22 +80,22 @@ public class JobLogServiceImpl implements IJobLogService {
     }
 
     @Override
-    public List<JobLog> findErrorLogs(Long invokeId) {
-        return jobLogMapper.findErrorLogsByInvokeId(invokeId);
+    public List<JobLog> findErrorLogs(Long instanceId) {
+        return jobLogMapper.findErrorLogsByInstanceId(instanceId);
     }
 
     @Override
-    public Page<JobLog> search(Long invokeId, Integer jobId, String executorName,
+    public Page<JobLog> search(Long instanceId, Integer jobId, String executorName,
                                LogLevelEnum logLevel, LocalDateTime startTime,
                                LocalDateTime endTime, Pageable pageable) {
-        return jobLogMapper.findByConditions(invokeId, jobId, executorName, logLevel, startTime, endTime, pageable);
+        return jobLogMapper.findByConditions(instanceId, jobId, executorName, logLevel, startTime, endTime, pageable);
     }
 
     // ==================== 统计相关 ====================
 
     @Override
-    public long countByInvokeId(Long invokeId) {
-        return jobLogMapper.countByInvokeId(invokeId);
+    public long countByInstanceId(Long instanceId) {
+        return jobLogMapper.countByInstanceId(instanceId);
     }
 
     @Override
@@ -104,8 +104,8 @@ public class JobLogServiceImpl implements IJobLogService {
     }
 
     @Override
-    public int getMaxSequence(Long invokeId) {
-        Integer maxSeq = jobLogMapper.findMaxSequenceByInvokeId(invokeId);
+    public int getMaxSequence(Long instanceId) {
+        Integer maxSeq = jobLogMapper.findMaxSequenceByInstanceId(instanceId);
         return maxSeq != null ? maxSeq : 0;
     }
 
@@ -113,8 +113,8 @@ public class JobLogServiceImpl implements IJobLogService {
 
     @Override
     @Transactional
-    public int deleteByInvokeId(Long invokeId) {
-        return jobLogMapper.deleteByInvokeId(invokeId);
+    public int deleteByInstanceId(Long instanceId) {
+        return jobLogMapper.deleteByInstanceId(instanceId);
     }
 
     @Override

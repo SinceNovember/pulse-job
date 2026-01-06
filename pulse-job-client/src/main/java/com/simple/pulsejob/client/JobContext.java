@@ -70,8 +70,8 @@ public class JobContext {
     /**
      * 获取调用ID
      */
-    public long invokeId() {
-        return request.invokeId();
+    public long instanceId() {
+        return request.instanceId();
     }
 
     /**
@@ -144,7 +144,7 @@ public class JobContext {
     @Override
     public String toString() {
         return "JobContext{" +
-                "invokeId=" + invokeId() +
+                "instanceId=" + instanceId() +
                 ", handlerName='" + handlerName + '\'' +
                 ", success=" + isSuccess() +
                 '}';

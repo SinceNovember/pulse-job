@@ -34,7 +34,7 @@ public class JobInstanceServiceImpl implements JobInstanceManager {
 
         jobInstanceMapper.save(instance);
 
-        log.debug("Created job instance: id={}, jobId={}, executorId={}",
+        log.debug("Created job instance: instanceId={}, jobId={}, executorId={}",
                 instance.getId(), jobId, executorId);
 
         return instance;

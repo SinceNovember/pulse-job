@@ -213,14 +213,14 @@ public class JobLogSender implements SmartLifecycle {
     }
 
     public void sendAsync(LogMessage logMessage) {
-        if (logMessage == null || logMessage.getInvokeId() == null) {
+        if (logMessage == null || logMessage.getInstanceId() == null) {
             return;
         }
 
         fillDefaults(logMessage);
 
         if (!queue.offer(logMessage)) {
-            log.warn("日志队列已满，丢弃日志 invokeId={}", logMessage.getInvokeId());
+            log.warn("日志队列已满，丢弃日志 instanceId={}", logMessage.getInstanceId());
         }
     }
 

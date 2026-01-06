@@ -24,7 +24,7 @@ public class BatchLogMessage implements Serializable {
     /** 最大批量大小 */
     public static final int MAX_BATCH_SIZE = 500;
 
-    /** 批量日志列表（每条日志保留自己的 invokeId） */
+    /** 批量日志列表（每条日志保留自己的 instanceId） */
     private List<LogMessage> logs;
 
     /**

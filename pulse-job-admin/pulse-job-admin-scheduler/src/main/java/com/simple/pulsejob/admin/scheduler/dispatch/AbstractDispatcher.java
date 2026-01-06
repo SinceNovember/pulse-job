@@ -56,7 +56,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
         final JRequestPayload payload = request.payload();
 
         final DefaultInvokeFuture future = DefaultInvokeFuture
-            .with(request.invokeId(), channel, 0, null, dispatchType)
+            .with(request.instanceId(), channel, 0, null, dispatchType)
             .interceptors(interceptors);
 
         if (!CollectionUtils.isEmpty(interceptors)) {

@@ -7,7 +7,7 @@ import com.simple.pulsejob.transport.metadata.LogMessage;
 import lombok.Setter;
 
 /**
- * 将带 taskId(invokeId) 的日志推送到 admin。
+ * 将带 taskId(instanceId) 的日志推送到 admin。
  * 
  * <p>支持两种发送模式：</p>
  * <ul>
@@ -29,7 +29,7 @@ public class CustomLogAppender extends AppenderBase<ILoggingEvent> {
 
         LogMessage logMessage = new LogMessage();
         try {
-            logMessage.setInvokeId(Long.parseLong(taskId));
+            logMessage.setInstanceId(Long.parseLong(taskId));
         } catch (NumberFormatException ignored) {
             return;
         }
