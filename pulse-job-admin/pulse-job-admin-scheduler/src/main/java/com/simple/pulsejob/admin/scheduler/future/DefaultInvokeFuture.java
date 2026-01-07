@@ -1,7 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.future;
 
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.TransportInterceptor;
 import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.Status;
@@ -48,7 +48,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final Dispatcher.Type dispatchType;
     private volatile boolean sent = false;
 
-    private List<SchedulerInterceptor> interceptors;
+    private List<TransportInterceptor> interceptors;
 
     /** 超时清理任务 */
     private volatile ScheduledFuture<?> timeoutTask;
@@ -166,7 +166,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         }
 
         // 拦截器后置处理
-        List<SchedulerInterceptor> interceptors = this.interceptors;
+        List<TransportInterceptor> interceptors = this.interceptors;
         if (interceptors != null) {
             for (int i = interceptors.size() - 1; i >= 0; i--) {
                 interceptors.get(i).afterInvoke(response, channel);
@@ -274,11 +274,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         sent = true;
     }
 
-    public DefaultInvokeFuture interceptors(List<SchedulerInterceptor> interceptors) {
-        this.interceptors = interceptors;
-        return this;
-    }
-    
+
     /**
      * 获取日志历史
      */

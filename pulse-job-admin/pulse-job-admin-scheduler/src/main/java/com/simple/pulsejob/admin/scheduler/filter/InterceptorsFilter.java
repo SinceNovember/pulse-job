@@ -40,7 +40,7 @@
 //    private void handleBeforeSchedule(JRequest request, ScheduleContext context) {
 //        for (JobInterceptor interceptor : interceptors) {
 //            try {
-//                interceptor.beforeInvoke(request, context);
+//                interceptor.beforeSchedule(request, context);
 //            } catch (Throwable t) {
 //                log.error("Interceptor[{}#afterInvoke]: {}.", Reflects.simpleClassName(interceptor),
 //                        StackTraceUtil.stackTrace(t));

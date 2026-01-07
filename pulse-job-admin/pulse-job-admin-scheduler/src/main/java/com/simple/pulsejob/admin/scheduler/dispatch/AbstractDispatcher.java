@@ -8,7 +8,7 @@ import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.TransportInterceptor;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -28,7 +28,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
 
     protected final ExecutorChannelGroupManager channelGroupManager;
 
-    protected final List<SchedulerInterceptor> interceptors;
+    protected final List<TransportInterceptor> interceptors;
 
     protected final LoadBalancerFactory loadBalancerFactory;
 
@@ -55,23 +55,28 @@ public abstract class AbstractDispatcher implements Dispatcher {
     protected DefaultInvokeFuture write(final JChannel channel, final JRequest request, final Type dispatchType) {
         final JRequestPayload payload = request.payload();
 
-        final DefaultInvokeFuture future = DefaultInvokeFuture
-            .with(request.instanceId(), channel, 0, null, dispatchType)
-            .interceptors(interceptors);
-
         if (!CollectionUtils.isEmpty(interceptors)) {
-            for (SchedulerInterceptor interceptor : interceptors) {
-                interceptor.beforeInvoke(request, channel);
+            for (TransportInterceptor interceptor : interceptors) {
+                interceptor.beforeTransport(request, channel);
             }
         }
+
+        final DefaultInvokeFuture future = DefaultInvokeFuture
+                .with(request.instanceId(), channel, 0, null, dispatchType);
 
         channel.write(payload, new JFutureListener<>() {
             @Override
             public void operationSuccess(JChannel channel) throws Exception {
+                for (TransportInterceptor interceptor : interceptors) {
+                    interceptor.afterTransport(request, channel);
+                }
             }
 
             @Override
             public void operationFailure(JChannel channel, Throwable cause) throws Exception {
+                for (TransportInterceptor interceptor : interceptors) {
+                    interceptor.onTransportFailure(request, channel, cause);
+                }
             }
         });
         return future;

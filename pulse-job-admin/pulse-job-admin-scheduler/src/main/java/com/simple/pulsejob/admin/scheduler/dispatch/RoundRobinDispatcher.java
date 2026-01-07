@@ -10,7 +10,7 @@ import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.TransportInterceptor;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class RoundRobinDispatcher extends AbstractDispatcher {
 
 
-    public RoundRobinDispatcher(ExecutorChannelGroupManager channelGroupManager, List<SchedulerInterceptor> interceptors,
+    public RoundRobinDispatcher(ExecutorChannelGroupManager channelGroupManager, List<TransportInterceptor> interceptors,
                                 LoadBalancerFactory loadBalancerFactory, JobFilterChains chains,
                                 SerializerFactory serializerFactory) {
         super(channelGroupManager, interceptors, loadBalancerFactory, chains, serializerFactory);

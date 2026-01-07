@@ -43,7 +43,8 @@ public class FailoverClusterInvoker implements ClusterInvoker {
     }
 
     @Override
-    public InvokeFuture invoke(JRequest request, ScheduleContext context) throws Exception {
+    public InvokeFuture
+    invoke(JRequest request, ScheduleContext context) throws Exception {
         Dispatcher dispatcher = dispatcherFactory.get(context.getDispatchType());
         FailoverInvokeFuture future = FailoverInvokeFuture.with();
         int tryCount = context.getRetries() + 1;
@@ -59,6 +60,7 @@ public class FailoverClusterInvoker implements ClusterInvoker {
                          final FailoverInvokeFuture failOverFuture,
                          final Throwable lastCause) {
         if (tryCount > 0) {
+
             final InvokeFuture future = dispatcher.dispatch(request, context);
             future.whenComplete((result, throwable) -> {
                 if (throwable == null) {
