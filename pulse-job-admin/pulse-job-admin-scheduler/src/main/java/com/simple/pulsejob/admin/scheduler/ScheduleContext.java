@@ -1,10 +1,10 @@
 package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.plusejob.serialization.SerializerType;
-import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
 import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
+import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategy;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
@@ -31,7 +31,7 @@ public class ScheduleContext {
     // ==================== 调度配置 ====================
 
     /** 调度类型：CRON、FIXED_RATE、FIXED_DELAY、API */
-    private ScheduleTypeEnum scheduleType;
+    private ScheduleStrategy.Type scheduleType;
 
     /** 调度表达式（CRON表达式或固定间隔秒数） */
     private String scheduleExpression;

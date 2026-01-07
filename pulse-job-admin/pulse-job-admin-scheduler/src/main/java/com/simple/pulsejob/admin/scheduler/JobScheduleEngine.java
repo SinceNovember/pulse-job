@@ -1,7 +1,6 @@
 package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
-import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.invoker.Invoker;
 import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategy;
 import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategyFactory;
@@ -146,7 +145,7 @@ public class JobScheduleEngine implements JobScheduler {
         
         try {
             // 获取调度策略
-            ScheduleTypeEnum scheduleType = jobInfo.getScheduleType();
+            ScheduleStrategy.Type scheduleType = ScheduleStrategy.Type.from(jobInfo.getScheduleType());
             ScheduleStrategy strategy = strategyFactory.getStrategy(scheduleType);
 
             // API 类型不需要自动调度
@@ -256,7 +255,8 @@ public class JobScheduleEngine implements JobScheduler {
     private void calculateNextExecuteTime(JobInfo jobInfo) {
         try {
             // 获取调度策略
-            ScheduleStrategy strategy = strategyFactory.getStrategy(jobInfo.getScheduleType());
+            ScheduleStrategy.Type scheduleType = ScheduleStrategy.Type.from(jobInfo.getScheduleType());
+            ScheduleStrategy strategy = strategyFactory.getStrategy(scheduleType);
 
             // API 类型不需要自动调度
             if (!strategy.needAutoSchedule()) {

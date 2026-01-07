@@ -1,6 +1,5 @@
 package com.simple.pulsejob.admin.scheduler.strategy;
 
-import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.support.CronExpression;
@@ -19,8 +18,8 @@ import java.time.ZoneId;
 public class CronScheduleStrategy extends AbstractScheduleStrategy {
 
     @Override
-    public ScheduleTypeEnum getType() {
-        return ScheduleTypeEnum.CRON;
+    public Type getType() {
+        return Type.CRON;
     }
 
     @Override

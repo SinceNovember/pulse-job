@@ -1,6 +1,5 @@
 package com.simple.pulsejob.admin.scheduler.strategy;
 
-import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,13 +20,13 @@ import java.util.Map;
 @Component
 public class ScheduleStrategyFactory {
 
-    private final Map<ScheduleTypeEnum, ScheduleStrategy> strategyMap;
+    private final Map<ScheduleStrategy.Type, ScheduleStrategy> strategyMap;
 
     /**
      * 通过 Spring 自动注入所有策略实现
      */
     public ScheduleStrategyFactory(List<ScheduleStrategy> strategies) {
-        this.strategyMap = new EnumMap<>(ScheduleTypeEnum.class);
+        this.strategyMap = new EnumMap<>(ScheduleStrategy.Type.class);
 
         for (ScheduleStrategy strategy : strategies) {
             strategyMap.put(strategy.getType(), strategy);
@@ -35,7 +34,7 @@ public class ScheduleStrategyFactory {
         }
 
         // 验证所有类型都有对应的策略
-        for (ScheduleTypeEnum type : ScheduleTypeEnum.values()) {
+        for (ScheduleStrategy.Type type : ScheduleStrategy.Type.values()) {
             if (!strategyMap.containsKey(type)) {
                 log.warn("调度类型 {} 未找到对应的策略实现", type);
             }
@@ -63,7 +62,7 @@ public class ScheduleStrategyFactory {
      * @return 调度策略
      * @throws IllegalArgumentException 如果找不到对应的策略
      */
-    public ScheduleStrategy getStrategy(ScheduleTypeEnum type) {
+    public ScheduleStrategy getStrategy(ScheduleStrategy.Type type) {
         ScheduleStrategy strategy = strategyMap.get(type);
 
         if (strategy == null) {
@@ -79,7 +78,7 @@ public class ScheduleStrategyFactory {
      * @param type 调度类型
      * @return true-支持，false-不支持
      */
-    public boolean supports(ScheduleTypeEnum type) {
+    public boolean supports(ScheduleStrategy.Type type) {
         return strategyMap.containsKey(type);
     }
 
@@ -90,7 +89,7 @@ public class ScheduleStrategyFactory {
      * @param expression 调度表达式
      * @return true-合法，false-不合法
      */
-    public boolean validateExpression(ScheduleTypeEnum type, String expression) {
+    public boolean validateExpression(ScheduleStrategy.Type type, String expression) {
         ScheduleStrategy strategy = strategyMap.get(type);
         if (strategy == null) {
             return false;
@@ -105,7 +104,7 @@ public class ScheduleStrategyFactory {
      * @param expression 调度表达式
      * @return 描述信息
      */
-    public String getDescription(ScheduleTypeEnum type, String expression) {
+    public String getDescription(ScheduleStrategy.Type type, String expression) {
         ScheduleStrategy strategy = strategyMap.get(type);
         if (strategy == null) {
             return "未知的调度类型: " + type;

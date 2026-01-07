@@ -3,7 +3,7 @@ package com.simple.pulsejob.admin.scheduler.strategy;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
-
+import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
@@ -23,11 +23,50 @@ import java.time.LocalDateTime;
 public interface ScheduleStrategy {
 
     /**
+     * 调度类型定义，仿照 LoadBalancer.Type 风格。
+     */
+    @Getter
+    enum Type {
+        /** CRON 表达式调度 */
+        CRON("cron", 1),
+        /** 固定频率调度（单位：秒） */
+        FIXED_RATE("fixed_rate", 2),
+        /** 固定延迟调度（单位：秒） */
+        FIXED_DELAY("fixed_delay", 3),
+        /** API 触发（手动触发，不自动调度） */
+        API("api", 4);
+
+        private final String name;
+        private final Integer code;
+
+        Type(String name, Integer code) {
+            this.name = name;
+            this.code = code;
+        }
+
+        public static Type fromCode(Integer type) {
+            for (Type e : values()) {
+                if (e.code.equals(type)) {
+                    return e;
+                }
+            }
+            throw new IllegalArgumentException("Unknown schedule type: " + type);
+        }
+
+        public static Type from(ScheduleTypeEnum e) {
+            if (e == null) {
+                return null;
+            }
+            return fromCode(e.getCode());
+        }
+    }
+
+    /**
      * 获取策略支持的调度类型
      *
      * @return 调度类型
      */
-    ScheduleTypeEnum getType();
+    Type getType();
 
     /**
      * 计算下次执行时间
