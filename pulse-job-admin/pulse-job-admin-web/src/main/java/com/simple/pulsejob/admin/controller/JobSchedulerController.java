@@ -46,17 +46,11 @@ public class JobSchedulerController {
      * 手动触发任务
      */
     @PostMapping("/trigger")
-    public ResponseResult<Void> trigger(
-            @RequestParam String executorName,
-            @RequestParam Long jobId,
-            @RequestParam Long executorId,
-            @RequestParam String handlerName,
-            @RequestParam(required = false) String params) {
+    public ResponseResult<Void> trigger() {
         try {
-            jobScheduler.trigger(executorName, jobId, executorId, handlerName, params);
+            jobScheduler.trigger();
             return ResponseResult.ok();
         } catch (Exception e) {
-            log.error("手动触发任务失败: jobId={}", jobId, e);
             return ResponseResult.error("手动触发任务失败: " + e.getMessage());
         }
     }

@@ -1,6 +1,6 @@
 package com.simple.pulsejob.admin.scheduler.future;
 
-import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
+import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
 import com.simple.pulsejob.common.util.Maps;
 import com.simple.pulsejob.transport.JResponse;
@@ -45,7 +45,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final JChannel channel;
     private final Class<?> returnType;
     private final long timeout;
-    private final Dispatcher.Type dispatchType;
+    private final DispatchTypeEnum dispatchType;
     private volatile boolean sent = false;
 
     private List<SchedulerInterceptor> interceptors;
@@ -60,12 +60,12 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private final CopyOnWriteArrayList<LogMessage> logHistory = new CopyOnWriteArrayList<>();
 
     public static DefaultInvokeFuture with(
-            long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
+            long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, DispatchTypeEnum dispatchType) {
         return new DefaultInvokeFuture(instanceId, channel, timeoutMillis, returnType, dispatchType);
     }
 
     public DefaultInvokeFuture(
-            long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, Dispatcher.Type dispatchType) {
+            long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, DispatchTypeEnum dispatchType) {
         this.instanceId = instanceId;
         this.channel = channel;
         this.timeout = timeoutMillis > 0 ? timeoutMillis : 30000; // 默认 30 秒

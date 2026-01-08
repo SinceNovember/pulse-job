@@ -1,10 +1,13 @@
 package com.simple.pulsejob.admin.common.model.entity;
 
+import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -40,6 +43,14 @@ public class JobInfo implements Serializable {
     private String jobHandler;
 
     /**
+     * 执行器ID
+     * 关联到具体的任务执行器
+     * 用于指定任务在哪个执行器上运行
+     */
+    @Column(name = "executor_id")
+    private Integer executorId;
+
+    /**
      * 调度频率表达式
      * 支持CRON表达式格式
      * 例如：0 0/30 * * * ? (每30分钟执行一次)
@@ -49,26 +60,35 @@ public class JobInfo implements Serializable {
 
     /**
      * 调度类型
-     * 目前支持CRON表达式调度
-     * 后续可扩展支持固定频率、固定延迟等
+     * CRON-CRON表达式, FIXED_RATE-固定频率, FIXED_DELAY-固定延迟, API-手动触发
      */
-    @Column(name = "schedule_type")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "schedule_type", length = 20)
     private ScheduleTypeEnum scheduleType;
 
     /**
-     * 执行器ID
-     * 关联到具体的任务执行器
-     * 用于指定任务在哪个执行器上运行
+     * 分发类型
+     * ROUND-单播轮询, BROADCAST-广播
      */
-    @Column(name = "executor_id")
-    private Integer executorId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dispatch_type", length = 20)
+    private DispatchTypeEnum dispatchType;
 
     /**
-     * 执行器名称
-     * 用于标识执行器，与执行器注册时的名称一致
+     * 负载均衡类型
+     * ROUND-轮询, RANDOM-随机, CONSISTENT_HASH-一致性哈希, LEAST_ACTIVE-最少活跃
      */
-    @Column(name = "executor_name", length = 100)
-    private String executorName;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "load_balance_type", length = 20)
+    private LoadBalanceTypeEnum loadBalanceType;
+
+    /**
+     * 序列化类型
+     * JAVA-Java原生, PROTO_STUFF-Protostuff, HESSIAN-Hessian, KRYO-Kryo, JSON-JSON
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "serializer_type", length = 20)
+    private SerializerTypeEnum serializerType;
 
     /**
      * 任务状态

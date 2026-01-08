@@ -1,11 +1,11 @@
 package com.simple.pulsejob.admin.scheduler;
 
-import com.simple.plusejob.serialization.SerializerType;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
+import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
-import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
-import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategy;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
@@ -35,13 +35,13 @@ public class ScheduleContext {
     private String scheduleExpression;
 
     /** 调度类型：CRON、FIXED_RATE、FIXED_DELAY、API */
-    private ScheduleStrategy.Type scheduleType;
+    private ScheduleTypeEnum scheduleType;
 
-    private Dispatcher.Type dispatchType;
+    private DispatchTypeEnum dispatchType;
 
-    private LoadBalancer.Type loadBalanceType;
+    private LoadBalanceTypeEnum loadBalanceType;
 
-    private SerializerType serializerType;
+    private SerializerTypeEnum serializerType;
 
     private boolean sync;
 
@@ -83,9 +83,6 @@ public class ScheduleContext {
 
         ScheduleContext context = new ScheduleContext();
 
-        // 执行器信息
-        context.setExecutorKey(ExecutorKey.of(jobInfo.getExecutorName()));
-
         // 任务基本信息
         context.setJobId(jobInfo.getId());
         context.setExecutorId(jobInfo.getExecutorId());
@@ -93,8 +90,11 @@ public class ScheduleContext {
         context.setJobParams(jobInfo.getJobParams());
 
         // 调度配置
-        context.setScheduleType(ScheduleStrategy.Type.from(jobInfo.getScheduleType()));
+        context.setScheduleType(jobInfo.getScheduleType());
         context.setScheduleExpression(jobInfo.getScheduleRate());
+        context.setDispatchType(jobInfo.getDispatchType());
+        context.setLoadBalanceType(jobInfo.getLoadBalanceType());
+        context.setSerializerType(jobInfo.getSerializerType());
         context.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
         context.setTimeoutSeconds(jobInfo.getTimeoutSeconds() != null ? jobInfo.getTimeoutSeconds() : 60);
 
@@ -105,9 +105,9 @@ public class ScheduleContext {
 
     public ScheduleContext() {
         // 默认构造函数，设置默认值
-        this.dispatchType = Dispatcher.Type.ROUND;
-        this.loadBalanceType = LoadBalancer.Type.RANDOM;
-        this.serializerType = SerializerType.JAVA;
+        this.dispatchType = DispatchTypeEnum.ROUND;
+        this.loadBalanceType = LoadBalanceTypeEnum.RANDOM;
+        this.serializerType = SerializerTypeEnum.JAVA;
         this.retries = 1;
         this.timeoutSeconds = 60;
     }

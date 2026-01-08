@@ -31,14 +31,8 @@ public interface JobScheduler {
 
     /**
      * 手动触发任务（立即执行）
-     *
-     * @param executorName 执行器名称
-     * @param jobId        任务ID
-     * @param executorId   执行器ID
-     * @param handlerName  处理器名称
-     * @param params       任务参数
      */
-    void trigger(String executorName, Long jobId, Long executorId, String handlerName, String params);
+    void trigger();
 
     /**
      * 取消任务调度

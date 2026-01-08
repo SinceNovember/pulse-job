@@ -7,7 +7,7 @@ import com.simple.pulsejob.transport.channel.JChannel;
 
 public interface SchedulerInterceptor {
 
-    void beforeSchedule(ScheduleContext context, JChannel channel);
+    void beforeSchedule(ScheduleContext context);
 
     void beforeTransport(ScheduleContext context, JChannel channel);
 

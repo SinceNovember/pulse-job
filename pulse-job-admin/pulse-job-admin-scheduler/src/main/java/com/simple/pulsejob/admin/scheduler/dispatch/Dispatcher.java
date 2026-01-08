@@ -1,17 +1,12 @@
 package com.simple.pulsejob.admin.scheduler.dispatch;
 
+import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.transport.JRequest;
 
 public interface Dispatcher {
 
     InvokeFuture dispatch(ScheduleContext context);
 
-    Dispatcher.Type type();
-
-    enum Type {
-        ROUND,
-        BROADCAST
-    }
+    DispatchTypeEnum type();
 }

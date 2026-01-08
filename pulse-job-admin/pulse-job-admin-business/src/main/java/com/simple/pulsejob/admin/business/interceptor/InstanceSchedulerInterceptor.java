@@ -5,7 +5,6 @@ import com.simple.pulsejob.admin.business.service.IJobInstanceService;
 import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
-import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.JResponse;
@@ -24,7 +23,7 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
     private final IJobInfoService jobInfoService;
 
     @Override
-    public void beforeSchedule(ScheduleContext context, JChannel channel) {
+    public void beforeSchedule(ScheduleContext context) {
         Integer jobId = context.getJobId();
 
         JobInfoWithExecutorDTO dto = jobInfoService
@@ -36,6 +35,10 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
 
         context.setExecutorId(jobInfo.getExecutorId());
         context.setExecutorKey(ExecutorKey.of(dto.getExecutorName()));
+        context.setDispatchType(jobInfo.getDispatchType());
+        context.setScheduleType(jobInfo.getScheduleType());
+        context.setLoadBalanceType(jobInfo.getLoadBalanceType());
+        context.setSerializerType(jobInfo.getSerializerType());
 
         log.debug("Schedule prepared: jobId={}, executorId={}, executorName={}",
             jobId, jobInfo.getExecutorId(), dto.getExecutorName());

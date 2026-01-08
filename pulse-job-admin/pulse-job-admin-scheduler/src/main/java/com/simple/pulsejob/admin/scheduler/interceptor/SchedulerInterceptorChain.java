@@ -1,8 +1,5 @@
 package com.simple.pulsejob.admin.scheduler.interceptor;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Consumer;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.JResponse;
@@ -11,6 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
 
 @Slf4j
 @Component
@@ -27,8 +28,8 @@ public class SchedulerInterceptorChain {
 
     /* ================== 正常流程 ================== */
 
-    public void beforeSchedule(ScheduleContext context, JChannel channel) {
-        forEach(i -> i.beforeSchedule(context, channel));
+    public void beforeSchedule(ScheduleContext context) {
+        forEach(i -> i.beforeSchedule(context));
     }
 
     public void beforeTransport(ScheduleContext context, JChannel channel) {

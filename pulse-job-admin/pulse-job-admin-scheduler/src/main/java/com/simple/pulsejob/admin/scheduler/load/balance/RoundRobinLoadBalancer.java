@@ -1,5 +1,6 @@
 package com.simple.pulsejob.admin.scheduler.load.balance;
 
+import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
 import org.springframework.stereotype.Component;
@@ -13,8 +14,7 @@ public class RoundRobinLoadBalancer implements LoadBalancer {
     }
 
     @Override
-    public Type type() {
-        return Type.ROUND;
+    public LoadBalanceTypeEnum type() {
+        return LoadBalanceTypeEnum.ROUND;
     }
-
 }

@@ -1,13 +1,16 @@
 package com.simple.pulsejob.admin.scheduler.load.balance;
 
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 @Component
 public class RandomLoadBalancer implements LoadBalancer {
+
     @Override
     public JChannel select(JChannelGroup channelGroup) {
         List<? extends JChannel> channels = channelGroup.channels();
@@ -26,7 +29,7 @@ public class RandomLoadBalancer implements LoadBalancer {
     }
 
     @Override
-    public Type type() {
-        return Type.RANDOM;
+    public LoadBalanceTypeEnum type() {
+        return LoadBalanceTypeEnum.RANDOM;
     }
 }

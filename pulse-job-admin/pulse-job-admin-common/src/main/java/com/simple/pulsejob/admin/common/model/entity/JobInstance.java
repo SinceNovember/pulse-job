@@ -40,9 +40,6 @@ public class JobInstance implements Serializable {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    @Column(name = "transport_status", nullable = false)
-    private Byte transportStatus = 0;
-
     @Column(name = "status", nullable = false)
     private Byte status = 0;
 

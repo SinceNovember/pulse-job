@@ -2,14 +2,13 @@ package com.simple.pulsejob.admin.scheduler.dispatch;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
-import com.simple.plusejob.serialization.io.OutputBuf;
+import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
 import com.simple.pulsejob.transport.JProtocolHeader;
@@ -23,9 +22,6 @@ import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.PayloadSerializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.CollectionUtils;
-
-import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -52,7 +48,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
         return channelGroupManager.find(executorKey);
     }
 
-    protected Serializer serializer(SerializerType serializerType) {
+    protected Serializer serializer(SerializerTypeEnum serializerType) {
         return serializerFactory.get(serializerType);
     }
 
@@ -86,8 +82,14 @@ public abstract class AbstractDispatcher implements Dispatcher {
         Long instanceId = context.getInstanceId();
 
         MessageWrapper message = new MessageWrapper(handlerName, args);
+        // 将 SerializerTypeEnum 转换为 SerializerType
+        SerializerTypeEnum serializerTypeEnum = context.getSerializerType();
+        SerializerType serializerType = serializerTypeEnum != null 
+            ? serializerTypeEnum.toSerializerType() 
+            : SerializerType.JAVA;
+        
         JRequestPayload payload = PayloadSerializer.createRequest(
-            instanceId, channel, context.getSerializerType(), message, JProtocolHeader.TRIGGER_JOB);
+            instanceId, channel, serializerType, message, JProtocolHeader.TRIGGER_JOB);
 
         return new JRequest(payload, message);
     }

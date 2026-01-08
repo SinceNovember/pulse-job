@@ -1,16 +1,15 @@
 package com.simple.pulsejob.admin.scheduler.invoker;
 
 import com.simple.plusejob.serialization.SerializerType;
-import com.simple.pulsejob.admin.common.model.entity.JobInstance;
 import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
@@ -24,10 +23,12 @@ public abstract class AbstractInvoker implements Invoker {
 
     private final ClusterInvoker clusterInvoker;
 
+    private final SchedulerInterceptorChain schedulerInterceptorChain;
+
     protected Object doInvoke(ScheduleConfig config) throws Throwable {
         Objects.requireNonNull(config, "ScheduleConfig is required");
-
         ScheduleContext context = ScheduleContext.of(config);
+        schedulerInterceptorChain.beforeSchedule(context);
         clusterInvoker.invoke(context);
         return context.getResult();
 //        // 5. 执行过滤器链

@@ -22,7 +22,7 @@ public abstract class AbstractScheduleStrategy implements ScheduleStrategy {
 
         // 构建简化的上下文
         ScheduleContext context = new ScheduleContext();
-        context.setScheduleType(ScheduleStrategy.Type.from(jobInfo.getScheduleType()));
+        context.setScheduleType(jobInfo.getScheduleType());
         context.setScheduleExpression(jobInfo.getScheduleRate());
 
         return calculateNextExecuteTime(context, jobInfo.getLastExecuteTime());

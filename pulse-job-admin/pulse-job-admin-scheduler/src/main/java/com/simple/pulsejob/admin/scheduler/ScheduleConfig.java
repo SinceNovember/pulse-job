@@ -1,10 +1,10 @@
 package com.simple.pulsejob.admin.scheduler;
 
-import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
-import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
-import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategy;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
@@ -31,15 +31,15 @@ public class ScheduleConfig {
     private String scheduleExpression;
 
     /** 调度类型：CRON、FIXED_RATE、FIXED_DELAY、API */
-    private ScheduleStrategy.Type scheduleType;
+    private ScheduleTypeEnum scheduleType;
 
-    private Dispatcher.Type dispatchType;
+    private DispatchTypeEnum dispatchType;
 
-    private LoadBalancer.Type loadBalanceType;
+    private LoadBalanceTypeEnum loadBalanceType;
 
     private ClusterInvoker.Strategy invokeStrategy;
 
-    private SerializerType serializerType;
+    private SerializerTypeEnum serializerType;
 
     private boolean sync;
 

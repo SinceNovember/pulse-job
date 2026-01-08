@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
+import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.scheduler.invoker.Invoker;
 import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategy;
 import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategyFactory;
@@ -80,19 +81,18 @@ public class JobScheduleEngine implements JobScheduler {
     }
 
     @Override
-    public void trigger(String executorName, Long jobId, Long executorId, String handlerName, String params) {
-        if (!running.get()) {
-            log.warn("调度引擎未启动，无法触发任务");
-            return;
-        }
+    public void trigger() {
+//        if (!running.get()) {
+//            log.warn("调度引擎未启动，无法触发任务");
+//            return;
+//        }
         
         try {
-            log.info("手动触发任务: executorName={}, jobId={}, handler={}", executorName, jobId, handlerName);
             ScheduleConfig config = new ScheduleConfig();
             config.setJobId(1);
             invoker.invoke(config);
         } catch (Throwable e) {
-            log.error("触发任务失败: jobId={}", jobId, e);
+            log.error("触发任务失败: jobId={}", 1, e);
         }
     }
 
@@ -147,7 +147,7 @@ public class JobScheduleEngine implements JobScheduler {
         
         try {
             // 获取调度策略
-            ScheduleStrategy.Type scheduleType = ScheduleStrategy.Type.from(jobInfo.getScheduleType());
+            ScheduleTypeEnum scheduleType = jobInfo.getScheduleType();
             ScheduleStrategy strategy = strategyFactory.getStrategy(scheduleType);
 
             // API 类型不需要自动调度
@@ -257,7 +257,7 @@ public class JobScheduleEngine implements JobScheduler {
     private void calculateNextExecuteTime(JobInfo jobInfo) {
         try {
             // 获取调度策略
-            ScheduleStrategy.Type scheduleType = ScheduleStrategy.Type.from(jobInfo.getScheduleType());
+            ScheduleTypeEnum scheduleType = jobInfo.getScheduleType();
             ScheduleStrategy strategy = strategyFactory.getStrategy(scheduleType);
 
             // API 类型不需要自动调度

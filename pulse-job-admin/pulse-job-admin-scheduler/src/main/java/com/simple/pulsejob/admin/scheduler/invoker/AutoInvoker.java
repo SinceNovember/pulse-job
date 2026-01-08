@@ -2,6 +2,7 @@ package com.simple.pulsejob.admin.scheduler.invoker;
 
 import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
 import org.springframework.stereotype.Component;
 
 /**
@@ -12,8 +13,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class AutoInvoker extends AbstractInvoker {
 
-    public AutoInvoker(ClusterInvoker clusterInvoker) {
-        super(clusterInvoker);
+    public AutoInvoker(ClusterInvoker clusterInvoker,
+                       SchedulerInterceptorChain schedulerInterceptorChain) {
+        super(clusterInvoker, schedulerInterceptorChain);
     }
 
     @Override
