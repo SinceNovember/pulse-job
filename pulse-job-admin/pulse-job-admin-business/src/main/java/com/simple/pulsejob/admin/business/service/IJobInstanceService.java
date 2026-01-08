@@ -1,16 +1,15 @@
-package com.simple.pulsejob.admin.scheduler.instance;
-
-import com.simple.pulsejob.admin.common.model.entity.JobInstance;
-import com.simple.pulsejob.admin.common.model.enums.JobInstanceStatus;
+package com.simple.pulsejob.admin.business.service;
 
 import java.time.LocalDateTime;
+import com.simple.pulsejob.admin.common.model.entity.JobInstance;
+import com.simple.pulsejob.admin.common.model.enums.JobInstanceStatus;
 
 /**
  * 任务实例管理器接口.
  *
  * <p>定义在 scheduler 模块，由 business 模块实现</p>
  */
-public interface JobInstanceManager {
+public interface IJobInstanceService {
 
     /**
      * 创建任务实例（调度前调用）
@@ -19,12 +18,14 @@ public interface JobInstanceManager {
      * @param executorId 执行器ID
      * @return 创建的实例（包含生成的ID）
      */
-    JobInstance createInstance(Long jobId, Long executorId);
+    Long createInstance(Integer jobId, Integer executorId);
 
     /**
      * 更新实例状态为已发送
      */
-    void markDispatched(Long instanceId);
+    void markTransported(Long instanceId);
+
+    void markTransportFailed(Long instanceId);
 
     /**
      * 更新实例状态为执行中

@@ -10,7 +10,8 @@ import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.TransportInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -20,23 +21,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class RoundRobinDispatcher extends AbstractDispatcher {
 
-
-    public RoundRobinDispatcher(ExecutorChannelGroupManager channelGroupManager, List<TransportInterceptor> interceptors,
+    public RoundRobinDispatcher(ExecutorChannelGroupManager channelGroupManager,
+                                SchedulerInterceptorChain schedulerInterceptorChain,
                                 LoadBalancerFactory loadBalancerFactory, JobFilterChains chains,
                                 SerializerFactory serializerFactory) {
-        super(channelGroupManager, interceptors, loadBalancerFactory, chains, serializerFactory);
+        super(channelGroupManager, schedulerInterceptorChain, loadBalancerFactory, chains, serializerFactory);
     }
 
     @Override
-    public InvokeFuture dispatch(JRequest request, ScheduleContext context) {
-        final MessageWrapper message = request.getMessage();
+    public InvokeFuture dispatch(ScheduleContext context) {
         // 通过软负载均衡选择一个channel
         JChannel channel = select(context);
-        SerializerType serializerType = context.getSerializerType();
-
-        OutputBuf outputBuf = serializer(serializerType).writeObject(channel.allocOutputBuf(), message);
-        request.outputBuf(serializerType, JProtocolHeader.TRIGGER_JOB, outputBuf);
-        return write(channel, request, type());
+        return write(channel, context);
     }
 
     @Override

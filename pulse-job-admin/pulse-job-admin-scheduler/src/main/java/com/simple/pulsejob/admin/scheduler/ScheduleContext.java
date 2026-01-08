@@ -16,20 +16,17 @@ public class ScheduleContext {
 
     private ExecutorKey executorKey;
 
-    private ClusterInvoker invoker;
-
     // ==================== 任务基本信息 ====================
 
-    private Long jobId;
+    private Integer jobId;
 
-    private Long executorId;
+    private Integer executorId;
 
     private Long instanceId;
 
     /** 任务处理器名称 */
     private String jobHandler;
 
-    /** 任务参数 */
     private String jobParams;
 
     // ==================== 调度配置 ====================
@@ -43,8 +40,6 @@ public class ScheduleContext {
     private Dispatcher.Type dispatchType;
 
     private LoadBalancer.Type loadBalanceType;
-
-    private ClusterInvoker.Strategy invokeStrategy;
 
     private SerializerType serializerType;
 
@@ -63,62 +58,25 @@ public class ScheduleContext {
 
     // ==================== 静态工厂方法 ====================
 
-    /**
-     * 从 JobInfoDTO 创建调度上下文
-     *
-     * @param dto     任务信息 DTO
-     * @param invoker 集群调用器
-     * @return ScheduleContext
-     */
-    public static ScheduleContext of(JobInfoDTO dto, ClusterInvoker invoker) {
-        if (dto == null) {
-            throw new IllegalArgumentException("JobInfoDTO cannot be null");
+    public static ScheduleContext of(ScheduleConfig config) {
+        if (config == null) {
+            throw new IllegalArgumentException("ScheduleConfig cannot be null");
         }
 
         ScheduleContext context = new ScheduleContext();
-
-        // 执行器信息
-        context.setExecutorKey(ExecutorKey.of(dto.getExecutorName()));
-        context.setInvoker(invoker);
-
-        // 任务基本信息
-        context.setJobId(dto.getJobId());
-        context.setExecutorId(dto.getExecutorId());
-        context.setJobHandler(dto.getJobHandler());
-        context.setJobParams(dto.getJobParams());
-
-        // 调度配置
-        context.setScheduleType(dto.getScheduleType());
-        context.setScheduleExpression(dto.getScheduleExpression());
-        context.setDispatchType(dto.getDispatchType());
-        context.setLoadBalanceType(dto.getLoadBalanceType());
-        context.setInvokeStrategy(dto.getInvokeStrategy());
-        context.setSerializerType(dto.getSerializerType());
-        context.setSync(dto.isSync());
-        context.setRetries(dto.getRetries());
-        context.setTimeoutSeconds(dto.getTimeoutSeconds());
-
+        context.setJobId(config.getJobId());
+        context.setJobParams(config.getJobParams());
         return context;
     }
 
-    /**
-     * 从 JobInfoDTO 创建调度上下文（无 invoker）
-     *
-     * @param dto 任务信息 DTO
-     * @return ScheduleContext
-     */
-    public static ScheduleContext of(JobInfoDTO dto) {
-        return of(dto, null);
-    }
 
-    /**
-     * 从 JobInfo 实体创建调度上下文
-     *
-     * @param jobInfo 任务实体
-     * @param invoker 集群调用器
-     * @return ScheduleContext
-     */
-    public static ScheduleContext of(JobInfo jobInfo, ClusterInvoker invoker) {
+        /**
+         * 从 JobInfo 实体创建调度上下文（无 invoker）
+         *
+         * @param jobInfo 任务实体
+         * @return ScheduleContext
+         */
+    public static ScheduleContext of(JobInfo jobInfo) {
         if (jobInfo == null) {
             throw new IllegalArgumentException("JobInfo cannot be null");
         }
@@ -127,11 +85,10 @@ public class ScheduleContext {
 
         // 执行器信息
         context.setExecutorKey(ExecutorKey.of(jobInfo.getExecutorName()));
-        context.setInvoker(invoker);
 
         // 任务基本信息
-        context.setJobId(jobInfo.getId() != null ? Long.valueOf(jobInfo.getId()) : null);
-        context.setExecutorId(jobInfo.getExecutorId() != null ? Long.valueOf(jobInfo.getExecutorId()) : null);
+        context.setJobId(jobInfo.getId());
+        context.setExecutorId(jobInfo.getExecutorId());
         context.setJobHandler(jobInfo.getJobHandler());
         context.setJobParams(jobInfo.getJobParams());
 
@@ -142,16 +99,6 @@ public class ScheduleContext {
         context.setTimeoutSeconds(jobInfo.getTimeoutSeconds() != null ? jobInfo.getTimeoutSeconds() : 60);
 
         return context;
-    }
-
-    /**
-     * 从 JobInfo 实体创建调度上下文（无 invoker）
-     *
-     * @param jobInfo 任务实体
-     * @return ScheduleContext
-     */
-    public static ScheduleContext of(JobInfo jobInfo) {
-        return of(jobInfo, null);
     }
 
     // ==================== 构造函数 ====================
@@ -168,14 +115,13 @@ public class ScheduleContext {
     public ScheduleContext(String executorName, ClusterInvoker invoker, boolean sync) {
         this();
         this.executorKey = ExecutorKey.of(executorName);
-        this.invoker = invoker;
         this.sync = sync;
     }
 
     /**
      * 完整构造函数（推荐）
      */
-    public ScheduleContext(String executorName, Long jobId, Long executorId,
+    public ScheduleContext(String executorName, Integer jobId, Integer executorId,
                            ClusterInvoker invoker, boolean sync) {
         this(executorName, invoker, sync);
         this.jobId = jobId;

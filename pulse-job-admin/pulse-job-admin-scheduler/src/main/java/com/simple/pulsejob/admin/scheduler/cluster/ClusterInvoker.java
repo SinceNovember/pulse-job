@@ -32,6 +32,6 @@ public interface ClusterInvoker {
 
     Strategy strategy();
 
-    InvokeFuture invoke(JRequest request, ScheduleContext context) throws Exception;
+    InvokeFuture invoke(ScheduleContext context) throws Exception;
 
 }

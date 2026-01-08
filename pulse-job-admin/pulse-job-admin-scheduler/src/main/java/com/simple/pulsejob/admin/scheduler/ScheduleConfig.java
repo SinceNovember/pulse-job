@@ -17,11 +17,7 @@ public class ScheduleConfig {
 
     // ==================== 任务基本信息 ====================
 
-    private Long jobId;
-
-    private Long executorId;
-
-    private Long instanceId;
+    private Integer jobId;
 
     /** 任务处理器名称 */
     private String jobHandler;

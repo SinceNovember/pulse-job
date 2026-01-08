@@ -1,5 +1,6 @@
 package com.simple.pulsejob.admin.persistence.mapper;
 
+import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JobInfoMapper extends JpaRepository<JobInfo, Integer>, JpaSpecificationExecutor<JobInfo> {
@@ -70,4 +72,12 @@ public interface JobInfoMapper extends JpaRepository<JobInfo, Integer>, JpaSpeci
                               @Param("lastExecuteTime") LocalDateTime lastExecuteTime,
                               @Param("retryTimes") Integer retryTimes,
                               @Param("updateTime") LocalDateTime updateTime);
+
+    /**
+     * 关联查询任务与执行器名称
+     */
+    @Query("select new com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO(j, e.executorName) "
+         + "from JobInfo j left join JobExecutor e on j.executorId = e.id "
+         + "where j.id = :jobId")
+    Optional<JobInfoWithExecutorDTO> findWithExecutorNameById(@Param("jobId") Integer jobId);
 } 

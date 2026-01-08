@@ -26,10 +26,10 @@ public class JobInstance implements Serializable {
     private Long id;
 
     @Column(name = "job_id", nullable = false)
-    private Long jobId;
+    private Integer jobId;
 
     @Column(name = "executor_id", nullable = false)
-    private Long executorId;
+    private Integer executorId;
 
 //    @Column(name = "trigger_time", nullable = false)
     private LocalDateTime triggerTime;
@@ -39,6 +39,9 @@ public class JobInstance implements Serializable {
 
     @Column(name = "end_time")
     private LocalDateTime endTime;
+
+    @Column(name = "transport_status", nullable = false)
+    private Byte transportStatus = 0;
 
     @Column(name = "status", nullable = false)
     private Byte status = 0;

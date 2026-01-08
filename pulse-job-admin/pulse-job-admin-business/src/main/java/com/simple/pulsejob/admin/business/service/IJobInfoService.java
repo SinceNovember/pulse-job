@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
+import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
 
 public interface IJobInfoService {
@@ -90,4 +91,9 @@ public interface IJobInfoService {
      * @param retryTimes 重试次数
      */
     void updateExecutionStatus(Integer jobId, LocalDateTime lastExecuteTime, Integer retryTimes);
+
+    /**
+     * 根据 jobId 获取 JobInfo 及其执行器名称
+     */
+    Optional<JobInfoWithExecutorDTO> getJobInfoWithExecutorNameById(Integer jobId);
 } 

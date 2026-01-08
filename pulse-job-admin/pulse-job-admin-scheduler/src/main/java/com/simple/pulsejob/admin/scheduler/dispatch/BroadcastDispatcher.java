@@ -9,7 +9,8 @@ import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.TransportInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
 import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -22,26 +23,21 @@ import java.util.List;
 @Component
 public class BroadcastDispatcher extends AbstractDispatcher {
 
-    public BroadcastDispatcher(ExecutorChannelGroupManager channelGroupManager, List<TransportInterceptor> interceptors,
+    public BroadcastDispatcher(ExecutorChannelGroupManager channelGroupManager,
+                               SchedulerInterceptorChain schedulerInterceptorChain,
                                LoadBalancerFactory loadBalancerFactory,
                                JobFilterChains chains, SerializerFactory serializerFactory) {
-        super(channelGroupManager, interceptors, loadBalancerFactory, chains, serializerFactory);
+        super(channelGroupManager, schedulerInterceptorChain, loadBalancerFactory, chains, serializerFactory);
     }
 
     @Override
-    public InvokeFuture dispatch(JRequest request, ScheduleContext context) {
-        final MessageWrapper message = request.getMessage();
+    public InvokeFuture dispatch(ScheduleContext context) {
         JChannelGroup channelGroup = channelGroup(context.getExecutorKey());
         List<JChannel> channels = channelGroup.channels();
-        SerializerType serializerType = context.getSerializerType();
         DefaultInvokeFuture[] futures = new DefaultInvokeFuture[channels.size()];
-
         for (int i = 0; i < channels.size(); i++) {
             JChannel channel = channels.get(i);
-            OutputBuf outputBuf =
-                serializer(serializerType).writeObject(channel.allocOutputBuf(), message);
-            request.outputBuf(serializerType, JProtocolHeader.TRIGGER_JOB, outputBuf);
-            futures[i] = write(channel, request, type());
+            futures[i] = write(channel, context);
         }
         return null;
     }

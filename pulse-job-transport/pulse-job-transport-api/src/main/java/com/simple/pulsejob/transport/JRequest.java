@@ -19,6 +19,7 @@ import com.simple.plusejob.serialization.SerializerType;
 import com.simple.plusejob.serialization.io.OutputBuf;
 import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -32,6 +33,7 @@ import lombok.Data;
  * @author jiachun.fjc
  */
 @Data
+@AllArgsConstructor
 public class JRequest {
 
     private final JRequestPayload payload;   // 请求bytes/stream

@@ -43,41 +43,38 @@ public class FailoverClusterInvoker implements ClusterInvoker {
     }
 
     @Override
-    public InvokeFuture
-    invoke(JRequest request, ScheduleContext context) throws Exception {
+    public InvokeFuture invoke(ScheduleContext context) throws Exception {
         Dispatcher dispatcher = dispatcherFactory.get(context.getDispatchType());
         FailoverInvokeFuture future = FailoverInvokeFuture.with();
         int tryCount = context.getRetries() + 1;
-        invoke0(request, context, dispatcher, tryCount, future, null);
+        invoke0(context, dispatcher, tryCount, future, null);
 
         return future;
     }
 
-    private void invoke0(final JRequest request,
-                         final ScheduleContext context,
+    private void invoke0(final ScheduleContext context,
                          final Dispatcher dispatcher,
                          final int tryCount,
                          final FailoverInvokeFuture failOverFuture,
                          final Throwable lastCause) {
         if (tryCount > 0) {
-
-            final InvokeFuture future = dispatcher.dispatch(request, context);
+            final InvokeFuture future = dispatcher.dispatch(context);
             future.whenComplete((result, throwable) -> {
                 if (throwable == null) {
-                    failOverFuture.complete(request);
+//                    failOverFuture.complete(request);
                 } else {
                     if (log.isWarnEnabled()) {
-                        MessageWrapper message = request.getMessage();
+//                        MessageWrapper message = request.getMessage();
                         JChannel channel =
                             future instanceof DefaultInvokeFuture ? ((DefaultInvokeFuture) future).channel() : null;
 
                         log.warn("[{}]: [Fail-over] retry, [{}] attempts left, [method: {}], {}.",
                             channel,
                             tryCount - 1,
-                            message.getHandlerName(),
+                            "",
                             StackTraceUtil.stackTrace(throwable));
                     }
-                    invoke0(request, context, dispatcher, tryCount - 1, failOverFuture, throwable);
+                    invoke0(context, dispatcher, tryCount - 1, failOverFuture, throwable);
                 }
             });
         } else {

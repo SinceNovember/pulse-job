@@ -6,7 +6,7 @@ import com.simple.pulsejob.transport.JRequest;
 
 public interface Dispatcher {
 
-    InvokeFuture dispatch(JRequest request, ScheduleContext context);
+    InvokeFuture dispatch(ScheduleContext context);
 
     Dispatcher.Type type();
 

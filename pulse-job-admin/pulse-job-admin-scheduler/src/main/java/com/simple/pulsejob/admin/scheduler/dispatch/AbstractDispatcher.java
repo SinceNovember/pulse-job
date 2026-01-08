@@ -2,20 +2,25 @@ package com.simple.pulsejob.admin.scheduler.dispatch;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
+import com.simple.plusejob.serialization.io.OutputBuf;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
-import com.simple.pulsejob.admin.scheduler.interceptor.TransportInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
+import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
 import com.simple.pulsejob.admin.scheduler.load.balance.LoadBalancer;
+import com.simple.pulsejob.transport.JProtocolHeader;
 import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.channel.JChannelGroup;
 import com.simple.pulsejob.transport.channel.JFutureListener;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
+import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
+import com.simple.pulsejob.transport.payload.PayloadSerializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
@@ -28,7 +33,7 @@ public abstract class AbstractDispatcher implements Dispatcher {
 
     protected final ExecutorChannelGroupManager channelGroupManager;
 
-    protected final List<TransportInterceptor> interceptors;
+    protected final SchedulerInterceptorChain schedulerInterceptorChain;
 
     protected final LoadBalancerFactory loadBalancerFactory;
 
@@ -52,33 +57,38 @@ public abstract class AbstractDispatcher implements Dispatcher {
     }
 
 
-    protected DefaultInvokeFuture write(final JChannel channel, final JRequest request, final Type dispatchType) {
-        final JRequestPayload payload = request.payload();
+    protected DefaultInvokeFuture write(final JChannel channel, ScheduleContext context) {
 
-        if (!CollectionUtils.isEmpty(interceptors)) {
-            for (TransportInterceptor interceptor : interceptors) {
-                interceptor.beforeTransport(request, channel);
-            }
-        }
+        schedulerInterceptorChain.beforeTransport(context, channel);
+
+        JRequest request = createRequest(channel, context);
 
         final DefaultInvokeFuture future = DefaultInvokeFuture
-                .with(request.instanceId(), channel, 0, null, dispatchType);
+            .with(request.instanceId(), channel, 0, null, type());
 
-        channel.write(payload, new JFutureListener<>() {
+        channel.write(request.payload(), new JFutureListener<>() {
             @Override
-            public void operationSuccess(JChannel channel) throws Exception {
-                for (TransportInterceptor interceptor : interceptors) {
-                    interceptor.afterTransport(request, channel);
-                }
+            public void operationSuccess(JChannel channel) {
+                schedulerInterceptorChain.afterTransport(context, channel, request);
             }
 
             @Override
-            public void operationFailure(JChannel channel, Throwable cause) throws Exception {
-                for (TransportInterceptor interceptor : interceptors) {
-                    interceptor.onTransportFailure(request, channel, cause);
-                }
+            public void operationFailure(JChannel channel, Throwable cause) {
+                schedulerInterceptorChain.onTransportFailure(context, channel, request, cause);
             }
         });
         return future;
+    }
+
+    private JRequest createRequest(JChannel channel, ScheduleContext context) {
+        String handlerName = context.getJobHandler();
+        String args = context.getJobParams();
+        Long instanceId = context.getInstanceId();
+
+        MessageWrapper message = new MessageWrapper(handlerName, args);
+        JRequestPayload payload = PayloadSerializer.createRequest(
+            instanceId, channel, context.getSerializerType(), message, JProtocolHeader.TRIGGER_JOB);
+
+        return new JRequest(payload, message);
     }
 }

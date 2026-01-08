@@ -27,7 +27,7 @@ package com.simple.pulsejob.transport.payload;
 public class JRequestPayload extends PayloadHolder {
 
     // instanceId 来自数据库 job_instance.instanceId，用于任务追踪和日志关联
-    private long instanceId;
+    private final long instanceId;
 
     // jupiter-transport层会在协议解析完成后打上一个时间戳, 用于后续监控对该请求的处理时间
     private transient long timestamp;

@@ -1,8 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.invoker;
 
+import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
-import com.simple.pulsejob.admin.scheduler.filter.JobFilterChains;
-import com.simple.pulsejob.admin.scheduler.instance.JobInstanceManager;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,15 +12,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class AutoInvoker extends AbstractInvoker {
 
-    public AutoInvoker(ClusterInvoker clusterInvoker,
-                       JobFilterChains chains,
-                       JobInstanceManager jobInstanceManager) {
-        super(clusterInvoker, chains, jobInstanceManager);
+    public AutoInvoker(ClusterInvoker clusterInvoker) {
+        super(clusterInvoker);
     }
 
     @Override
-    public Object invoke(String executorName, Long jobId, Long executorId,
-                         String handlerName, String args) throws Throwable {
-        return doInvoke(executorName, jobId, executorId, handlerName, args, false);
+    public Object invoke(ScheduleConfig config) throws Throwable {
+        return doInvoke(config);
     }
 }

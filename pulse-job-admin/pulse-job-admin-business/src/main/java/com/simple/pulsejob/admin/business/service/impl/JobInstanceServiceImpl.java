@@ -1,10 +1,10 @@
 
 package com.simple.pulsejob.admin.business.service.impl;
 
+import com.simple.pulsejob.admin.business.service.IJobInstanceService;
 import com.simple.pulsejob.admin.common.model.entity.JobInstance;
 import com.simple.pulsejob.admin.common.model.enums.JobInstanceStatus;
 import com.simple.pulsejob.admin.persistence.mapper.JobInstanceMapper;
-import com.simple.pulsejob.admin.scheduler.instance.JobInstanceManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,82 +18,69 @@ import java.time.LocalDateTime;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class JobInstanceServiceImpl implements JobInstanceManager {
+public class JobInstanceServiceImpl implements IJobInstanceService {
 
     private final JobInstanceMapper jobInstanceMapper;
 
     @Override
     @Transactional
-    public JobInstance createInstance(Long jobId, Long executorId) {
+    public Long createInstance(Integer jobId, Integer executorId) {
         JobInstance instance = new JobInstance();
-        instance.setJobId(12L);
-        instance.setExecutorId(12L);
+        instance.setJobId(jobId);
+        instance.setExecutorId(executorId);
         instance.setTriggerTime(LocalDateTime.now());
         instance.setStatus(JobInstanceStatus.PENDING.getValue());
         instance.setRetryCount(0);
 
-        jobInstanceMapper.save(instance);
+        JobInstance jobInstance = jobInstanceMapper.save(instance);
 
         log.debug("Created job instance: instanceId={}, jobId={}, executorId={}",
                 instance.getId(), jobId, executorId);
 
-        return instance;
+        return jobInstance.getId();
     }
 
     @Override
     @Transactional
-    public void markDispatched(Long instanceId) {
-        updateStatus(instanceId, JobInstanceStatus.DISPATCHED);
+    public void markTransported(Long instanceId) {
+        updateStatus(instanceId, JobInstanceStatus.TRANSPORTED);
+    }
+
+    @Override
+    public void markTransportFailed(Long instanceId) {
+        updateStatus(instanceId, JobInstanceStatus.TRANSPORT_FAILED);
+
     }
 
     @Override
     @Transactional
     public void markRunning(Long instanceId, LocalDateTime startTime) {
-        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
-            instance.setStatus(JobInstanceStatus.RUNNING.getValue());
-            instance.setStartTime(startTime);
-            jobInstanceMapper.save(instance);
-        });
+        updateStatus(instanceId, JobInstanceStatus.RUNNING);
     }
 
     @Override
     @Transactional
     public void markSuccess(Long instanceId, LocalDateTime endTime) {
-        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
-            instance.setStatus(JobInstanceStatus.SUCCESS.getValue());
-            instance.setEndTime(endTime);
-            jobInstanceMapper.save(instance);
-        });
+        updateStatus(instanceId, JobInstanceStatus.SUCCESS);
+
     }
 
     @Override
     @Transactional
     public void markFailed(Long instanceId, LocalDateTime endTime, String errorMsg) {
-        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
-            instance.setStatus(JobInstanceStatus.FAILED.getValue());
-            instance.setEndTime(endTime);
-            // 如果需要存储错误信息，可以在 JobInstance 中添加 errorMsg 字段
-            jobInstanceMapper.save(instance);
-        });
+        updateStatus(instanceId, JobInstanceStatus.FAILED);
+
     }
 
     @Override
     @Transactional
     public void markTimeout(Long instanceId) {
-        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
-            instance.setStatus(JobInstanceStatus.TIMEOUT.getValue());
-            instance.setEndTime(LocalDateTime.now());
-            jobInstanceMapper.save(instance);
-        });
+        updateStatus(instanceId, JobInstanceStatus.TIMEOUT);
     }
 
     @Override
-    @Transactional
     public void updateStatus(Long instanceId, JobInstanceStatus status) {
-        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
-            instance.setStatus(status.getValue());
-            jobInstanceMapper.save(instance);
-        });
+        jobInstanceMapper.updateStatus(instanceId, status.getValue());
     }
 
     @Override

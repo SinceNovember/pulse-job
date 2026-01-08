@@ -10,17 +10,17 @@ import org.springframework.stereotype.Component;
 public class ClusterInvokeFilter implements JobFilter {
     @Override
     public void doFilter(JRequest request, ScheduleContext context, JobFilterChain next) throws Throwable {
-
-        ClusterInvoker invoker = context.getInvoker();
-        InvokeFuture invoke = invoker.invoke(request, context);
-        if (context.isSync()) {
-            context.setResult(invoke.getResult());
-        }
-        else  {
-            context.setResult(invoke);
-        }
-        if (next != null) {
-            next.doFilter(request, context);
-        }
+//
+//        ClusterInvoker invoker = context.getInvoker();
+//        InvokeFuture invoke = invoker.invoke(context);
+//        if (context.isSync()) {
+//            context.setResult(invoke.getResult());
+//        }
+//        else  {
+//            context.setResult(invoke);
+//        }
+//        if (next != null) {
+//            next.doFilter(request, context);
+//        }
     }
 }

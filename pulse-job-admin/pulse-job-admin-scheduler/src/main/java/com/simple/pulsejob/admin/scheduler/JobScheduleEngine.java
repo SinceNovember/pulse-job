@@ -88,7 +88,9 @@ public class JobScheduleEngine implements JobScheduler {
         
         try {
             log.info("手动触发任务: executorName={}, jobId={}, handler={}", executorName, jobId, handlerName);
-            invoker.invoke(executorName, jobId, executorId, handlerName, params);
+            ScheduleConfig config = new ScheduleConfig();
+            config.setJobId(1);
+            invoker.invoke(config);
         } catch (Throwable e) {
             log.error("触发任务失败: jobId={}", jobId, e);
         }

@@ -2,6 +2,7 @@ package com.simple.pulsejob.admin.business.service.impl;
 
 import com.simple.pulsejob.admin.business.service.IJobInfoService;
 import com.simple.pulsejob.admin.common.mapping.JobInfoMapping;
+import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
 import com.simple.pulsejob.admin.persistence.mapper.JobInfoMapper;
@@ -103,5 +104,11 @@ public class JobInfoServiceImpl implements IJobInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void updateExecutionStatus(Integer jobId, LocalDateTime lastExecuteTime, Integer retryTimes) {
         jobInfoMapper.updateExecutionStatus(jobId, lastExecuteTime, retryTimes, LocalDateTime.now());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<JobInfoWithExecutorDTO> getJobInfoWithExecutorNameById(Integer jobId) {
+        return jobInfoMapper.findWithExecutorNameById(jobId);
     }
 }    

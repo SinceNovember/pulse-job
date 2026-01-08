@@ -1,5 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.invoker;
 
+import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
+
 /**
  * 任务调用器接口.
  *
@@ -7,16 +9,5 @@ package com.simple.pulsejob.admin.scheduler.invoker;
  */
 public interface Invoker {
 
-    /**
-     * 执行调度
-     *
-     * @param executorName 执行器名称
-     * @param jobId        任务ID
-     * @param executorId   执行器ID
-     * @param handlerName  处理器名称
-     * @param args         参数
-     * @return 执行结果
-     */
-    Object invoke(String executorName, Long jobId, Long executorId,
-                  String handlerName, String args) throws Throwable;
+    Object invoke(ScheduleConfig scheduleConfig) throws Throwable;
 }
