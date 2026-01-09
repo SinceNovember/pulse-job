@@ -1,6 +1,5 @@
 package com.simple.pulsejob.admin.autoconfigure;
 
-import com.simple.plusejob.serialization.Serializer;
 import com.simple.pulsejob.admin.scheduler.timer.HashedWheelTimer;
 import com.simple.pulsejob.admin.scheduler.timer.Timer;
 import com.simple.pulsejob.common.concurrent.JNamedThreadFactory;
@@ -8,14 +7,13 @@ import com.simple.pulsejob.serialization.hessian.HessianSerializer;
 import com.simple.pulsejob.serialization.java.JavaSerializer;
 import com.simple.pulsejob.transport.JAcceptor;
 import com.simple.pulsejob.transport.netty.JNettyTcpAcceptor;
-import com.simple.pulsejob.transport.payload.PayloadSerializer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +32,15 @@ public class PulseJobAdminConfiguration {
     }
 
     @Bean
-    public List<Serializer> serializers() {
-        List<Serializer> serializers = List.of(new JavaSerializer(), new HessianSerializer());
-        PayloadSerializer.registerAll(serializers);
-        return serializers;
+    @ConditionalOnMissingBean
+    public JavaSerializer javaSerializer() {
+        return new JavaSerializer();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public HessianSerializer hessianSerializer() {
+        return new HessianSerializer();
     }
 
     /**

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANSI 日志颜色预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #58a6ff;
+        }
+
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .log-viewer {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-line {
+            padding: 2px 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 13px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            color: #c9d1d9;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2ea043;
+        }
+
+        .tip {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+
+        .color-map {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .color-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 ANSI 日志颜色预览</h1>
+
+    <div class="section">
+        <div class="section-title">示例日志（转换后）</div>
+        <div class="log-viewer" id="demo-output"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">粘贴你的日志</div>
+        <textarea id="input" placeholder="粘贴包含 ANSI 转义码的日志..."></textarea>
+        <button onclick="convertLog()">转换</button>
+        <p class="tip">💡 从数据库复制的日志粘贴到这里，点击转换即可预览颜色效果</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">转换结果</div>
+        <div class="log-viewer" id="output">等待输入...</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">ANSI 颜色对照表</div>
+        <div class="color-map">
+            <div class="color-item"><div class="color-box" style="background:#1e1e1e"></div>[30m 黑色</div>
+            <div class="color-item"><div class="color-box" style="background:#EF4444"></div>[31m 红色 (ERROR)</div>
+            <div class="color-item"><div class="color-box" style="background:#10B981"></div>[32m 绿色 (INFO)</div>
+            <div class="color-item"><div class="color-box" style="background:#F59E0B"></div>[33m 黄色 (WARN)</div>
+            <div class="color-item"><div class="color-box" style="background:#3B82F6"></div>[34m 蓝色</div>
+            <div class="color-item"><div class="color-box" style="background:#A855F7"></div>[35m 紫色 (PID)</div>
+            <div class="color-item"><div class="color-box" style="background:#22D3EE"></div>[36m 青色 (Logger)</div>
+            <div class="color-item"><div class="color-box" style="background:#d4d4d4"></div>[37m 白色</div>
+            <div class="color-item"><div class="color-box" style="background:#6b7280"></div>[2m 灰色/淡化</div>
+            <div class="color-item"><div class="color-box" style="background:#d4d4d4"></div>[0m 重置</div>
+        </div>
+    </div>
+
+    <script>
+        // ANSI 转 HTML 转换器（纯 JS 实现，无需外部依赖）
+        function ansiToHtml(text) {
+            const colorMap = {
+                '30': '#1e1e1e', '31': '#EF4444', '32': '#10B981', '33': '#F59E0B',
+                '34': '#3B82F6', '35': '#A855F7', '36': '#22D3EE', '37': '#d4d4d4',
+                '90': '#6b7280', '91': '#f87171', '92': '#34d399', '93': '#fbbf24',
+                '94': '#60a5fa', '95': '#c084fc', '96': '#67e8f9', '97': '#f3f4f6'
+            };
+            
+            let result = '';
+            let i = 0;
+            let openTags = 0;
+            
+            while (i < text.length) {
+                // 检测 ESC 字符（\x1b 或 \u001b，ASCII 27）
+                if (text.charCodeAt(i) === 27 && text[i + 1] === '[') {
+                    // 找到 'm' 结束符
+                    let j = i + 2;
+                    while (j < text.length && text[j] !== 'm') j++;
+                    
+                    if (text[j] === 'm') {
+                        const codes = text.substring(i + 2, j).split(';');
+                        i = j + 1;
+                        
+                        for (const code of codes) {
+                            if (code === '0' || code === '39' || code === '') {
+                                // 重置
+                                while (openTags > 0) {
+                                    result += '</span>';
+                                    openTags--;
+                                }
+                            } else if (code === '1') {
+                                result += '<span style="font-weight:bold">';
+                                openTags++;
+                            } else if (code === '2') {
+                                result += '<span style="opacity:0.7">';
+                                openTags++;
+                            } else if (colorMap[code]) {
+                                result += '<span style="color:' + colorMap[code] + '">';
+                                openTags++;
+                            }
+                        }
+                        continue;
+                    }
+                }
+                result += text[i];
+                i++;
+            }
+            
+            // 关闭剩余标签
+            while (openTags > 0) {
+                result += '</span>';
+                openTags--;
+            }
+            
+            return result;
+        }
+
+        // 示例日志（包含 ANSI 转义码）
+        const demoLogs = [
+            '\x1b[2m2026-01-09T13:26:48.493+08:00\x1b[0;39m \x1b[32m INFO\x1b[0;39m \x1b[35m25696\x1b[0;39m \x1b[2m---\x1b[0;39m \x1b[2m[efault-thread-0]\x1b[0;39m \x1b[36mc.s.p.c.i.LoggingJobInterceptor         \x1b[0;39m \x1b[2m:\x1b[0;39m [Job-32] 开始执行: handler=TestJob1#testJob1()',
+            '\x1b[2m2026-01-09T13:26:48.512+08:00\x1b[0;39m \x1b[33m WARN\x1b[0;39m \x1b[35m25696\x1b[0;39m \x1b[2m---\x1b[0;39m \x1b[2m[efault-thread-0]\x1b[0;39m \x1b[36mc.s.p.c.i.LoggingJobInterceptor         \x1b[0;39m \x1b[2m:\x1b[0;39m [Job-32] 库存不足，请注意检查',
+            '\x1b[2m2026-01-09T13:26:48.523+08:00\x1b[0;39m \x1b[31mERROR\x1b[0;39m \x1b[35m25696\x1b[0;39m \x1b[2m---\x1b[0;39m \x1b[2m[efault-thread-0]\x1b[0;39m \x1b[36mc.s.p.c.i.LoggingJobInterceptor         \x1b[0;39m \x1b[2m:\x1b[0;39m [Job-32] 执行失败: NullPointerException',
+            '\x1b[2m2026-01-09T13:26:48.534+08:00\x1b[0;39m \x1b[32m INFO\x1b[0;39m \x1b[35m25696\x1b[0;39m \x1b[2m---\x1b[0;39m \x1b[2m[efault-thread-0]\x1b[0;39m \x1b[36mc.s.p.c.i.LoggingJobInterceptor         \x1b[0;39m \x1b[2m:\x1b[0;39m [Job-32] 执行完成，耗时: 41ms',
+        ];
+
+        // HTML 转义（防 XSS）
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // 转换并显示示例
+        function showDemo() {
+            const output = document.getElementById('demo-output');
+            output.innerHTML = demoLogs.map(log => {
+                return '<div class="log-line">' + ansiToHtml(escapeHtml(log)) + '</div>';
+            }).join('');
+        }
+
+        // 转换用户输入
+        function convertLog() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            
+            if (!input.trim()) {
+                output.innerHTML = '请输入日志内容';
+                return;
+            }
+
+            // 按行分割
+            const lines = input.split('\n');
+            output.innerHTML = lines.map(line => {
+                return '<div class="log-line">' + ansiToHtml(escapeHtml(line)) + '</div>';
+            }).join('');
+        }
+
+        // 页面加载时显示示例
+        document.addEventListener('DOMContentLoaded', function() {
+            showDemo();
+            
+            // 支持 Ctrl+Enter 快捷键
+            document.getElementById('input').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    convertLog();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

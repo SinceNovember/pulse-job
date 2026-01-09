@@ -77,11 +77,12 @@ public abstract class AbstractDispatcher implements Dispatcher {
     }
 
     private JRequest createRequest(JChannel channel, ScheduleContext context) {
+        Integer jobId = context.getJobId();
         String handlerName = context.getJobHandler();
         String args = context.getJobParams();
         Long instanceId = context.getInstanceId();
 
-        MessageWrapper message = new MessageWrapper(handlerName, args);
+        MessageWrapper message = new MessageWrapper(jobId, handlerName, args);
         // 将 SerializerTypeEnum 转换为 SerializerType
         SerializerTypeEnum serializerTypeEnum = context.getSerializerType();
         SerializerType serializerType = serializerTypeEnum != null 

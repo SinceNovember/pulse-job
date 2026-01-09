@@ -35,13 +35,6 @@ public interface IJobLogService {
 
     // ==================== 查询相关 ====================
 
-    /**
-     * 根据调用ID查询日志
-     *
-     * @param instanceId 调用ID
-     * @return 日志列表（按序号排序）
-     */
-    List<JobLog> findByInstanceId(Long instanceId);
 
     /**
      * 分页查询指定调用ID的日志
@@ -52,74 +45,7 @@ public interface IJobLogService {
      */
     Page<JobLog> findByInstanceId(Long instanceId, Pageable pageable);
 
-    /**
-     * 根据任务ID查询日志
-     *
-     * @param jobId 任务ID
-     * @return 日志列表
-     */
-    List<JobLog> findByJobId(Integer jobId);
 
-    /**
-     * 分页查询指定任务ID的日志
-     *
-     * @param jobId    任务ID
-     * @param pageable 分页参数
-     * @return 日志分页结果
-     */
-    Page<JobLog> findByJobId(Integer jobId, Pageable pageable);
-
-    /**
-     * 查询指定执行器的日志
-     *
-     * @param executorName 执行器名称
-     * @param pageable     分页参数
-     * @return 日志分页结果
-     */
-    Page<JobLog> findByExecutorName(String executorName, Pageable pageable);
-
-    /**
-     * 查询指定级别的日志
-     *
-     * @param logLevel 日志级别
-     * @param pageable 分页参数
-     * @return 日志分页结果
-     */
-    Page<JobLog> findByLogLevel(LogLevelEnum logLevel, Pageable pageable);
-
-    /**
-     * 查询指定时间范围内的日志
-     *
-     * @param startTime 开始时间
-     * @param endTime   结束时间
-     * @param pageable  分页参数
-     * @return 日志分页结果
-     */
-    Page<JobLog> findByTimeRange(LocalDateTime startTime, LocalDateTime endTime, Pageable pageable);
-
-    /**
-     * 查询指定调用ID的错误日志
-     *
-     * @param instanceId 调用ID
-     * @return 错误日志列表
-     */
-    List<JobLog> findErrorLogs(Long instanceId);
-
-    /**
-     * 复杂条件查询
-     *
-     * @param instanceId     调用ID（可选）
-     * @param jobId        任务ID（可选）
-     * @param executorName 执行器名称（可选）
-     * @param logLevel     日志级别（可选）
-     * @param startTime    开始时间
-     * @param endTime      结束时间
-     * @param pageable     分页参数
-     * @return 日志分页结果
-     */
-    Page<JobLog> search(Long instanceId, Integer jobId, String executorName,
-                        LogLevelEnum logLevel, LocalDateTime startTime,
-                        LocalDateTime endTime, Pageable pageable);
 
     // ==================== 统计相关 ====================
 
@@ -131,21 +57,6 @@ public interface IJobLogService {
      */
     long countByInstanceId(Long instanceId);
 
-    /**
-     * 统计指定任务ID的日志数量
-     *
-     * @param jobId 任务ID
-     * @return 日志数量
-     */
-    long countByJobId(Integer jobId);
-
-    /**
-     * 获取指定调用ID的最大序号
-     *
-     * @param instanceId 调用ID
-     * @return 最大序号
-     */
-    int getMaxSequence(Long instanceId);
 
     // ==================== 删除/清理相关 ====================
 
@@ -156,14 +67,6 @@ public interface IJobLogService {
      * @return 删除的记录数
      */
     int deleteByInstanceId(Long instanceId);
-
-    /**
-     * 删除指定任务ID的日志
-     *
-     * @param jobId 任务ID
-     * @return 删除的记录数
-     */
-    int deleteByJobId(Integer jobId);
 
     /**
      * 清理过期日志

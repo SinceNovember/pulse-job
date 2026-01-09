@@ -1,5 +1,6 @@
 package com.simple.pulsejob.admin.common.model.enums;
 
+import com.simple.pulsejob.transport.metadata.LogMessage;
 import lombok.Getter;
 
 /**
@@ -24,7 +25,7 @@ public enum LogLevelEnum {
     /**
      * 从 transport 层的 LogLevel 转换
      */
-    public static LogLevelEnum fromTransportLevel(com.simple.pulsejob.transport.metadata.LogMessage.LogLevel level) {
+    public static LogLevelEnum fromTransportLevel(LogMessage.LogLevel level) {
         if (level == null) {
             return INFO;
         }

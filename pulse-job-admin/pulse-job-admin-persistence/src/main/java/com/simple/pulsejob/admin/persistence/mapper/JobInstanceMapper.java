@@ -14,7 +14,7 @@ public interface JobInstanceMapper extends JpaRepository<JobInstance, Long>, Jpa
 
     @Transactional
     @Modifying
-    @Query("update JobInstance ji set ji.status = :status, ji.updatedAt = CURRENT_TIMESTAMP where ji.id = :instanceId")
+    @Query("update JobInstance ji set ji.status = :status, ji.updateTime = CURRENT_TIMESTAMP where ji.id = :instanceId")
     int updateStatus(@Param("instanceId") Long instanceId, @Param("status") byte status);
 
 }

@@ -7,7 +7,7 @@ import com.simple.pulsejob.admin.scheduler.ExecutorRegistryService;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
-import com.simple.pulsejob.admin.scheduler.log.JobLogStorageService;
+import com.simple.pulsejob.admin.scheduler.log.JobLogDispatcher;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -19,6 +19,8 @@ import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.processor.AcceptorProcessor;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +44,7 @@ public class AdminServerProcessor implements AcceptorProcessor {
     private final ExecutorChannelGroupManager channelGroupManager;
     private final ExecutorRegistryService executorRegistryService;
     private final SerializerFactory serializerFactory;
-    private final JobLogStorageService jobLogStorageService;
+    private final JobLogDispatcher jobLogDispatcher;
 
     /** 缓存默认序列化器 */
     private volatile Serializer defaultSerializer;
@@ -119,7 +121,6 @@ public class AdminServerProcessor implements AcceptorProcessor {
     @Override
     public void shutdown() {
         log.info("AdminServerProcessor shutting down...");
-        jobLogStorageService.flush();
     }
 
     // ==================== 消息处理 ====================
@@ -166,14 +167,18 @@ public class AdminServerProcessor implements AcceptorProcessor {
 
         log.debug("Received batch log: count={}", batch.size());
 
-        // 处理每条日志（直接获取，无需转换）
-        for (LogMessage logMessage : batch.getLogs()) {
-            Long instanceId = logMessage.getInstanceId();
-            if (instanceId != null) {
-                DefaultInvokeFuture.receivedLog(channel, instanceId, logMessage);
-            }
-            jobLogStorageService.store(logMessage);
-        }
+        List<LogMessage> logs = batch.getLogs();
+
+        // 转发到 Future（实时推送）
+//        for (LogMessage logMessage : logs) {
+//            Long instanceId = logMessage.getInstanceId();
+//            if (instanceId != null) {
+//                DefaultInvokeFuture.receivedLog(channel, instanceId, logMessage);
+//            }
+//        }
+
+        // 派发到所有监听器（持久化等）
+        jobLogDispatcher.dispatchBatch(logs);
     }
 
     /**
@@ -205,11 +210,11 @@ public class AdminServerProcessor implements AcceptorProcessor {
     private void processLogMessage(JChannel channel, long instanceId, LogMessage logMessage) {
         log.debug("Received log: instanceId={}, level={}", instanceId, logMessage.getLevel());
 
-        // 转发到 Future
+        // 转发到 Future（实时推送）
         DefaultInvokeFuture.receivedLog(channel, instanceId, logMessage);
 
-        // 异步存储
-        jobLogStorageService.store(logMessage);
+        // 派发到所有监听器（持久化等）
+        jobLogDispatcher.dispatch(logMessage);
     }
 
     // ==================== 辅助方法 ====================

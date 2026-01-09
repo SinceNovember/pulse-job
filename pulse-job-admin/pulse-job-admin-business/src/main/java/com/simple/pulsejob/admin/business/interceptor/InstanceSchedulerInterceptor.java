@@ -39,7 +39,8 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
         context.setScheduleType(jobInfo.getScheduleType());
         context.setLoadBalanceType(jobInfo.getLoadBalanceType());
         context.setSerializerType(jobInfo.getSerializerType());
-
+        context.setJobHandler(jobInfo.getJobHandler());
+        context.setJobParams(jobInfo.getJobParams());
         log.debug("Schedule prepared: jobId={}, executorId={}, executorName={}",
             jobId, jobInfo.getExecutorId(), dto.getExecutorName());
     }

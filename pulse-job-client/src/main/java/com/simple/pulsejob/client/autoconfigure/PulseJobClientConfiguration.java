@@ -7,7 +7,7 @@ import com.simple.pulsejob.client.interceptor.JobExecutionInterceptorChain;
 import com.simple.pulsejob.client.interceptor.LoggingJobInterceptor;
 import com.simple.pulsejob.client.invoker.DefaultInvoker;
 import com.simple.pulsejob.client.invoker.Invoker;
-import com.simple.pulsejob.client.log.CustomLogAppenderInitializer;
+import com.simple.pulsejob.client.log.JobLogAppenderInitializer;
 import com.simple.pulsejob.client.log.JobLogSender;
 import com.simple.pulsejob.client.processor.DefaultClientProcessor;
 import com.simple.pulsejob.client.registry.JobBeanDefinitionRegistry;
@@ -48,7 +48,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "pulse-job", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(PulseJobClientProperties.class)
-@Import({JobHandlerRegistry.class, CustomLogAppenderInitializer.class, LoggingJobInterceptor.class})
+@Import({JobHandlerRegistry.class, JobLogAppenderInitializer.class, LoggingJobInterceptor.class})
 public class PulseJobClientConfiguration {
 
     private final PulseJobClientProperties properties;

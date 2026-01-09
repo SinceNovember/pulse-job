@@ -356,20 +356,9 @@ public class JobLogStorageService {
      */
     private String formatLogLine(JobLog jobLog) {
         StringBuilder sb = new StringBuilder();
-        sb.append(jobLog.getLogTime() != null ? jobLog.getLogTime().format(DATETIME_FORMATTER) : "-");
-        sb.append(" | ");
         sb.append(String.format("%-5s", jobLog.getLogLevel()));
         sb.append(" | ");
         sb.append("instanceId=").append(jobLog.getInstanceId());
-        if (jobLog.getJobId() != null) {
-            sb.append(", jobId=").append(jobLog.getJobId());
-        }
-        if (jobLog.getExecutorName() != null) {
-            sb.append(", executor=").append(jobLog.getExecutorName());
-        }
-        if (jobLog.getThreadName() != null) {
-            sb.append(", thread=").append(jobLog.getThreadName());
-        }
         sb.append(" | ");
         sb.append(jobLog.getContent());
         return sb.toString();
@@ -426,11 +415,8 @@ public class JobLogStorageService {
     private JobLog convertToJobLog(LogMessage logMessage) {
         return JobLog.builder()
                 .instanceId(logMessage.getInstanceId())
-                .jobId(logMessage.getJobId())
                 .logLevel(LogLevelEnum.fromTransportLevel(logMessage.getLevel()))
                 .content(logMessage.getContent())
-                .sequence(logMessage.getSequence())
-                .logTime(logMessage.getTimestamp())
                 .build();
     }
 

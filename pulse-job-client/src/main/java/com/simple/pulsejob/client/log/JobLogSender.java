@@ -72,9 +72,10 @@ public class JobLogSender implements SmartLifecycle {
     private volatile boolean running = false;
 
     /**
-     * 全局序号生成器
+     * 每个任务实例独立的序号生成器
+     * Key: instanceId, Value: 当前序号
      */
-    private final AtomicInteger globalSequence = new AtomicInteger(0);
+    private final ConcurrentHashMap<Long, AtomicInteger> instanceSequences = new ConcurrentHashMap<>();
 
     /**
      * 当前活跃的 Channel
@@ -266,7 +267,22 @@ public class JobLogSender implements SmartLifecycle {
             logMessage.setTimestamp(LocalDateTime.now());
         }
         if (logMessage.getSequence() == null) {
-            logMessage.setSequence(globalSequence.incrementAndGet());
+            // 每个 instanceId 独立计数，保证同一任务内序号连续
+            Long instanceId = logMessage.getInstanceId();
+            AtomicInteger counter = instanceSequences.computeIfAbsent(
+                    instanceId, k -> new AtomicInteger(0));
+            logMessage.setSequence(counter.incrementAndGet());
+        }
+    }
+
+    /**
+     * 任务完成后清理序号计数器（避免内存泄漏）
+     *
+     * @param instanceId 任务实例 ID
+     */
+    public void clearSequence(Long instanceId) {
+        if (instanceId != null) {
+            instanceSequences.remove(instanceId);
         }
     }
 }

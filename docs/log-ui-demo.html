@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Log UI 设计方案</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0f2f5;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-section {
+            margin-bottom: 48px;
+        }
+
+        .demo-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .demo-title span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* ========== 方案1: 暗色终端风格 ========== */
+        .style1-container {
+            background: #0d1117;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .style1-header {
+            background: #161b22;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .style1-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .style1-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .style1-dot.red { background: #ff5f56; }
+        .style1-dot.yellow { background: #ffbd2e; }
+        .style1-dot.green { background: #27ca40; }
+
+        .style1-title {
+            color: #8b949e;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .style1-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .style1-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .style1-btn:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        .style1-toolbar {
+            background: #161b22;
+            padding: 8px 16px;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .style1-filter {
+            display: flex;
+            gap: 4px;
+        }
+
+        .style1-filter-btn {
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .style1-filter-btn:hover { background: #21262d; }
+        .style1-filter-btn.active { background: #238636; color: white; }
+        .style1-filter-btn.warn { background: #9e6a03; color: white; }
+        .style1-filter-btn.error { background: #da3633; color: white; }
+
+        .style1-search {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 4px 12px;
+            color: #c9d1d9;
+            font-size: 13px;
+        }
+
+        .style1-search::placeholder { color: #484f58; }
+
+        .style1-logs {
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .style1-log {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .style1-log:hover { background: #161b22; }
+
+        .style1-time { color: #6e7681; min-width: 200px; }
+        .style1-level { min-width: 50px; font-weight: 500; }
+        .style1-level.info { color: #3fb950; }
+        .style1-level.warn { color: #d29922; }
+        .style1-level.error { color: #f85149; }
+        .style1-level.debug { color: #8b949e; }
+        .style1-thread { color: #a371f7; min-width: 140px; }
+        .style1-logger { color: #58a6ff; min-width: 280px; }
+        .style1-msg { color: #c9d1d9; flex: 1; }
+
+        /* ========== 方案2: 亮色清爽风格 ========== */
+        .style2-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .style2-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .style2-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .style2-title-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .style2-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .style2-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .style2-toolbar {
+            padding: 12px 24px;
+            background: #f9fafb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .style2-tabs {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .style2-tab {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+        }
+
+        .style2-tab:hover { color: #111827; }
+        .style2-tab.active { background: #10b981; color: white; }
+
+        .style2-search {
+            flex: 1;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .style2-search:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .style2-logs {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .style2-log {
+            padding: 12px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .style2-log:hover { background: #f9fafb; }
+
+        .style2-log-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .style2-log-icon.info { background: #d1fae5; color: #059669; }
+        .style2-log-icon.warn { background: #fef3c7; color: #d97706; }
+        .style2-log-icon.error { background: #fee2e2; color: #dc2626; }
+
+        .style2-log-content { flex: 1; }
+        .style2-log-time { color: #9ca3af; font-size: 12px; margin-bottom: 4px; }
+        .style2-log-msg { color: #374151; line-height: 1.5; }
+        .style2-log-source { color: #6b7280; font-size: 12px; margin-top: 4px; }
+
+        /* ========== 方案3: IDE 风格 ========== */
+        .style3-container {
+            background: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .style3-header {
+            background: #323233;
+            padding: 0;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .style3-tab {
+            padding: 10px 20px;
+            color: #969696;
+            font-size: 13px;
+            cursor: pointer;
+            border-right: 1px solid #1e1e1e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .style3-tab.active {
+            background: #1e1e1e;
+            color: #fff;
+        }
+
+        .style3-tab-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .style3-toolbar {
+            background: #252526;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #1e1e1e;
+        }
+
+        .style3-tool-btn {
+            background: transparent;
+            border: none;
+            color: #969696;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .style3-tool-btn:hover { color: #fff; }
+
+        .style3-divider {
+            width: 1px;
+            height: 16px;
+            background: #3c3c3c;
+        }
+
+        .style3-logs {
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .style3-log {
+            padding: 2px 12px;
+            display: flex;
+            align-items: flex-start;
+            border-left: 3px solid transparent;
+        }
+
+        .style3-log:hover { background: #2a2d2e; }
+        .style3-log.info { border-left-color: #4ec9b0; }
+        .style3-log.warn { border-left-color: #dcdcaa; }
+        .style3-log.error { border-left-color: #f14c4c; background: #3a1d1d; }
+
+        .style3-line-num {
+            color: #858585;
+            min-width: 40px;
+            text-align: right;
+            margin-right: 16px;
+            user-select: none;
+        }
+
+        .style3-log-time { color: #608b4e; }
+        .style3-log-level { margin: 0 8px; }
+        .style3-log-level.info { color: #4ec9b0; }
+        .style3-log-level.warn { color: #dcdcaa; }
+        .style3-log-level.error { color: #f14c4c; }
+        .style3-log-thread { color: #c586c0; }
+        .style3-log-logger { color: #9cdcfe; }
+        .style3-log-msg { color: #d4d4d4; }
+
+        /* ========== 方案4: 卡片流风格 ========== */
+        .style4-container {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 24px;
+            min-height: 500px;
+        }
+
+        .style4-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .style4-title {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .style4-live {
+            background: #ef4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .style4-stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .style4-stat {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .style4-stat-value {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .style4-stat-label {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .style4-logs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .style4-log {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid;
+            backdrop-filter: blur(10px);
+        }
+
+        .style4-log.info { border-left-color: #10b981; }
+        .style4-log.warn { border-left-color: #f59e0b; }
+        .style4-log.error { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+        .style4-log-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .style4-log-level {
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .style4-log-level.info { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .style4-log-level.warn { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .style4-log-level.error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        .style4-log-time {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .style4-log-msg {
+            color: #e2e8f0;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .style4-log-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .style4-log-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Job Log UI 设计方案</h1>
+    <p class="subtitle">四种不同风格的日志展示界面，点击可查看详情</p>
+
+    <div class="demo-container">
+        <!-- 方案1: 暗色终端风格 -->
+        <div class="demo-section">
+            <div class="demo-title">
+                <span>方案 1</span>
+                暗色终端风格 - GitHub/VS Code 风格
+            </div>
+            <div class="style1-container">
+                <div class="style1-header">
+                    <div class="style1-dots">
+                        <div class="style1-dot red"></div>
+                        <div class="style1-dot yellow"></div>
+                        <div class="style1-dot green"></div>
+                    </div>
+                    <div class="style1-title">Job Instance #12345 - TestJob1</div>
+                    <div class="style1-actions">
+                        <button class="style1-btn">⬇️ 下载</button>
+                        <button class="style1-btn">🔄 刷新</button>
+                    </div>
+                </div>
+                <div class="style1-toolbar">
+                    <div class="style1-filter">
+                        <button class="style1-filter-btn active">ALL</button>
+                        <button class="style1-filter-btn">INFO</button>
+                        <button class="style1-filter-btn warn">WARN</button>
+                        <button class="style1-filter-btn error">ERROR</button>
+                    </div>
+                    <input type="text" class="style1-search" placeholder="🔍 搜索日志...">
+                </div>
+                <div class="style1-logs">
+                    <div class="style1-log">
+                        <span class="style1-time">2026-01-09 13:26:48.493</span>
+                        <span class="style1-level info">INFO</span>
+                        <span class="style1-thread">[job-worker-1]</span>
+                        <span class="style1-logger">c.s.p.c.i.LoggingJobInterceptor</span>
+                        <span class="style1-msg">[Job-32] 开始执行: handler=TestJob1#testJob1()</span>
+                    </div>
+                    <div class="style1-log">
+                        <span class="style1-time">2026-01-09 13:26:48.512</span>
+                        <span class="style1-level info">INFO</span>
+                        <span class="style1-thread">[job-worker-1]</span>
+                        <span class="style1-logger">c.e.demo.job.TestJob1</span>
+                        <span class="style1-msg">正在处理订单数据，共 1000 条记录</span>
+                    </div>
+                    <div class="style1-log">
+                        <span class="style1-time">2026-01-09 13:26:48.623</span>
+                        <span class="style1-level warn">WARN</span>
+                        <span class="style1-thread">[job-worker-1]</span>
+                        <span class="style1-logger">c.e.demo.job.TestJob1</span>
+                        <span class="style1-msg">发现 3 条数据格式异常，已跳过处理</span>
+                    </div>
+                    <div class="style1-log">
+                        <span class="style1-time">2026-01-09 13:26:49.156</span>
+                        <span class="style1-level error">ERROR</span>
+                        <span class="style1-thread">[job-worker-1]</span>
+                        <span class="style1-logger">c.e.demo.job.TestJob1</span>
+                        <span class="style1-msg">数据库连接超时: Connection timed out after 30000ms</span>
+                    </div>
+                    <div class="style1-log">
+                        <span class="style1-time">2026-01-09 13:26:49.234</span>
+                        <span class="style1-level info">INFO</span>
+                        <span class="style1-thread">[job-worker-1]</span>
+                        <span class="style1-logger">c.s.p.c.i.LoggingJobInterceptor</span>
+                        <span class="style1-msg">[Job-32] 执行完成，耗时: 741ms，结果: PARTIAL_SUCCESS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案2: 亮色清爽风格 -->
+        <div class="demo-section">
+            <div class="demo-title">
+                <span>方案 2</span>
+                亮色清爽风格 - 现代 SaaS 风格
+            </div>
+            <div class="style2-container">
+                <div class="style2-header">
+                    <div class="style2-title">
+                        <div class="style2-title-icon">📋</div>
+                        <div>
+                            <div>执行日志</div>
+                            <div style="font-size: 12px; color: #6b7280; font-weight: 400;">Instance ID: 12345</div>
+                        </div>
+                    </div>
+                    <div class="style2-meta">
+                        <div class="style2-meta-item">🕐 开始: 13:26:48</div>
+                        <div class="style2-meta-item">⏱️ 耗时: 741ms</div>
+                        <div class="style2-meta-item">📊 日志: 156 条</div>
+                    </div>
+                </div>
+                <div class="style2-toolbar">
+                    <div class="style2-tabs">
+                        <button class="style2-tab active">全部</button>
+                        <button class="style2-tab">INFO (120)</button>
+                        <button class="style2-tab">WARN (31)</button>
+                        <button class="style2-tab">ERROR (5)</button>
+                    </div>
+                    <input type="text" class="style2-search" placeholder="搜索日志内容...">
+                </div>
+                <div class="style2-logs">
+                    <div class="style2-log">
+                        <div class="style2-log-icon info">✓</div>
+                        <div class="style2-log-content">
+                            <div class="style2-log-time">13:26:48.493</div>
+                            <div class="style2-log-msg">[Job-32] 开始执行: handler=TestJob1#testJob1()</div>
+                            <div class="style2-log-source">LoggingJobInterceptor · job-worker-1</div>
+                        </div>
+                    </div>
+                    <div class="style2-log">
+                        <div class="style2-log-icon info">✓</div>
+                        <div class="style2-log-content">
+                            <div class="style2-log-time">13:26:48.512</div>
+                            <div class="style2-log-msg">正在处理订单数据，共 1000 条记录</div>
+                            <div class="style2-log-source">TestJob1 · job-worker-1</div>
+                        </div>
+                    </div>
+                    <div class="style2-log">
+                        <div class="style2-log-icon warn">⚠</div>
+                        <div class="style2-log-content">
+                            <div class="style2-log-time">13:26:48.623</div>
+                            <div class="style2-log-msg">发现 3 条数据格式异常，已跳过处理</div>
+                            <div class="style2-log-source">TestJob1 · job-worker-1</div>
+                        </div>
+                    </div>
+                    <div class="style2-log">
+                        <div class="style2-log-icon error">✕</div>
+                        <div class="style2-log-content">
+                            <div class="style2-log-time">13:26:49.156</div>
+                            <div class="style2-log-msg">数据库连接超时: Connection timed out after 30000ms</div>
+                            <div class="style2-log-source">TestJob1 · job-worker-1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案3: IDE 风格 -->
+        <div class="demo-section">
+            <div class="demo-title">
+                <span>方案 3</span>
+                IDE 风格 - IntelliJ/VS Code 控制台
+            </div>
+            <div class="style3-container">
+                <div class="style3-header">
+                    <div class="style3-tab active">
+                        <span>📄</span> Job-12345.log
+                    </div>
+                    <div class="style3-tab">
+                        <span>📄</span> Job-12344.log
+                    </div>
+                </div>
+                <div class="style3-toolbar">
+                    <button class="style3-tool-btn">▶️ 运行</button>
+                    <button class="style3-tool-btn">⏹️ 停止</button>
+                    <div class="style3-divider"></div>
+                    <button class="style3-tool-btn">🔍 搜索</button>
+                    <button class="style3-tool-btn">📋 复制</button>
+                    <button class="style3-tool-btn">🗑️ 清空</button>
+                    <div class="style3-divider"></div>
+                    <button class="style3-tool-btn">⬇️ 滚动到底部</button>
+                </div>
+                <div class="style3-logs">
+                    <div class="style3-log info">
+                        <span class="style3-line-num">1</span>
+                        <span class="style3-log-time">13:26:48.493</span>
+                        <span class="style3-log-level info">INFO</span>
+                        <span class="style3-log-thread">[job-worker-1]</span>
+                        <span class="style3-log-logger">c.s.p.c.i.LoggingJobInterceptor</span>
+                        <span class="style3-log-msg">: [Job-32] 开始执行</span>
+                    </div>
+                    <div class="style3-log info">
+                        <span class="style3-line-num">2</span>
+                        <span class="style3-log-time">13:26:48.512</span>
+                        <span class="style3-log-level info">INFO</span>
+                        <span class="style3-log-thread">[job-worker-1]</span>
+                        <span class="style3-log-logger">c.e.demo.job.TestJob1</span>
+                        <span class="style3-log-msg">: 正在处理订单数据</span>
+                    </div>
+                    <div class="style3-log warn">
+                        <span class="style3-line-num">3</span>
+                        <span class="style3-log-time">13:26:48.623</span>
+                        <span class="style3-log-level warn">WARN</span>
+                        <span class="style3-log-thread">[job-worker-1]</span>
+                        <span class="style3-log-logger">c.e.demo.job.TestJob1</span>
+                        <span class="style3-log-msg">: 发现异常数据</span>
+                    </div>
+                    <div class="style3-log error">
+                        <span class="style3-line-num">4</span>
+                        <span class="style3-log-time">13:26:49.156</span>
+                        <span class="style3-log-level error">ERROR</span>
+                        <span class="style3-log-thread">[job-worker-1]</span>
+                        <span class="style3-log-logger">c.e.demo.job.TestJob1</span>
+                        <span class="style3-log-msg">: Connection timed out</span>
+                    </div>
+                    <div class="style3-log info">
+                        <span class="style3-line-num">5</span>
+                        <span class="style3-log-time">13:26:49.234</span>
+                        <span class="style3-log-level info">INFO</span>
+                        <span class="style3-log-thread">[job-worker-1]</span>
+                        <span class="style3-log-logger">c.s.p.c.i.LoggingJobInterceptor</span>
+                        <span class="style3-log-msg">: [Job-32] 执行完成</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案4: 卡片流风格 -->
+        <div class="demo-section">
+            <div class="demo-title">
+                <span>方案 4</span>
+                卡片流风格 - 现代监控仪表盘
+            </div>
+            <div class="style4-container">
+                <div class="style4-header">
+                    <div class="style4-title">
+                        <span>🎯 TestJob1 执行日志</span>
+                        <span class="style4-live">● LIVE</span>
+                    </div>
+                    <div class="style4-stats">
+                        <div class="style4-stat">
+                            <div class="style4-stat-value">156</div>
+                            <div class="style4-stat-label">总日志</div>
+                        </div>
+                        <div class="style4-stat">
+                            <div class="style4-stat-value" style="color: #f59e0b;">31</div>
+                            <div class="style4-stat-label">警告</div>
+                        </div>
+                        <div class="style4-stat">
+                            <div class="style4-stat-value" style="color: #ef4444;">5</div>
+                            <div class="style4-stat-label">错误</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="style4-logs">
+                    <div class="style4-log info">
+                        <div class="style4-log-header">
+                            <span class="style4-log-level info">INFO</span>
+                            <span class="style4-log-time">13:26:48.493</span>
+                        </div>
+                        <div class="style4-log-msg">[Job-32] 开始执行: handler=TestJob1#testJob1()</div>
+                        <div class="style4-log-meta">
+                            <span>🧵 job-worker-1</span>
+                            <span>📦 LoggingJobInterceptor</span>
+                        </div>
+                    </div>
+                    <div class="style4-log warn">
+                        <div class="style4-log-header">
+                            <span class="style4-log-level warn">WARN</span>
+                            <span class="style4-log-time">13:26:48.623</span>
+                        </div>
+                        <div class="style4-log-msg">发现 3 条数据格式异常，已跳过处理</div>
+                        <div class="style4-log-meta">
+                            <span>🧵 job-worker-1</span>
+                            <span>📦 TestJob1</span>
+                        </div>
+                    </div>
+                    <div class="style4-log error">
+                        <div class="style4-log-header">
+                            <span class="style4-log-level error">ERROR</span>
+                            <span class="style4-log-time">13:26:49.156</span>
+                        </div>
+                        <div class="style4-log-msg">数据库连接超时: Connection timed out after 30000ms</div>
+                        <div class="style4-log-meta">
+                            <span>🧵 job-worker-1</span>
+                            <span>📦 TestJob1</span>
+                        </div>
+                    </div>
+                    <div class="style4-log info">
+                        <div class="style4-log-header">
+                            <span class="style4-log-level info">INFO</span>
+                            <span class="style4-log-time">13:26:49.234</span>
+                        </div>
+                        <div class="style4-log-msg">[Job-32] 执行完成，耗时: 741ms，结果: PARTIAL_SUCCESS</div>
+                        <div class="style4-log-meta">
+                            <span>🧵 job-worker-1</span>
+                            <span>📦 LoggingJobInterceptor</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

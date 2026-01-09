@@ -46,26 +46,26 @@ public class JobInstance implements Serializable {
     @Column(name = "retry_count")
     private Integer retryCount = 0;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "create_time", nullable = false)
+    private LocalDateTime createTime;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    @Column(name = "update_time", nullable = false)
+    private LocalDateTime updateTime;
 
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
-        if (createdAt == null) {
-            createdAt = now;
+        if (createTime == null) {
+            createTime = now;
         }
-        if (updatedAt == null) {
-            updatedAt = now;
+        if (updateTime == null) {
+            updateTime = now;
         }
     }
 
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now();
+        updateTime = LocalDateTime.now();
     }
 }
 

@@ -45,50 +45,8 @@ public class JobLogServiceImpl implements IJobLogService {
     // ==================== 查询相关 ====================
 
     @Override
-    public List<JobLog> findByInstanceId(Long instanceId) {
-        return jobLogMapper.findByInstanceIdOrderBySequenceAsc(instanceId);
-    }
-
-    @Override
     public Page<JobLog> findByInstanceId(Long instanceId, Pageable pageable) {
         return jobLogMapper.findByInstanceId(instanceId, pageable);
-    }
-
-    @Override
-    public List<JobLog> findByJobId(Integer jobId) {
-        return jobLogMapper.findByJobIdOrderByCreateTimeDesc(jobId);
-    }
-
-    @Override
-    public Page<JobLog> findByJobId(Integer jobId, Pageable pageable) {
-        return jobLogMapper.findByJobId(jobId, pageable);
-    }
-
-    @Override
-    public Page<JobLog> findByExecutorName(String executorName, Pageable pageable) {
-        return jobLogMapper.findByExecutorName(executorName, pageable);
-    }
-
-    @Override
-    public Page<JobLog> findByLogLevel(LogLevelEnum logLevel, Pageable pageable) {
-        return jobLogMapper.findByLogLevel(logLevel, pageable);
-    }
-
-    @Override
-    public Page<JobLog> findByTimeRange(LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
-        return jobLogMapper.findByCreateTimeBetween(startTime, endTime, pageable);
-    }
-
-    @Override
-    public List<JobLog> findErrorLogs(Long instanceId) {
-        return jobLogMapper.findErrorLogsByInstanceId(instanceId);
-    }
-
-    @Override
-    public Page<JobLog> search(Long instanceId, Integer jobId, String executorName,
-                               LogLevelEnum logLevel, LocalDateTime startTime,
-                               LocalDateTime endTime, Pageable pageable) {
-        return jobLogMapper.findByConditions(instanceId, jobId, executorName, logLevel, startTime, endTime, pageable);
     }
 
     // ==================== 统计相关 ====================
@@ -98,16 +56,6 @@ public class JobLogServiceImpl implements IJobLogService {
         return jobLogMapper.countByInstanceId(instanceId);
     }
 
-    @Override
-    public long countByJobId(Integer jobId) {
-        return jobLogMapper.countByJobId(jobId);
-    }
-
-    @Override
-    public int getMaxSequence(Long instanceId) {
-        Integer maxSeq = jobLogMapper.findMaxSequenceByInstanceId(instanceId);
-        return maxSeq != null ? maxSeq : 0;
-    }
 
     // ==================== 删除/清理相关 ====================
 
@@ -116,13 +64,6 @@ public class JobLogServiceImpl implements IJobLogService {
     public int deleteByInstanceId(Long instanceId) {
         return jobLogMapper.deleteByInstanceId(instanceId);
     }
-
-    @Override
-    @Transactional
-    public int deleteByJobId(Integer jobId) {
-        return jobLogMapper.deleteByJobId(jobId);
-    }
-
     @Override
     @Transactional
     public int cleanExpiredLogs(int retentionDays) {

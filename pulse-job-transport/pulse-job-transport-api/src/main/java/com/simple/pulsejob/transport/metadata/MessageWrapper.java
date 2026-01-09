@@ -36,14 +36,26 @@ public class MessageWrapper implements Serializable {
     @Serial
     private static final long serialVersionUID = 1009813828866652852L;
 
-    private String handlerName; //执行器名称
+    /** 任务ID */
+    private Integer jobId;
 
-    private String args;        // 目标方法参数
+    /** 执行器名称 */
+    private String handlerName;
+
+    /** 目标方法参数 */
+    private String args;
 
     public MessageWrapper(String handlerName) {
         this.handlerName = handlerName;
     }
+
     public MessageWrapper(String handlerName, String args) {
+        this.handlerName = handlerName;
+        this.args = args;
+    }
+
+    public MessageWrapper(Integer jobId, String handlerName, String args) {
+        this.jobId = jobId;
         this.handlerName = handlerName;
         this.args = args;
     }

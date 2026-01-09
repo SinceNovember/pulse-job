@@ -75,6 +75,14 @@ public class JobContext {
     }
 
     /**
+     * 获取任务ID
+     */
+    public Integer getJobId() {
+        MessageWrapper message = request.getMessage();
+        return message != null ? message.getJobId() : null;
+    }
+
+    /**
      * 是否执行成功
      */
     public boolean isSuccess() {

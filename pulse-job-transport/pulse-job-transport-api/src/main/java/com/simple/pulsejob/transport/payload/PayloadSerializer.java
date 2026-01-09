@@ -29,8 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class PayloadSerializer {
 
-    /** 序列化器注册表 */
+    /** 序列化器注册表（按类型） */
     private static final Map<SerializerType, Serializer> SERIALIZERS = new ConcurrentHashMap<>();
+
+    /** 序列化器注册表（按字节码） */
+    private static final Map<Byte, Serializer> CODE_MAP = new ConcurrentHashMap<>();
 
     /** 默认序列化类型 */
     private static volatile SerializerType defaultType = SerializerType.JAVA;
@@ -45,6 +48,7 @@ public final class PayloadSerializer {
     public static void register(Serializer serializer) {
         if (serializer != null) {
             SERIALIZERS.put(serializer.code(), serializer);
+            CODE_MAP.put(serializer.code().value(), serializer);
         }
     }
 
@@ -58,7 +62,7 @@ public final class PayloadSerializer {
     }
 
     /**
-     * 获取序列化器
+     * 按类型获取序列化器
      */
     public static Serializer get(SerializerType type) {
         Serializer serializer = SERIALIZERS.get(type);
@@ -66,6 +70,31 @@ public final class PayloadSerializer {
             throw new IllegalStateException("Serializer not registered: " + type);
         }
         return serializer;
+    }
+
+    /**
+     * 按字节码获取序列化器
+     */
+    public static Serializer getByCode(byte code) {
+        Serializer serializer = CODE_MAP.get(code);
+        if (serializer == null) {
+            throw new IllegalStateException("Serializer not registered for code: " + code);
+        }
+        return serializer;
+    }
+
+    /**
+     * 检查是否支持某类型
+     */
+    public static boolean supports(SerializerType type) {
+        return SERIALIZERS.containsKey(type);
+    }
+
+    /**
+     * 检查是否支持某字节码
+     */
+    public static boolean supportsByCode(byte code) {
+        return CODE_MAP.containsKey(code);
     }
 
     /**
