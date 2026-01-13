@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Job - 任务日志控制台</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 主色调 - 深邃蓝紫 */
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1a2332;
+            --bg-card: #151d2c;
+            --bg-hover: #1e293b;
+            
+            /* 边框 */
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-focus: #6366f1;
+            
+            /* 文字 */
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            /* 强调色 */
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            
+            /* 状态色 */
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+            
+            /* 圆角 */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 20px;
+            
+            /* 阴影 */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========== 整体布局 ========== */
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: 64px 1fr;
+            height: 100vh;
+        }
+
+        /* ========== 顶部导航 ========== */
+        .top-nav {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            gap: 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-gradient);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            margin-left: 48px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .nav-tab.active {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .nav-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 8px 16px;
+            width: 280px;
+            transition: all 0.2s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-icon {
+            color: var(--text-muted);
+            margin-right: 10px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* ========== 左侧任务列表 ========== */
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-default);
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .filter-pill:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+
+        .filter-pill.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .filter-pill .count {
+            margin-left: 6px;
+            opacity: 0.7;
+        }
+
+        .instance-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .instance-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .instance-list::-webkit-scrollbar-thumb {
+            background: var(--bg-hover);
+            border-radius: 3px;
+        }
+
+        .instance-item {
+            padding: 16px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+            border: 1px solid transparent;
+        }
+
+        .instance-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .instance-item.active {
+            background: var(--bg-card);
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .instance-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.running {
+            background: var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.success { background: var(--success); }
+        .status-dot.failed { background: var(--error); }
+        .status-dot.warning { background: var(--warning); }
+        .status-dot.pending { background: var(--text-muted); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        }
+
+        .instance-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .instance-id {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .instance-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .instance-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .instance-progress {
+            height: 3px;
+            background: var(--bg-hover);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .instance-progress-bar {
+            height: 100%;
+            background: var(--accent-gradient);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* ========== 主内容区 ========== */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+
+        /* 任务详情头部 */
+        .content-header {
+            padding: 20px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .content-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .job-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .job-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .job-details h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .job-details .job-handler {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* 统计卡片 */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            min-width: 140px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .stat-icon.time { background: rgba(99, 102, 241, 0.15); }
+        .stat-icon.duration { background: rgba(16, 185, 129, 0.15); }
+        .stat-icon.logs { background: rgba(245, 158, 11, 0.15); }
+        .stat-icon.errors { background: rgba(239, 68, 68, 0.15); }
+
+        .stat-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* 日志工具栏 */
+        .log-toolbar {
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .log-filters {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: var(--radius-md);
+        }
+
+        .log-filter-btn {
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .log-filter-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .log-filter-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .log-filter-btn.info.active { color: var(--success); }
+        .log-filter-btn.warn.active { color: var(--warning); }
+        .log-filter-btn.error.active { color: var(--error); }
+
+        .log-search {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-tertiary);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-default);
+        }
+
+        .log-search:focus-within {
+            border-color: var(--accent-primary);
+        }
+
+        .log-search input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .log-search input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar-btn {
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid var(--border-default);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .toolbar-btn.active {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* 日志内容区 */
+        .log-container {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-viewer {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            padding: 16px 24px;
+            background: var(--bg-primary);
+        }
+
+        .log-viewer::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-viewer::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .log-viewer::-webkit-scrollbar-thumb {
+            background: var(--bg-hover);
+            border-radius: 4px;
+        }
+
+        .log-viewer::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .log-line {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            border-left: 3px solid transparent;
+            transition: background 0.15s ease;
+        }
+
+        .log-line:hover {
+            background: var(--bg-secondary);
+        }
+
+        .log-line.info { border-left-color: var(--success); }
+        .log-line.warn { 
+            border-left-color: var(--warning); 
+            background: rgba(245, 158, 11, 0.05);
+        }
+        .log-line.error { 
+            border-left-color: var(--error); 
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        .log-line-num {
+            color: var(--text-muted);
+            min-width: 36px;
+            text-align: right;
+            user-select: none;
+            opacity: 0.5;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            min-width: 200px;
+        }
+
+        .log-level {
+            min-width: 50px;
+            font-weight: 600;
+        }
+
+        .log-level.info { color: var(--success); }
+        .log-level.warn { color: var(--warning); }
+        .log-level.error { color: var(--error); }
+        .log-level.debug { color: var(--text-muted); }
+
+        .log-thread {
+            color: var(--accent-secondary);
+            min-width: 130px;
+        }
+
+        .log-logger {
+            color: #22d3ee;
+            min-width: 260px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .log-msg {
+            color: var(--text-primary);
+            flex: 1;
+            word-break: break-word;
+        }
+
+        /* 底部状态栏 */
+        .status-bar {
+            padding: 10px 24px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--success);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 280px 1fr;
+            }
+            
+            .stats-bar {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <nav class="top-nav">
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <span>Pulse Job</span>
+            </div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab">控制台</button>
+                <button class="nav-tab">任务管理</button>
+                <button class="nav-tab">执行器</button>
+                <button class="nav-tab active">执行日志</button>
+                <button class="nav-tab">监控告警</button>
+            </div>
+            
+            <div class="nav-right">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="搜索任务、执行器...">
+                </div>
+                <div class="user-avatar">YL</div>
+            </div>
+        </nav>
+
+        <!-- 左侧任务实例列表 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">执行实例</div>
+                <div class="filter-pills">
+                    <button class="filter-pill active">全部 <span class="count">156</span></button>
+                    <button class="filter-pill">运行中 <span class="count">3</span></button>
+                    <button class="filter-pill">成功 <span class="count">142</span></button>
+                    <button class="filter-pill">失败 <span class="count">11</span></button>
+                </div>
+            </div>
+            
+            <div class="instance-list">
+                <!-- 运行中 -->
+                <div class="instance-item active">
+                    <div class="instance-header">
+                        <div class="status-dot running"></div>
+                        <div class="instance-name">数据同步任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78542</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 13:26:48</span>
+                        <span class="instance-meta-item">📊 1.2k 条</span>
+                    </div>
+                    <div class="instance-progress">
+                        <div class="instance-progress-bar" style="width: 68%"></div>
+                    </div>
+                </div>
+
+                <!-- 成功 -->
+                <div class="instance-item">
+                    <div class="instance-header">
+                        <div class="status-dot success"></div>
+                        <div class="instance-name">订单清算任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78541</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 13:20:00</span>
+                        <span class="instance-meta-item">⏱️ 2.3s</span>
+                    </div>
+                </div>
+
+                <!-- 失败 -->
+                <div class="instance-item">
+                    <div class="instance-header">
+                        <div class="status-dot failed"></div>
+                        <div class="instance-name">报表生成任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78540</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 13:15:00</span>
+                        <span class="instance-meta-item">❌ 超时</span>
+                    </div>
+                </div>
+
+                <!-- 更多实例 -->
+                <div class="instance-item">
+                    <div class="instance-header">
+                        <div class="status-dot success"></div>
+                        <div class="instance-name">缓存刷新任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78539</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 13:10:00</span>
+                        <span class="instance-meta-item">⏱️ 156ms</span>
+                    </div>
+                </div>
+
+                <div class="instance-item">
+                    <div class="instance-header">
+                        <div class="status-dot success"></div>
+                        <div class="instance-name">邮件发送任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78538</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 13:05:00</span>
+                        <span class="instance-meta-item">⏱️ 89ms</span>
+                    </div>
+                </div>
+
+                <div class="instance-item">
+                    <div class="instance-header">
+                        <div class="status-dot warning"></div>
+                        <div class="instance-name">库存检查任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78537</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 13:00:00</span>
+                        <span class="instance-meta-item">⚠️ 部分成功</span>
+                    </div>
+                </div>
+
+                <div class="instance-item">
+                    <div class="instance-header">
+                        <div class="status-dot success"></div>
+                        <div class="instance-name">数据备份任务</div>
+                    </div>
+                    <div class="instance-id">#Instance-78536</div>
+                    <div class="instance-meta">
+                        <span class="instance-meta-item">⏰ 12:55:00</span>
+                        <span class="instance-meta-item">⏱️ 45.2s</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 任务详情头部 -->
+            <header class="content-header">
+                <div class="content-header-top">
+                    <div class="job-info">
+                        <div class="job-icon">📊</div>
+                        <div class="job-details">
+                            <h2>数据同步任务</h2>
+                            <span class="job-handler">com.example.job.DataSyncJob#execute()</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary">📋 复制日志</button>
+                        <button class="btn btn-secondary">⬇️ 下载</button>
+                        <button class="btn btn-danger">⏹️ 终止</button>
+                        <button class="btn btn-primary">🔄 重新执行</button>
+                    </div>
+                </div>
+                
+                <div class="stats-bar">
+                    <div class="stat-card">
+                        <div class="stat-icon time">🕐</div>
+                        <div class="stat-content">
+                            <div class="stat-value">13:26:48</div>
+                            <div class="stat-label">开始时间</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon duration">⏱️</div>
+                        <div class="stat-content">
+                            <div class="stat-value">1m 23s</div>
+                            <div class="stat-label">已运行</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon logs">📝</div>
+                        <div class="stat-content">
+                            <div class="stat-value">1,247</div>
+                            <div class="stat-label">日志条数</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon errors">⚠️</div>
+                        <div class="stat-content">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">警告/错误</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 日志工具栏 -->
+            <div class="log-toolbar">
+                <div class="log-filters">
+                    <button class="log-filter-btn active">ALL</button>
+                    <button class="log-filter-btn info">INFO</button>
+                    <button class="log-filter-btn warn">WARN</button>
+                    <button class="log-filter-btn error">ERROR</button>
+                </div>
+                
+                <div class="log-search">
+                    <span>🔍</span>
+                    <input type="text" placeholder="搜索日志内容... (支持正则)">
+                </div>
+                
+                <div class="toolbar-right">
+                    <button class="toolbar-btn">📏 换行</button>
+                    <button class="toolbar-btn active">🎨 颜色</button>
+                    <button class="toolbar-btn">⬇️ 自动滚动</button>
+                </div>
+            </div>
+
+            <!-- 日志内容 -->
+            <div class="log-container">
+                <div class="log-viewer" id="log-output">
+                    <!-- 日志将由 JavaScript 渲染 -->
+                </div>
+            </div>
+
+            <!-- 底部状态栏 -->
+            <footer class="status-bar">
+                <div class="status-left">
+                    <div class="live-indicator">
+                        <div class="live-dot"></div>
+                        <span>实时更新中</span>
+                    </div>
+                    <div class="status-item">执行器: executor-node-01 (192.168.1.101)</div>
+                    <div class="status-item">Job ID: 32</div>
+                </div>
+                <div class="status-right">
+                    <span>显示 1,247 条 / 共 1,247 条</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // ANSI 转 HTML
+        function ansiToHtml(text) {
+            const colorMap = {
+                '30': '#1e1e1e', '31': '#EF4444', '32': '#10B981', '33': '#F59E0B',
+                '34': '#3B82F6', '35': '#A855F7', '36': '#22D3EE', '37': '#d4d4d4',
+                '90': '#6b7280', '91': '#f87171', '92': '#34d399', '93': '#fbbf24',
+                '94': '#60a5fa', '95': '#c084fc', '96': '#67e8f9', '97': '#f3f4f6'
+            };
+            
+            let result = '';
+            let i = 0;
+            let openTags = 0;
+            
+            while (i < text.length) {
+                if (text.charCodeAt(i) === 27 && text[i + 1] === '[') {
+                    let j = i + 2;
+                    while (j < text.length && text[j] !== 'm') j++;
+                    
+                    if (text[j] === 'm') {
+                        const codes = text.substring(i + 2, j).split(';');
+                        i = j + 1;
+                        
+                        for (const code of codes) {
+                            if (code === '0' || code === '39' || code === '') {
+                                while (openTags > 0) {
+                                    result += '</span>';
+                                    openTags--;
+                                }
+                            } else if (code === '1') {
+                                result += '<span style="font-weight:bold">';
+                                openTags++;
+                            } else if (code === '2') {
+                                result += '<span style="opacity:0.6">';
+                                openTags++;
+                            } else if (colorMap[code]) {
+                                result += '<span style="color:' + colorMap[code] + '">';
+                                openTags++;
+                            }
+                        }
+                        continue;
+                    }
+                }
+                result += text[i];
+                i++;
+            }
+            
+            while (openTags > 0) {
+                result += '</span>';
+                openTags--;
+            }
+            
+            return result;
+        }
+
+        // 示例日志数据
+        const sampleLogs = [
+            { level: 'info', time: '13:26:48.493', thread: 'job-worker-1', logger: 'c.s.p.c.i.LoggingJobInterceptor', msg: '[Job-32] 开始执行: handler=DataSyncJob#execute()' },
+            { level: 'info', time: '13:26:48.512', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '开始同步数据，目标: MySQL → Elasticsearch' },
+            { level: 'info', time: '13:26:48.623', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '正在查询源数据库，批次大小: 1000' },
+            { level: 'info', time: '13:26:49.156', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '查询完成，获取到 1000 条记录' },
+            { level: 'info', time: '13:26:49.234', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '开始批量写入 Elasticsearch...' },
+            { level: 'warn', time: '13:26:50.412', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '发现 3 条数据字段缺失，已使用默认值填充' },
+            { level: 'info', time: '13:26:51.789', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '批次 1 写入完成，成功: 997，跳过: 3' },
+            { level: 'info', time: '13:26:52.012', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '正在查询源数据库，批次大小: 1000' },
+            { level: 'info', time: '13:26:52.456', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '查询完成，获取到 247 条记录（最后一批）' },
+            { level: 'error', time: '13:26:53.123', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: 'Elasticsearch 写入超时: Connection timed out after 5000ms, 正在重试...' },
+            { level: 'info', time: '13:26:54.567', thread: 'job-worker-1', logger: 'c.e.demo.job.DataSyncJob', msg: '重试成功，批次 2 写入完成' },
+            { level: 'info', time: '13:26:54.890', thread: 'job-worker-1', logger: 'c.s.p.c.i.LoggingJobInterceptor', msg: '[Job-32] 执行完成，耗时: 6397ms，同步记录: 1247 条' },
+        ];
+
+        // 渲染日志
+        function renderLogs() {
+            const container = document.getElementById('log-output');
+            container.innerHTML = sampleLogs.map((log, index) => `
+                <div class="log-line ${log.level}">
+                    <span class="log-line-num">${index + 1}</span>
+                    <span class="log-time">${log.time}</span>
+                    <span class="log-level ${log.level}">${log.level.toUpperCase()}</span>
+                    <span class="log-thread">[${log.thread}]</span>
+                    <span class="log-logger">${log.logger}</span>
+                    <span class="log-msg">: ${log.msg}</span>
+                </div>
+            `).join('');
+        }
+
+        // 过滤器交互
+        document.querySelectorAll('.log-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.filter-pill').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.instance-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.instance-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.toolbar-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('active');
+            });
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', renderLogs);
+    </script>
+</body>
+</html>
