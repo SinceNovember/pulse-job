@@ -1,0 +1,9 @@
+server:
+  port: 8081
+
+pulse:
+  job:
+    executorName: my-executor
+    admin:
+      host: 127.0.0.1
+      port: 10410

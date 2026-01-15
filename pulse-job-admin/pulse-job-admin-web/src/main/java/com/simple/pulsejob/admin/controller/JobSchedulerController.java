@@ -1,5 +1,6 @@
 package com.simple.pulsejob.admin.controller;
 
+import com.simple.pulsejob.admin.business.service.IJobInfoService;
 import com.simple.pulsejob.admin.common.model.base.ResponseResult;
 import com.simple.pulsejob.admin.scheduler.JobScheduler;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ public class JobSchedulerController {
 
     private final JobScheduler jobScheduler;
 
+    private final IJobInfoService jobInfoService;
     /**
      * 启动调度引擎
      */
@@ -44,13 +46,28 @@ public class JobSchedulerController {
 
     /**
      * 手动触发任务
+     *
+     * @param jobId  任务ID
+     * @param params 执行参数（可选，传入则覆盖任务配置的参数）
      */
-    @PostMapping("/trigger")
-    public ResponseResult<Void> trigger() {
+    @PostMapping("/trigger/{jobId}")
+    public ResponseResult<Void> trigger(@PathVariable("jobId") Integer jobId,
+                                        @RequestParam(value = "params", required = false) String params) {
         try {
-            jobScheduler.trigger();
+            if (params != null && !params.isEmpty()) {
+                jobInfoService.trigger(jobId, params);
+            } else {
+                jobInfoService.trigger(jobId);
+            }
             return ResponseResult.ok();
+        } catch (IllegalArgumentException e) {
+            log.warn("手动触发任务参数错误: jobId={}, error={}", jobId, e.getMessage());
+            return ResponseResult.error(e.getMessage());
+        } catch (IllegalStateException e) {
+            log.warn("手动触发任务状态错误: jobId={}, error={}", jobId, e.getMessage());
+            return ResponseResult.error(e.getMessage());
         } catch (Exception e) {
+            log.error("手动触发任务失败: jobId={}", jobId, e);
             return ResponseResult.error("手动触发任务失败: " + e.getMessage());
         }
     }
@@ -59,7 +76,7 @@ public class JobSchedulerController {
      * 取消任务调度
      */
     @PostMapping("/cancel/{jobId}")
-    public ResponseResult<Boolean> cancelJob(@PathVariable Long jobId) {
+    public ResponseResult<Boolean> cancelJob(@PathVariable("jobId") Long jobId) {
         try {
             boolean result = jobScheduler.cancel(jobId);
             return ResponseResult.ok(result);
@@ -73,7 +90,7 @@ public class JobSchedulerController {
      * 暂停任务
      */
     @PostMapping("/pause/{jobId}")
-    public ResponseResult<Boolean> pauseJob(@PathVariable Long jobId) {
+    public ResponseResult<Boolean> pauseJob(@PathVariable("jobId") Long jobId) {
         try {
             boolean result = jobScheduler.pause(jobId);
             return ResponseResult.ok(result);

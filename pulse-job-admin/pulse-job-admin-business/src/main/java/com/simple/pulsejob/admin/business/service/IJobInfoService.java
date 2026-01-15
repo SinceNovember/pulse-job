@@ -1,12 +1,13 @@
 package com.simple.pulsejob.admin.business.service;
 
 
+import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
+import com.simple.pulsejob.admin.common.model.entity.JobInfo;
+import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import com.simple.pulsejob.admin.common.model.entity.JobInfo;
-import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
-import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
 
 public interface IJobInfoService {
     
@@ -50,6 +51,21 @@ public interface IJobInfoService {
      * @return 更新后的任务信息
      */
     JobInfo updateJobInfo(JobInfo jobInfo);
+
+    /**
+     * 手动触发任务（立即执行）
+     *
+     * @param jobId 任务ID
+     */
+    void trigger(Integer jobId);
+
+    /**
+     * 手动触发任务（带参数覆盖）
+     *
+     * @param jobId  任务ID
+     * @param params 执行参数（覆盖任务配置的参数）
+     */
+    void trigger(Integer jobId, String params);
     
     /**
      * 删除任务信息

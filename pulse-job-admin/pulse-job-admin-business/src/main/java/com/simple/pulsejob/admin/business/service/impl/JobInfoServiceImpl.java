@@ -6,10 +6,13 @@ import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
 import com.simple.pulsejob.admin.persistence.mapper.JobInfoMapper;
+import com.simple.pulsejob.admin.scheduler.JobScheduleEngine;
+import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.Optional;
 public class JobInfoServiceImpl implements IJobInfoService {
 
     private final JobInfoMapper jobInfoMapper;
+    private final JobScheduleEngine jobScheduleEngine;
 
     @Override
     public void addJobInfo(JobInfoParam jobInfoParam) {
@@ -61,6 +65,67 @@ public class JobInfoServiceImpl implements IJobInfoService {
         }
         jobInfo.setUpdateTime(LocalDateTime.now());
         return jobInfoMapper.save(jobInfo);
+    }
+
+    @Override
+    public void trigger(Integer jobId) {
+        trigger(jobId, null);
+    }
+
+    @Override
+    public void trigger(Integer jobId, String params) {
+
+        JobInfoWithExecutorDTO jobInfoWithExecutorDTO = getJobInfoWithExecutorNameById(jobId)
+                .orElseThrow(() -> new IllegalStateException("JobInfo not found, jobId=" + jobId));
+
+        JobInfo jobInfo = jobInfoWithExecutorDTO.getJobInfo();
+
+        // 4. 检查任务是否启用
+        if (!jobInfo.isEnabled()) {
+            log.warn("任务已禁用，无法触发: jobId={}", jobId);
+            throw new IllegalStateException("任务已禁用");
+        }
+
+        log.info("手动触发任务开始: jobId={}, handler={}", jobId, jobInfo.getJobHandler());
+
+        try {
+            // 6. 构建调度配置
+            ScheduleConfig config = buildScheduleConfig(jobInfo, params);
+            jobScheduleEngine.schedule(config);
+
+        } catch (Exception e) {
+            log.error("invoke error", e);
+        }
+    }
+
+    /**
+     * 从 JobInfo 构建 ScheduleConfig
+     */
+    private ScheduleConfig buildScheduleConfig(JobInfo jobInfo, String overrideParams) {
+        ScheduleConfig config = new ScheduleConfig();
+
+        // 任务基本信息
+        config.setJobId(jobInfo.getId());
+        config.setJobHandler(jobInfo.getJobHandler());
+
+        // 参数：如果传入了 overrideParams 则使用传入的，否则使用任务配置的
+        config.setJobParams(StringUtils.hasText(overrideParams) ? overrideParams : jobInfo.getJobParams());
+
+        // 执行器信息
+//        config.setExecutorKey(ExecutorKey.of(jobInfo.getExecutorName()));
+
+        // 调度配置
+        config.setScheduleType(jobInfo.getScheduleType());
+        config.setScheduleExpression(jobInfo.getScheduleRate());
+        config.setDispatchType(jobInfo.getDispatchType());
+        config.setLoadBalanceType(jobInfo.getLoadBalanceType());
+        config.setSerializerType(jobInfo.getSerializerType());
+
+        // 重试和同步配置
+        config.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
+        config.setSync(false); // 手动触发默认异步
+
+        return config;
     }
 
     @Override
@@ -107,7 +172,6 @@ public class JobInfoServiceImpl implements IJobInfoService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<JobInfoWithExecutorDTO> getJobInfoWithExecutorNameById(Integer jobId) {
         return jobInfoMapper.findWithExecutorNameById(jobId);
     }

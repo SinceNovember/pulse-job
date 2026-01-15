@@ -1,7 +1,5 @@
 package com.simple.pulsejob.admin.scheduler;
 
-import com.simple.pulsejob.admin.common.model.entity.JobInfo;
-
 /**
  * 任务调度器接口
  * <p>
@@ -27,12 +25,7 @@ public interface JobScheduler {
      *
      * @param jobInfo 任务信息
      */
-    void schedule(JobInfo jobInfo);
-
-    /**
-     * 手动触发任务（立即执行）
-     */
-    void trigger();
+    void schedule(ScheduleConfig config);
 
     /**
      * 取消任务调度

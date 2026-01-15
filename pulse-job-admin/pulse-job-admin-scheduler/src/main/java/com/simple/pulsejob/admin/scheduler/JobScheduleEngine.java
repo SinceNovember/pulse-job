@@ -2,6 +2,7 @@ package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
+import com.simple.pulsejob.admin.persistence.mapper.JobInfoMapper;
 import com.simple.pulsejob.admin.scheduler.invoker.Invoker;
 import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategy;
 import com.simple.pulsejob.admin.scheduler.strategy.ScheduleStrategyFactory;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -36,17 +39,24 @@ public class JobScheduleEngine implements JobScheduler {
     private final Timer hashedWheelTimer;
     private final Invoker invoker;
     private final ScheduleStrategyFactory strategyFactory;
+    private final JobInfoMapper jobInfoMapper;
 
     @Resource
     private ThreadPoolExecutor jobExecutor;
 
-    /** 调度器运行状态 */
+    /**
+     * 调度器运行状态
+     */
     private final AtomicBoolean running = new AtomicBoolean(false);
 
-    /** 已暂停的任务集合 */
+    /**
+     * 已暂停的任务集合
+     */
     private final Set<Long> pausedJobs = ConcurrentHashMap.newKeySet();
 
-    /** 已调度的任务缓存，避免重复调度 */
+    /**
+     * 已调度的任务缓存，避免重复调度
+     */
     private final ConcurrentHashMap<Long, Timeout> scheduledJobs = new ConcurrentHashMap<>();
 
     // ==================== JobScheduler 接口实现 ====================
@@ -72,27 +82,13 @@ public class JobScheduleEngine implements JobScheduler {
     }
 
     @Override
-    public void schedule(JobInfo jobInfo) {
-        if (!running.get()) {
-            log.warn("调度引擎未启动，无法调度任务: {}", jobInfo.getId());
-            return;
-        }
-        doSchedule(jobInfo);
-    }
-
-    @Override
-    public void trigger() {
-//        if (!running.get()) {
-//            log.warn("调度引擎未启动，无法触发任务");
-//            return;
-//        }
-        
+    public void schedule(ScheduleConfig config) {
         try {
-            ScheduleConfig config = new ScheduleConfig();
-            config.setJobId(1);
-            invoker.invoke(config);
+            Object result = invoker.invoke(config);
+            log.info("手动触发任务成功: jobId={}, handler={}, result={}", config.getJobId(), config.getJobHandler(), result);
         } catch (Throwable e) {
-            log.error("触发任务失败: jobId={}", 1, e);
+            log.error("手动触发任务失败: jobId={}, handler={}, result={}", config.getJobId(), config.getJobHandler());
+            throw new RuntimeException("任务触发失败: " + e.getMessage(), e);
         }
     }
 
@@ -144,7 +140,7 @@ public class JobScheduleEngine implements JobScheduler {
      */
     private void doSchedule(JobInfo jobInfo) {
         Long jobId = Long.valueOf(jobInfo.getId());
-        
+
         try {
             // 获取调度策略
             ScheduleTypeEnum scheduleType = jobInfo.getScheduleType();
@@ -171,7 +167,7 @@ public class JobScheduleEngine implements JobScheduler {
             // 计算延迟时间
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime nextExecuteTime = jobInfo.getNextExecuteTime();
-            
+
             // 如果下次执行时间为空，使用策略计算
             if (nextExecuteTime == null) {
                 nextExecuteTime = strategy.calculateNextExecuteTime(jobInfo);
@@ -211,7 +207,7 @@ public class JobScheduleEngine implements JobScheduler {
      */
     private void executeJob(JobInfo jobInfo) {
         Long jobId = Long.valueOf(jobInfo.getId());
-        
+
         try {
             log.info("开始执行任务: ID={}, Handler={}", jobId, jobInfo.getJobHandler());
 

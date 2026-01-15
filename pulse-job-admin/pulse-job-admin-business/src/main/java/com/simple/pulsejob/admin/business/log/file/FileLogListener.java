@@ -59,7 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @ConditionalOnProperty(name = "pulse-job.log.listener.file.enabled", havingValue = "true", matchIfMissing = true)
 public class FileLogListener implements JobLogListener {
 
-    @Value("${pulse-job.log.listener.file.path:D:/logs/job-logs}")
+    @Value("${pulse-job.log.listener.file.path:./logs/job-logs}")
     private String logBasePath;
 
     private final ConcurrentHashMap<String, BufferedWriter> writerCache = new ConcurrentHashMap<>();

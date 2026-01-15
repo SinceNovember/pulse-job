@@ -26,10 +26,8 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
     public void beforeSchedule(ScheduleContext context) {
         Integer jobId = context.getJobId();
 
-        JobInfoWithExecutorDTO dto = jobInfoService
-            .getJobInfoWithExecutorNameById(jobId)
-            .orElseThrow(() ->
-                new IllegalStateException("JobInfo not found, jobId=" + jobId));
+        JobInfoWithExecutorDTO dto = jobInfoService.getJobInfoWithExecutorNameById(jobId)
+                .orElseThrow(() -> new IllegalStateException("JobInfo not found, jobId=" + jobId));
 
         JobInfo jobInfo = dto.getJobInfo();
 
@@ -42,7 +40,7 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
         context.setJobHandler(jobInfo.getJobHandler());
         context.setJobParams(jobInfo.getJobParams());
         log.debug("Schedule prepared: jobId={}, executorId={}, executorName={}",
-            jobId, jobInfo.getExecutorId(), dto.getExecutorName());
+                jobId, jobInfo.getExecutorId(), dto.getExecutorName());
     }
 
     @Override
@@ -54,7 +52,7 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
         context.setInstanceId(instanceId);
 
         log.info("Job instance created: instanceId={}, jobId={}, executorId={}",
-            instanceId, jobId, executorId);
+                instanceId, jobId, executorId);
     }
 
     @Override
@@ -69,10 +67,10 @@ public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
 
     @Override
     public void onTransportFailure(
-        ScheduleContext context,
-        JChannel channel,
-        JRequest request,
-        Throwable throwable) {
+            ScheduleContext context,
+            JChannel channel,
+            JRequest request,
+            Throwable throwable) {
 
         Long instanceId = context.getInstanceId();
         if (instanceId == null) {

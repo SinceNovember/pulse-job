@@ -5,14 +5,6 @@ spring:
     password: mypassword
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-jpa:
-  hibernate:
-    ddl-auto: update    # 可选值：none, validate, update, create, create-drop
-  show-sql: true
-  properties:
-    hibernate:
-      format_sql: true
-
 # PulseJob Admin 配置
 pulse:
   job:
@@ -61,5 +53,10 @@ pulse:
 # 日志配置
 logging:
   level:
-    com.simple.pulsejob.admin.scheduler: DEBUG
-    com.simple.pulsejob.admin.service: DEBUG
+#    com.simple.pulsejob.admin.persistence: DEBUG
+    # Hibernate SQL 日志
+    org.hibernate.SQL: DEBUG
+    # Hibernate 参数绑定日志 (Hibernate 6.x)
+    org.hibernate.orm.jdbc.bind: TRACE
+    # 如果使用 Hibernate 5.x，使用下面这行代替：
+    # org.hibernate.type.descriptor.sql.BasicBinder: TRACE

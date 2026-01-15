@@ -78,6 +78,12 @@
                 <artifactId>pulse-job-transport-netty</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>pulse-job-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- # pulse-job module dependency: end -->
 
             <dependency>

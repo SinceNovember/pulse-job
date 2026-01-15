@@ -58,14 +58,46 @@ public class ScheduleContext {
 
     // ==================== 静态工厂方法 ====================
 
+    /**
+     * 从 ScheduleConfig 创建调度上下文
+     *
+     * @param config 调度配置
+     * @return ScheduleContext
+     */
     public static ScheduleContext of(ScheduleConfig config) {
         if (config == null) {
             throw new IllegalArgumentException("ScheduleConfig cannot be null");
         }
 
         ScheduleContext context = new ScheduleContext();
+
+        // 任务基本信息
         context.setJobId(config.getJobId());
+        context.setJobHandler(config.getJobHandler());
         context.setJobParams(config.getJobParams());
+
+        // 执行器信息
+        context.setExecutorKey(config.getExecutorKey());
+
+        // 调度配置
+        context.setScheduleType(config.getScheduleType());
+        context.setScheduleExpression(config.getScheduleExpression());
+        
+        // 分发与负载均衡（使用配置值，如果为空则使用默认值）
+        if (config.getDispatchType() != null) {
+            context.setDispatchType(config.getDispatchType());
+        }
+        if (config.getLoadBalanceType() != null) {
+            context.setLoadBalanceType(config.getLoadBalanceType());
+        }
+        if (config.getSerializerType() != null) {
+            context.setSerializerType(config.getSerializerType());
+        }
+
+        // 执行配置
+        context.setSync(config.isSync());
+        context.setRetries(config.getRetries() > 0 ? config.getRetries() : 1);
+
         return context;
     }
 
