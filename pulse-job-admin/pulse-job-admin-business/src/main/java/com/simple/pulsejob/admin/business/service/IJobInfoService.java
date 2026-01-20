@@ -53,21 +53,6 @@ public interface IJobInfoService {
     JobInfo updateJobInfo(JobInfo jobInfo);
 
     /**
-     * 手动触发任务（立即执行）
-     *
-     * @param jobId 任务ID
-     */
-    void trigger(Integer jobId);
-
-    /**
-     * 手动触发任务（带参数覆盖）
-     *
-     * @param jobId  任务ID
-     * @param params 执行参数（覆盖任务配置的参数）
-     */
-    void trigger(Integer jobId, String params);
-    
-    /**
      * 删除任务信息
      * @param id 任务ID
      */

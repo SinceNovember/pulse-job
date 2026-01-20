@@ -24,6 +24,45 @@ public class PulseJobAdminProperties {
      */
     private HashedWheelTimer hashedWheelTimer = new HashedWheelTimer();
 
+    /**
+     * 调度器配置
+     */
+    private Scheduler scheduler = new Scheduler();
+
+    @Data
+    public static class Scheduler {
+        
+        /**
+         * 是否启用自动调度
+         */
+        private boolean enabled = true;
+        
+        /**
+         * 查询间隔（毫秒）- 多久查询一次数据库
+         */
+        private long queryInterval = 5000L;
+        
+        /**
+         * 查询时间窗口（秒）- 查询未来多少秒内的任务
+         */
+        private int queryWindow = 10;
+        
+        /**
+         * 预读时间（秒）- 提前多少秒将任务加载到内存
+         */
+        private int preReadSeconds = 5;
+        
+        /**
+         * 重试间隔（秒）
+         */
+        private int retryInterval = 30;
+        
+        /**
+         * 最大重试次数
+         */
+        private int maxRetryTimes = 3;
+    }
+
     @Data
     public static class ThreadPool {
         

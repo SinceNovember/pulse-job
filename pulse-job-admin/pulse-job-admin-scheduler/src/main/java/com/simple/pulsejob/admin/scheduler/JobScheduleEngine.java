@@ -39,7 +39,6 @@ public class JobScheduleEngine implements JobScheduler {
     private final Timer hashedWheelTimer;
     private final Invoker invoker;
     private final ScheduleStrategyFactory strategyFactory;
-    private final JobInfoMapper jobInfoMapper;
 
     @Resource
     private ThreadPoolExecutor jobExecutor;

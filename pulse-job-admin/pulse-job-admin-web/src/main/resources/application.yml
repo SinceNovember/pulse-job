@@ -39,12 +39,16 @@ pulse:
         max-pending-timeouts: -1
         # 线程工厂名称前缀
         thread-name-prefix: hashed-wheel-timer-
-      # 任务调度配置
+      # 定时任务调度配置
       scheduler:
-        # 查询间隔（毫秒）
+        # 是否启用自动调度
+        enabled: true
+        # 查询间隔（毫秒）- 多久查询一次数据库
         query-interval: 5000
-        # 查询时间窗口（秒）
+        # 查询时间窗口（秒）- 查询未来多少秒内的任务
         query-window: 10
+        # 预读时间（秒）- 提前多少秒将任务加载到内存
+        pre-read-seconds: 5
         # 重试间隔（秒）
         retry-interval: 30
         # 最大重试次数

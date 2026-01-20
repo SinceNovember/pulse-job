@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class InstanceSchedulerInterceptor implements SchedulerInterceptor {
+public class JobInstanceLifecycleInterceptor implements SchedulerInterceptor {
 
     private final IJobInstanceService jobInstanceService;
     private final IJobInfoService jobInfoService;
