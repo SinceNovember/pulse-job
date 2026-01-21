@@ -2,10 +2,10 @@ package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
-import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
 import lombok.Builder;
 import lombok.Data;
 
@@ -68,15 +68,12 @@ public class JobInfoDTO {
 
     /** 集群调用策略 */
     @Builder.Default
-    private ClusterInvoker.Strategy invokeStrategy = ClusterInvoker.Strategy.FAIL_FAST;
+    private InvokeStrategyEnum invokeStrategy = InvokeStrategyEnum.FAIL_FAST;
 
     /** 序列化类型 */
     @Builder.Default
     private SerializerTypeEnum serializerType = SerializerTypeEnum.JAVA;
 
-    /** 是否同步调用 */
-    @Builder.Default
-    private boolean sync = false;
 
     /** 重试次数 */
     @Builder.Default

@@ -38,6 +38,12 @@ public class BroadcastDispatcher extends AbstractDispatcher {
     }
 
     @Override
+    public InvokeFuture dispatchRetry(ScheduleContext context) {
+        // 广播模式不支持重试（Failover 策略已在上层阻止）
+        throw new UnsupportedOperationException("Broadcast dispatch does not support retry");
+    }
+
+    @Override
     public DispatchTypeEnum type() {
         return DispatchTypeEnum.BROADCAST;
     }

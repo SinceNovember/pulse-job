@@ -33,6 +33,20 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     private static final ConcurrentMap<String, DefaultInvokeFuture> broadcastFutures =
             Maps.newConcurrentMap(1024);
 
+    /**
+     * ✅ 根据 instanceId 获取 Future（用于外部注册回调）
+     */
+    public static DefaultInvokeFuture getFuture(long instanceId) {
+        return roundFutures.get(instanceId);
+    }
+
+    /**
+     * ✅ 根据 channel 和 instanceId 获取广播 Future
+     */
+    public static DefaultInvokeFuture getBroadcastFuture(String channelId, long instanceId) {
+        return broadcastFutures.get(subInstanceId(channelId, instanceId));
+    }
+
     /** 超时调度器（守护线程，共享） */
     private static final ScheduledExecutorService TIMEOUT_SCHEDULER =
             Executors.newSingleThreadScheduledExecutor(r -> {

@@ -2,10 +2,10 @@ package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
-import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
@@ -43,7 +43,8 @@ public class ScheduleContext {
 
     private SerializerTypeEnum serializerType;
 
-    private boolean sync;
+    /** 集群调用策略 */
+    private InvokeStrategyEnum invokeStrategy;
 
     private int retries;
 
@@ -93,9 +94,11 @@ public class ScheduleContext {
         if (config.getSerializerType() != null) {
             context.setSerializerType(config.getSerializerType());
         }
+        if (config.getInvokeStrategy() != null) {
+            context.setInvokeStrategy(config.getInvokeStrategy());
+        }
 
         // 执行配置
-        context.setSync(config.isSync());
         context.setRetries(config.getRetries() > 0 ? config.getRetries() : 1);
 
         return context;
@@ -140,22 +143,21 @@ public class ScheduleContext {
         this.dispatchType = DispatchTypeEnum.ROUND;
         this.loadBalanceType = LoadBalanceTypeEnum.RANDOM;
         this.serializerType = SerializerTypeEnum.JAVA;
+        this.invokeStrategy = InvokeStrategyEnum.getDefault();
         this.retries = 1;
         this.timeoutSeconds = 60;
     }
 
-    public ScheduleContext(String executorName, ClusterInvoker invoker, boolean sync) {
+    public ScheduleContext(String executorName) {
         this();
         this.executorKey = ExecutorKey.of(executorName);
-        this.sync = sync;
     }
 
     /**
      * 完整构造函数（推荐）
      */
-    public ScheduleContext(String executorName, Integer jobId, Integer executorId,
-                           ClusterInvoker invoker, boolean sync) {
-        this(executorName, invoker, sync);
+    public ScheduleContext(String executorName, Integer jobId, Integer executorId) {
+        this(executorName);
         this.jobId = jobId;
         this.executorId = executorId;
     }

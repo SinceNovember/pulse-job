@@ -50,8 +50,8 @@ public class SchedulerInterceptorChain {
         forEach(i -> i.onTransportFailure(context, channel, request, throwable));
     }
 
-    public void onScheduleFailure(ScheduleContext context, JChannel channel, JRequest request) {
-        forEach(i -> i.onScheduleFailure(context, channel, request));
+    public void onScheduleFailure(ScheduleContext context, JChannel channel, JRequest request, Throwable throwable) {
+        forEach(i -> i.onScheduleFailure(context, channel, request, throwable));
     }
 
     /* ================== 内部工具 ================== */

@@ -1,37 +1,29 @@
 package com.simple.pulsejob.admin.scheduler.cluster;
 
+import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-import com.simple.pulsejob.transport.JRequest;
 
+/**
+ * 集群调用器接口.
+ *
+ * <p>不同的实现类对应不同的容错策略：</p>
+ * <ul>
+ *   <li>{@link FailfastClusterInvoker} - 快速失败</li>
+ *   <li>{@link FailoverClusterInvoker} - 失败重试</li>
+ *   <li>{@link FailsafeClusterInvoker} - 失败安全</li>
+ * </ul>
+ */
 public interface ClusterInvoker {
+
     /**
-     * 集群容错策略
+     * 获取当前调用器对应的策略
      */
-    enum Strategy {
-        FAIL_FAST,  // 快速失败
-        FAIL_OVER,  // 失败重试
-        FAIL_SAFE,  // 失败安全
-        // FAIL_BACK,  没想到合适场景, 暂不支持
-        // FORKING,    消耗资源太多, 暂不支持
-        ;
+    InvokeStrategyEnum strategy();
 
-        public static Strategy parse(String name) {
-            for (Strategy s : values()) {
-                if (s.name().equalsIgnoreCase(name)) {
-                    return s;
-                }
-            }
-            return null;
-        }
-
-        public static Strategy getDefault() {
-            return FAIL_FAST;
-        }
-    }
-
-    Strategy strategy();
-
+    /**
+     * 执行调用
+     */
     InvokeFuture invoke(ScheduleContext context) throws Exception;
 
 }

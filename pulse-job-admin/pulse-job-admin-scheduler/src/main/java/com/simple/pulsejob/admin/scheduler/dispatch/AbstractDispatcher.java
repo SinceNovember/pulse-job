@@ -53,9 +53,25 @@ public abstract class AbstractDispatcher implements Dispatcher {
     }
 
 
+    /**
+     * 写入请求（首次调用，触发 beforeTransport 创建 Instance）
+     */
     protected DefaultInvokeFuture write(final JChannel channel, ScheduleContext context) {
+        return doWrite(channel, context, true);
+    }
 
-        schedulerInterceptorChain.beforeTransport(context, channel);
+    /**
+     * 重试写入（复用已有 instanceId，跳过 beforeTransport）
+     */
+    protected DefaultInvokeFuture writeRetry(final JChannel channel, ScheduleContext context) {
+        return doWrite(channel, context, false);
+    }
+
+    private DefaultInvokeFuture doWrite(final JChannel channel, ScheduleContext context, boolean isFirstAttempt) {
+        if (isFirstAttempt) {
+            // 首次调用：触发 beforeTransport（创建 JobInstance）
+            schedulerInterceptorChain.beforeTransport(context, channel);
+        }
 
         JRequest request = createRequest(channel, context);
 

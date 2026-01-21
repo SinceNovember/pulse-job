@@ -25,7 +25,20 @@ public class RoundRobinDispatcher extends AbstractDispatcher {
     public InvokeFuture dispatch(ScheduleContext context) {
         // 通过软负载均衡选择一个channel
         JChannel channel = select(context);
+        if (channel == null) {
+            throw new IllegalStateException("No available channel for executor: " + context.getExecutorKey());
+        }
         return write(channel, context);
+    }
+
+    @Override
+    public InvokeFuture dispatchRetry(ScheduleContext context) {
+        // 重试时重新选择 channel（可能切换到其他节点）
+        JChannel channel = select(context);
+        if (channel == null) {
+            throw new IllegalStateException("No available channel for retry, executor: " + context.getExecutorKey());
+        }
+        return writeRetry(channel, context);
     }
 
     @Override

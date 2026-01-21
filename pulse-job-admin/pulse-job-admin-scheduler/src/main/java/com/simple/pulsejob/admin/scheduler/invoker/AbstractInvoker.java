@@ -1,12 +1,12 @@
 package com.simple.pulsejob.admin.scheduler.invoker;
 
-import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
+import com.simple.pulsejob.admin.scheduler.factory.ClusterInvokerFactory;
+import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
-import com.simple.pulsejob.transport.JRequest;
-import com.simple.pulsejob.transport.metadata.MessageWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,48 +15,64 @@ import java.util.Objects;
 /**
  * 抽象调用器.
  *
- * <p>所有调度都必须创建 JobInstance，使用数据库生成的 instanceId 作为请求标识</p>
+ * <p>完整调度流程：</p>
+ * <ol>
+ *   <li>beforeSchedule - 拦截器前置处理（查询 JobInfo、设置 ExecutorKey）</li>
+ *   <li>根据策略选择 ClusterInvoker</li>
+ *   <li>ClusterInvoker.invoke() - 包含 beforeTransport、网络传输、afterTransport</li>
+ *   <li>注册异步回调处理执行结果</li>
+ * </ol>
+ *
+ * <p>注意：分布式定时任务统一采用异步模式，不支持同步阻塞等待。</p>
  */
 @Slf4j
 @RequiredArgsConstructor
 public abstract class AbstractInvoker implements Invoker {
 
-    private final ClusterInvoker clusterInvoker;
-
+    private final ClusterInvokerFactory clusterInvokerFactory;
     private final SchedulerInterceptorChain schedulerInterceptorChain;
 
     protected Object doInvoke(ScheduleConfig config) throws Throwable {
         Objects.requireNonNull(config, "ScheduleConfig is required");
+
         ScheduleContext context = ScheduleContext.of(config);
-        schedulerInterceptorChain.beforeSchedule(context);
-        clusterInvoker.invoke(context);
-        return context.getResult();
-//        // 5. 执行过滤器链
-//        try {
-//            clusterInvoker.invoke(context);
-//
-//            // 成功时更新状态
-//            if (context.isSuccess()) {
-//                jobInstanceManager.markSuccess(instanceId, LocalDateTime.now());
-//            }
-//
-//            return context.getResult();
-//        } catch (Throwable e) {
-//            // 失败时更新实例状态
-//            jobInstanceManager.markFailed(instanceId, LocalDateTime.now(), e.getMessage());
-//            throw e;
-//        }
-    }
 
-    /**
-     * 创建请求
-     */
-    private JRequest createRequest(long instanceId, String handlerName, String args) {
-        MessageWrapper message = new MessageWrapper(handlerName, args);
+        try {
+            // 1. 拦截器前置处理
+            schedulerInterceptorChain.beforeSchedule(context);
 
-        JRequest request = new JRequest(instanceId);
-        request.setMessage(message);
-        request.getPayload().setSerializerCode(SerializerType.JAVA.value());
-        return request;
+            // 2. 根据策略选择 ClusterInvoker
+            InvokeStrategyEnum strategy = context.getInvokeStrategy();
+            if (strategy == null) {
+                strategy = InvokeStrategyEnum.getDefault();
+            }
+            ClusterInvoker clusterInvoker = clusterInvokerFactory.get(strategy);
+
+            log.debug("使用集群策略: {}, jobId={}", strategy, context.getJobId());
+
+            // 3. 执行调用（异步）
+            InvokeFuture future = clusterInvoker.invoke(context);
+
+            // 4. 注册异步回调
+            future.whenComplete((result, throwable) -> {
+                if (throwable == null) {
+                    context.markSuccess(result);
+                    log.debug("任务执行成功: jobId={}, instanceId={}",
+                            context.getJobId(), context.getInstanceId());
+                } else {
+                    context.markFailed(throwable);
+                    log.error("任务执行失败: jobId={}, instanceId={}",
+                            context.getJobId(), context.getInstanceId(), throwable);
+                }
+            });
+
+            // 异步模式，立即返回
+            return null;
+
+        } catch (Throwable e) {
+            context.markFailed(e);
+            log.error("调度失败: jobId={}", context.getJobId(), e);
+            throw e;
+        }
     }
 }

@@ -1,10 +1,10 @@
 package com.simple.pulsejob.admin.scheduler;
 
 import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
-import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
@@ -37,11 +37,9 @@ public class ScheduleConfig {
 
     private LoadBalanceTypeEnum loadBalanceType;
 
-    private ClusterInvoker.Strategy invokeStrategy;
+    private InvokeStrategyEnum invokeStrategy;
 
     private SerializerTypeEnum serializerType;
-
-    private boolean sync;
 
     private int retries;
 }

@@ -82,14 +82,6 @@ public class JobInstanceLifecycleInterceptor implements SchedulerInterceptor {
         log.error("Transport failed: instanceId={}", instanceId, throwable);
     }
 
-    @Override
-    public void afterSchedule(ScheduleContext context, JChannel channel, JResponse response) {
-        // 当前拦截器只关心“调度前 + 传输阶段”
-        // 执行结果由其他拦截器处理
-    }
-
-    @Override
-    public void onScheduleFailure(ScheduleContext context, JChannel channel, JRequest request) {
-        // 同上，刻意留空，语义上不处理
-    }
+    // afterSchedule 和 onScheduleFailure 使用默认空实现
+    // 执行结果由 JobInstanceResultInterceptor 处理
 }

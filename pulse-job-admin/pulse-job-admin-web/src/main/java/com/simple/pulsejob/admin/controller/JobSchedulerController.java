@@ -187,6 +187,7 @@ public class JobSchedulerController {
             Map<String, Object> status = new HashMap<>();
             status.put("running", cronJobScheduler.isRunning());
             status.put("scheduledCount", cronJobScheduler.getScheduledCount());
+            status.put("runningCount", cronJobScheduler.getRunningCount());
             return ResponseResult.ok(status);
         } catch (Exception e) {
             log.error("获取 Cron 调度器状态失败", e);

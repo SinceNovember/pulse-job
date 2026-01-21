@@ -24,17 +24,17 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 定时任务调度器.
+ * 定时任务调度器（优化版）.
  *
- * <p>定期从数据库拉取即将执行的任务，提交到时间轮中执行。</p>
- *
- * <p>工作流程：</p>
- * <ol>
- *   <li>定期查询数据库中 next_execute_time 在时间窗口内的启用任务</li>
- *   <li>计算延迟时间，将任务提交到时间轮</li>
- *   <li>任务执行完成后，计算下次执行时间并更新数据库</li>
- *   <li>如果是周期性任务，重新调度</li>
- * </ol>
+ * <p>整合了 xxl-job 和 PowerJob 的优秀设计：</p>
+ * <ul>
+ *   <li>【PowerJob】扫描时立即更新下次执行时间，不等任务执行完</li>
+ *   <li>【xxl-job】过期任务分类处理：过期太久跳过、刚过期立即执行</li>
+ *   <li>【xxl-job】时间轮只存 jobId，触发时重新获取最新 JobInfo</li>
+ *   <li>【优化】正在执行的任务不重复调度</li>
+ *   <li>【优化】高频任务执行后立即重调度</li>
+ *   <li>【优化】长延迟任务不放入时间轮，等待扫描</li>
+ * </ul>
  *
  * @author pulse
  */
@@ -52,22 +52,32 @@ public class CronJobScheduler {
     @Value("${pulse.job.admin.scheduler.enabled:true}")
     private boolean enabled;
 
+    /** 扫描间隔（毫秒） */
     @Value("${pulse.job.admin.scheduler.query-interval:5000}")
     private long queryInterval;
 
+    /** 预读时间窗口（秒），建议为 2 × 扫描间隔 */
     @Value("${pulse.job.admin.scheduler.query-window:10}")
     private int queryWindow;
 
-    @Value("${pulse.job.admin.scheduler.pre-read-seconds:5}")
-    private int preReadSeconds;
+    /** 时间轮调度阈值（秒），延迟小于此值才放入时间轮 */
+    @Value("${pulse.job.admin.scheduler.wheel-threshold-seconds:#{${pulse.job.admin.scheduler.query-window:10}}}")
+    private int wheelThresholdSeconds;
+
+    /** 过期容忍时间（秒），超过此时间的过期任务跳过本次执行 */
+    @Value("${pulse.job.admin.scheduler.misfire-threshold-seconds:10}")
+    private int misfireThresholdSeconds;
 
     // ==================== 内部状态 ====================
 
     /** 运行状态 */
     private final AtomicBoolean running = new AtomicBoolean(false);
 
-    /** 已调度的任务（jobId -> Timeout），避免重复调度 */
+    /** 已调度到时间轮的任务（jobId -> Timeout） */
     private final ConcurrentHashMap<Integer, Timeout> scheduledJobs = new ConcurrentHashMap<>();
+
+    /** 正在执行中的任务，防止并发执行 */
+    private final Set<Integer> runningJobs = ConcurrentHashMap.newKeySet();
 
     /** 已暂停的任务 */
     private final Set<Integer> pausedJobs = ConcurrentHashMap.newKeySet();
@@ -78,7 +88,7 @@ public class CronJobScheduler {
     /** 任务执行线程池 */
     private ExecutorService jobExecutor;
 
-    public CronJobScheduler(Timer hashedWheelTimer, 
+    public CronJobScheduler(Timer hashedWheelTimer,
                             Invoker invoker,
                             ScheduleStrategyFactory strategyFactory,
                             JobInfoMapper jobInfoMapper) {
@@ -97,7 +107,6 @@ public class CronJobScheduler {
             return;
         }
 
-        // 初始化线程池
         schedulerExecutor = Executors.newSingleThreadScheduledExecutor(
                 new JNamedThreadFactory("cron-scheduler", true));
 
@@ -108,13 +117,10 @@ public class CronJobScheduler {
                 new JNamedThreadFactory("cron-job-executor", true),
                 new ThreadPoolExecutor.CallerRunsPolicy());
 
-        log.info("CronJobScheduler 初始化完成，queryInterval={}ms, queryWindow={}s",
-                queryInterval, queryWindow);
+        log.info("CronJobScheduler 初始化完成: queryInterval={}ms, queryWindow={}s, wheelThreshold={}s, misfireThreshold={}s",
+                queryInterval, queryWindow, wheelThresholdSeconds, misfireThresholdSeconds);
     }
 
-    /**
-     * 启动调度器
-     */
     public void start() {
         if (!enabled) {
             log.warn("CronJobScheduler 已禁用，无法启动");
@@ -123,8 +129,6 @@ public class CronJobScheduler {
 
         if (running.compareAndSet(false, true)) {
             log.info("CronJobScheduler 启动");
-
-            // 启动定时查询任务
             schedulerExecutor.scheduleWithFixedDelay(
                     this::scanAndScheduleJobs,
                     0,
@@ -133,22 +137,16 @@ public class CronJobScheduler {
         }
     }
 
-    /**
-     * 停止调度器
-     */
     @PreDestroy
     public void stop() {
         if (running.compareAndSet(true, false)) {
             log.info("CronJobScheduler 停止中...");
 
-            // 取消所有已调度的任务
             scheduledJobs.forEach((jobId, timeout) -> {
                 timeout.cancel();
-                log.debug("取消任务调度: jobId={}", jobId);
             });
             scheduledJobs.clear();
 
-            // 关闭线程池
             if (schedulerExecutor != null) {
                 schedulerExecutor.shutdown();
             }
@@ -171,7 +169,7 @@ public class CronJobScheduler {
     // ==================== 核心调度逻辑 ====================
 
     /**
-     * 扫描并调度任务
+     * 扫描并调度任务（参考 xxl-job + PowerJob）
      */
     private void scanAndScheduleJobs() {
         if (!running.get()) {
@@ -182,18 +180,24 @@ public class CronJobScheduler {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime endTime = now.plusSeconds(queryWindow);
 
-            // 查询时间窗口内的启用任务
-            List<JobInfo> jobs = jobInfoMapper.findJobsToExecute(now, endTime, 1);
+            // 查询时间窗口内的启用任务（包括已过期的）
+            // 注意：这里 startTime 用 now 减去 misfireThreshold，以便捕获刚过期的任务
+            LocalDateTime startTime = now.minusSeconds(misfireThresholdSeconds);
+            List<JobInfo> jobs = jobInfoMapper.findJobsToExecute(startTime, endTime, 1);
 
             if (jobs.isEmpty()) {
-                log.debug("没有需要调度的任务，时间窗口: {} ~ {}", now, endTime);
+                log.debug("没有需要调度的任务，时间窗口: {} ~ {}", startTime, endTime);
                 return;
             }
 
-            log.info("扫描到 {} 个待调度任务，时间窗口: {} ~ {}", jobs.size(), now, endTime);
+            log.debug("扫描到 {} 个待调度任务", jobs.size());
 
             for (JobInfo job : jobs) {
-                scheduleJob(job);
+                try {
+                    processJob(job, now);
+                } catch (Exception e) {
+                    log.error("处理任务 {} 时发生错误", job.getId(), e);
+                }
             }
 
         } catch (Exception e) {
@@ -202,63 +206,128 @@ public class CronJobScheduler {
     }
 
     /**
-     * 调度单个任务到时间轮
+     * 处理单个任务（参考 xxl-job 的过期任务处理策略）
      */
-    private void scheduleJob(JobInfo jobInfo) {
+    @Transactional
+    protected void processJob(JobInfo jobInfo, LocalDateTime now) {
         Integer jobId = jobInfo.getId();
 
-        try {
-            // 检查任务是否已暂停
-            if (pausedJobs.contains(jobId)) {
-                log.debug("任务 {} 已暂停，跳过调度", jobId);
-                return;
-            }
-
-            // 检查任务是否已调度
-            if (scheduledJobs.containsKey(jobId)) {
-                log.debug("任务 {} 已在调度队列中，跳过", jobId);
-                return;
-            }
-
-            // 获取调度策略
-            ScheduleTypeEnum scheduleType = jobInfo.getScheduleType();
-            ScheduleStrategy strategy = strategyFactory.getStrategy(scheduleType);
-
-            // API 类型不需要自动调度
-            if (!strategy.needAutoSchedule()) {
-                log.debug("任务 {} 为 {} 类型，不需要自动调度", jobId, scheduleType);
-                return;
-            }
-
-            // 计算延迟时间
-            LocalDateTime nextExecuteTime = jobInfo.getNextExecuteTime();
-            if (nextExecuteTime == null) {
-                nextExecuteTime = strategy.calculateNextExecuteTime(jobInfo);
-                if (nextExecuteTime == null) {
-                    log.warn("任务 {} 无法计算下次执行时间", jobId);
-                    return;
-                }
-            }
-
-            long delayMs = ChronoUnit.MILLIS.between(LocalDateTime.now(), nextExecuteTime);
-            if (delayMs < 0) {
-                delayMs = 0; // 已过期，立即执行
-            }
-
-            log.info("调度任务: jobId={}, type={}, handler={}, nextExecuteTime={}, delay={}ms",
-                    jobId, scheduleType, jobInfo.getJobHandler(), nextExecuteTime, delayMs);
-
-            // 提交到时间轮
-            Timeout timeout = hashedWheelTimer.newTimeout(
-                    task -> executeJob(jobInfo),
-                    delayMs,
-                    TimeUnit.MILLISECONDS);
-
-            scheduledJobs.put(jobId, timeout);
-
-        } catch (Exception e) {
-            log.error("调度任务 {} 时发生错误", jobId, e);
+        // 1. 检查是否已暂停
+        if (pausedJobs.contains(jobId)) {
+            return;
         }
+
+        // 2. 检查是否正在执行中
+        if (runningJobs.contains(jobId)) {
+            log.debug("任务 {} 正在执行中，跳过本次调度", jobId);
+            return;
+        }
+
+        // 3. 检查是否已在时间轮中
+        if (scheduledJobs.containsKey(jobId)) {
+            return;
+        }
+
+        // 4. 获取调度策略
+        ScheduleStrategy strategy = strategyFactory.getStrategy(jobInfo.getScheduleType());
+        if (!strategy.needAutoSchedule()) {
+            return;
+        }
+
+        LocalDateTime nextExecuteTime = jobInfo.getNextExecuteTime();
+        if (nextExecuteTime == null) {
+            nextExecuteTime = strategy.calculateNextExecuteTime(jobInfo);
+            if (nextExecuteTime == null) {
+                return;
+            }
+        }
+
+        long delayMs = ChronoUnit.MILLIS.between(now, nextExecuteTime);
+
+        // 5. 【xxl-job 策略】过期任务分类处理
+        if (delayMs < 0) {
+            long overdueMs = -delayMs;
+            long misfireThresholdMs = misfireThresholdSeconds * 1000L;
+
+            if (overdueMs > misfireThresholdMs) {
+                // 过期太久（超过阈值），跳过本次，直接计算下次执行时间
+                log.warn("任务 {} 过期 {}ms > 阈值 {}ms，跳过本次执行，计算下次时间",
+                        jobId, overdueMs, misfireThresholdMs);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               refreshNextExecuteTime(jobInfo, strategy);
+                return;
+            } else {
+                // 刚过期（在阈值内），立即执行
+                log.info("任务 {} 过期 {}ms <= 阈值 {}ms，立即执行",
+                        jobId, overdueMs, misfireThresholdMs);
+                delayMs = 0;
+            }
+        }
+
+        // 6. 【PowerJob 策略】扫描时立即更新下次执行时间
+        // 不等任务执行完，这样下次扫描就能看到新的执行时间
+        refreshNextExecuteTime(jobInfo, strategy);
+
+        // 7. 放入时间轮
+        scheduleToWheel(jobId, delayMs);
+    }
+
+    /**
+     * 【PowerJob 优化】扫描时立即计算并更新下次执行时间
+     */
+    @Transactional
+    protected void refreshNextExecuteTime(JobInfo jobInfo, ScheduleStrategy strategy) {
+        LocalDateTime nextTime = strategy.calculateNextExecuteTime(jobInfo);
+        if (nextTime != null) {
+            jobInfoMapper.updateNextExecuteTime(jobInfo.getId(), nextTime, LocalDateTime.now());
+            jobInfo.setNextExecuteTime(nextTime);
+            log.debug("任务 {} 下次执行时间更新为: {}", jobInfo.getId(), nextTime);
+        }
+    }
+
+    /**
+     * 【xxl-job 优化】时间轮只存 jobId，触发时重新获取最新 JobInfo
+     */
+    private void scheduleToWheel(Integer jobId, long delayMs) {
+        // 如果延迟超过阈值，不放入时间轮
+        if (delayMs >= wheelThresholdSeconds * 1000L) {
+            log.debug("任务 {} 延迟 {}ms >= 阈值，等待下次扫描", jobId, delayMs);
+            return;
+        }
+
+        log.info("调度任务到时间轮: jobId={}, delay={}ms", jobId, delayMs);
+
+        // 时间轮只存 jobId
+        Timeout timeout = hashedWheelTimer.newTimeout(
+                task -> triggerJob(jobId),  // 只传 jobId
+                delayMs,
+                TimeUnit.MILLISECONDS);
+
+        scheduledJobs.put(jobId, timeout);
+    }
+
+    /**
+     * 时间轮触发任务
+     */
+    private void triggerJob(Integer jobId) {
+        scheduledJobs.remove(jobId);
+
+        if (!running.get() || pausedJobs.contains(jobId)) {
+            return;
+        }
+
+        // 【xxl-job 优化】触发时重新从 DB 获取最新的 JobInfo
+        jobInfoMapper.findById(jobId).ifPresentOrElse(
+                jobInfo -> {
+                    // 检查是否正在执行
+                    if (runningJobs.contains(jobId)) {
+                        log.warn("任务 {} 正在执行中，跳过本次触发", jobId);
+                        return;
+                    }
+                    // 提交到线程池执行
+                    jobExecutor.submit(() -> executeJob(jobInfo));
+                },
+                () -> log.warn("任务 {} 不存在或已删除", jobId)
+        );
     }
 
     /**
@@ -267,60 +336,66 @@ public class CronJobScheduler {
     private void executeJob(JobInfo jobInfo) {
         Integer jobId = jobInfo.getId();
 
-        // 从调度队列移除
-        scheduledJobs.remove(jobId);
-
-        // 检查是否已暂停
-        if (pausedJobs.contains(jobId)) {
-            log.info("任务 {} 已暂停，跳过执行", jobId);
+        // 标记为正在执行
+        if (!runningJobs.add(jobId)) {
+            log.warn("任务 {} 正在执行中，跳过", jobId);
             return;
         }
-
-        // 检查是否仍在运行
-        if (!running.get()) {
-            log.info("调度器已停止，跳过执行任务 {}", jobId);
-            return;
-        }
-
-        // 提交到线程池异步执行
-        jobExecutor.submit(() -> doExecuteJob(jobInfo));
-    }
-
-    /**
-     * 实际执行任务
-     */
-    private void doExecuteJob(JobInfo jobInfo) {
-        Integer jobId = jobInfo.getId();
-        String jobHandler = jobInfo.getJobHandler();
-
-        log.info("开始执行任务: jobId={}, handler={}", jobId, jobHandler);
 
         try {
-            // 构建调度配置
-            ScheduleConfig config = buildScheduleConfig(jobInfo);
+            log.info("开始执行任务: jobId={}, handler={}", jobId, jobInfo.getJobHandler());
 
-            // 通过 Invoker 执行任务
+            ScheduleConfig config = buildScheduleConfig(jobInfo);
             Object result = invoker.invoke(config);
 
-            log.info("任务执行成功: jobId={}, handler={}, result={}", jobId, jobHandler, result);
-
-            // 重置重试次数
+            log.info("任务执行成功: jobId={}, result={}", jobId, result);
             jobInfo.resetRetryTimes();
 
         } catch (Throwable e) {
-            log.error("任务执行失败: jobId={}, handler={}", jobId, jobHandler, e);
-
-            // 处理执行错误
+            log.error("任务执行失败: jobId={}", jobId, e);
             handleExecutionError(jobInfo, e);
+
         } finally {
-            // 计算并更新下次执行时间
-            updateNextExecuteTime(jobInfo);
+            // 移除执行标记
+            runningJobs.remove(jobId);
+
+            // 【高频任务优化】执行完后检查是否需要立即重调度
+            rescheduleIfNeeded(jobInfo);
         }
     }
 
     /**
-     * 构建调度配置
+     * 【高频任务优化】执行完后检查是否需要立即重调度
      */
+    private void rescheduleIfNeeded(JobInfo jobInfo) {
+        Integer jobId = jobInfo.getId();
+
+        if (pausedJobs.contains(jobId) || !running.get()) {
+            return;
+        }
+
+        ScheduleStrategy strategy = strategyFactory.getStrategy(jobInfo.getScheduleType());
+        if (!strategy.needAutoSchedule()) {
+            return;
+        }
+
+        // 获取最新的下次执行时间（扫描时已更新）
+        LocalDateTime nextTime = jobInfo.getNextExecuteTime();
+        if (nextTime == null) {
+            return;
+        }
+
+        long delayMs = ChronoUnit.MILLIS.between(LocalDateTime.now(), nextTime);
+
+        // 如果下次执行时间在阈值内，立即放入时间轮
+        if (delayMs >= 0 && delayMs < wheelThresholdSeconds * 1000L) {
+            if (!scheduledJobs.containsKey(jobId)) {
+                log.debug("高频任务 {} 立即重调度，delay={}ms", jobId, delayMs);
+                scheduleToWheel(jobId, delayMs);
+            }
+        }
+    }
+
     private ScheduleConfig buildScheduleConfig(JobInfo jobInfo) {
         ScheduleConfig config = new ScheduleConfig();
         config.setJobId(jobInfo.getId());
@@ -332,13 +407,9 @@ public class CronJobScheduler {
         config.setLoadBalanceType(jobInfo.getLoadBalanceType());
         config.setSerializerType(jobInfo.getSerializerType());
         config.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
-        config.setSync(false);
         return config;
     }
 
-    /**
-     * 处理执行错误
-     */
     private void handleExecutionError(JobInfo jobInfo, Throwable e) {
         Integer jobId = jobInfo.getId();
         int currentRetry = jobInfo.getRetryTimes();
@@ -348,9 +419,8 @@ public class CronJobScheduler {
             jobInfo.incrementRetryTimes();
             log.warn("任务 {} 执行失败，将进行第 {} 次重试", jobId, jobInfo.getRetryTimes());
 
-            // 延迟重试（30秒后）
             hashedWheelTimer.newTimeout(
-                    task -> executeJob(jobInfo),
+                    task -> triggerJob(jobId),
                     30,
                     TimeUnit.SECONDS);
         } else {
@@ -359,53 +429,10 @@ public class CronJobScheduler {
         }
     }
 
-    /**
-     * 更新下次执行时间并重新调度
-     */
-    @Transactional
-    public void updateNextExecuteTime(JobInfo jobInfo) {
-        Integer jobId = jobInfo.getId();
-
-        try {
-            // 获取调度策略
-            ScheduleStrategy strategy = strategyFactory.getStrategy(jobInfo.getScheduleType());
-
-            // API 类型不需要自动调度
-            if (!strategy.needAutoSchedule()) {
-                log.debug("任务 {} 为 API 类型，不自动调度", jobId);
-                return;
-            }
-
-            // 计算下次执行时间
-            LocalDateTime nextExecuteTime = strategy.calculateNextExecuteTime(jobInfo);
-
-            if (nextExecuteTime != null) {
-                // 更新数据库
-                jobInfoMapper.updateNextExecuteTime(jobId, nextExecuteTime, LocalDateTime.now());
-
-                // 更新内存中的对象
-                jobInfo.setNextExecuteTime(nextExecuteTime);
-                jobInfo.setLastExecuteTime(LocalDateTime.now());
-
-                log.info("任务 {} 下次执行时间更新为: {}", jobId, nextExecuteTime);
-
-            } else {
-                log.warn("任务 {} 无法计算下次执行时间，停止自动调度", jobId);
-            }
-
-        } catch (Exception e) {
-            log.error("更新任务 {} 下次执行时间时发生错误", jobId, e);
-        }
-    }
-
     // ==================== 公开方法 ====================
 
-    /**
-     * 暂停任务
-     */
     public boolean pause(Integer jobId) {
         if (pausedJobs.add(jobId)) {
-            // 取消当前调度
             Timeout timeout = scheduledJobs.remove(jobId);
             if (timeout != null) {
                 timeout.cancel();
@@ -416,21 +443,14 @@ public class CronJobScheduler {
         return false;
     }
 
-    /**
-     * 恢复任务
-     */
     public boolean resume(Integer jobId) {
         if (pausedJobs.remove(jobId)) {
             log.info("恢复任务: {}", jobId);
-            // 下次扫描时会自动重新调度
             return true;
         }
         return false;
     }
 
-    /**
-     * 取消任务调度
-     */
     public boolean cancel(Integer jobId) {
         Timeout timeout = scheduledJobs.remove(jobId);
         if (timeout != null) {
@@ -441,33 +461,25 @@ public class CronJobScheduler {
         return false;
     }
 
-    /**
-     * 立即触发任务（不等待调度时间）
-     */
     public void triggerNow(Integer jobId) {
         jobInfoMapper.findById(jobId).ifPresent(jobInfo -> {
             log.info("立即触发任务: jobId={}", jobId);
-            jobExecutor.submit(() -> doExecuteJob(jobInfo));
+            jobExecutor.submit(() -> executeJob(jobInfo));
         });
     }
 
-    /**
-     * 获取已调度任务数量
-     */
     public int getScheduledCount() {
         return scheduledJobs.size();
     }
 
-    /**
-     * 检查任务是否已调度
-     */
+    public int getRunningCount() {
+        return runningJobs.size();
+    }
+
     public boolean isScheduled(Integer jobId) {
         return scheduledJobs.containsKey(jobId);
     }
 
-    /**
-     * 检查调度器是否运行中
-     */
     public boolean isRunning() {
         return running.get();
     }

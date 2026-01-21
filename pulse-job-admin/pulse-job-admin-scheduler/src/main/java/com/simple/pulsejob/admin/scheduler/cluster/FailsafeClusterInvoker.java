@@ -1,56 +1,39 @@
-///*
-// * Copyright (c) 2015 The Jupiter Project
-// *
-// * Licensed under the Apache License, version 2.0 (the "License");
-// * you may not use this file except in compliance with the License.
-// * You may obtain a copy of the License at:
-// *
-// *   http://www.apache.org/licenses/LICENSE-2.0
-// *
-// * Unless required by applicable law or agreed to in writing, software
-// * distributed under the License is distributed on an "AS IS" BASIS,
-// * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// * See the License for the specific language governing permissions and
-// * limitations under the License.
-// */
-//package com.simple.pulsejob.admin.scheduler.cluster;
-//
-//
-//import com.simple.pulsejob.admin.scheduler.ScheduleContext;
-//import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
-//import com.simple.pulsejob.admin.scheduler.future.FailsafeInvokeFuture;
-//import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
-//import com.simple.pulsejob.transport.JRequest;
-//
-///**
-// * 失败安全, 同步调用时发生异常时只打印日志.
-// *
-// * 通常用于写入审计日志等操作.
-// *
-// * http://en.wikipedia.org/wiki/Fail-safe
-// *
-// * jupiter
-// * org.jupiter.rpc.consumer.cluster
-// *
-// * @author jiachun.fjc
-// */
-//
-//public class FailsafeClusterInvoker implements ClusterInvoker {
-//
-//    private final Dispatcher dispatcher;
-//
-//    public FailsafeClusterInvoker(Dispatcher dispatcher) {
-//        this.dispatcher = dispatcher;
-//    }
-//
-//    @Override
-//    public Strategy strategy() {
-//        return Strategy.FAIL_SAFE;
-//    }
-//
-//    @Override
-//    public InvokeFuture invoke(JRequest request, ScheduleContext context) throws Exception {
-//        InvokeFuture future = dispatcher.dispatch(request, context);
-//        return FailsafeInvokeFuture.with(future);
-//    }
-//}
+package com.simple.pulsejob.admin.scheduler.cluster;
+
+import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
+import com.simple.pulsejob.admin.scheduler.dispatch.Dispatcher;
+import com.simple.pulsejob.admin.scheduler.factory.DispatcherFactory;
+import com.simple.pulsejob.admin.scheduler.future.FailsafeInvokeFuture;
+import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+/**
+ * 失败安全策略.
+ *
+ * <p>同步调用时发生异常只打印日志，不抛出异常。</p>
+ * <p>通常用于写入审计日志等操作。</p>
+ *
+ * @see <a href="http://en.wikipedia.org/wiki/Fail-safe">Fail-safe</a>
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class FailsafeClusterInvoker implements ClusterInvoker {
+
+    private final DispatcherFactory dispatcherFactory;
+
+    @Override
+    public InvokeStrategyEnum strategy() {
+        return InvokeStrategyEnum.FAIL_SAFE;
+    }
+
+    @Override
+    public InvokeFuture invoke(ScheduleContext context) throws Exception {
+        Dispatcher dispatcher = dispatcherFactory.get(context.getDispatchType());
+        InvokeFuture future = dispatcher.dispatch(context);
+        return FailsafeInvokeFuture.with(future);
+    }
+}

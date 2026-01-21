@@ -76,7 +76,6 @@ public class JobTriggerServiceImpl implements IJobTriggerService {
 
         // 重试和同步配置
         config.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
-        config.setSync(false); // 手动触发默认异步
 
         return config;
     }

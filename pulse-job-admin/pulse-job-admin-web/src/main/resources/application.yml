@@ -45,10 +45,12 @@ pulse:
         enabled: true
         # 查询间隔（毫秒）- 多久查询一次数据库
         query-interval: 5000
-        # 查询时间窗口（秒）- 查询未来多少秒内的任务
+        # 查询时间窗口（秒）- 查询未来多少秒内的任务，建议为 2 × 扫描间隔
         query-window: 10
-        # 预读时间（秒）- 提前多少秒将任务加载到内存
-        pre-read-seconds: 5
+        # 时间轮调度阈值（秒）- 延迟小于此值的任务放入时间轮
+        wheel-threshold-seconds: 10
+        # 过期容忍时间（秒）- 超过此时间的过期任务跳过本次执行（参考 xxl-job）
+        misfire-threshold-seconds: 10
         # 重试间隔（秒）
         retry-interval: 30
         # 最大重试次数
