@@ -16,8 +16,9 @@
 package com.simple.pulsejob.admin.scheduler.future;
 
 import java.util.concurrent.CompletableFuture;
-import com.simple.pulsejob.common.util.Reflects;
+
 import com.simple.pulsejob.common.util.StackTraceUtil;
+import com.simple.pulsejob.transport.JResponse;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,9 +33,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author jiachun.fjc
  */
-@SuppressWarnings("unchecked")
 @Slf4j
-public class FailsafeInvokeFuture extends CompletableFuture<Object> implements InvokeFuture {
+public class FailsafeInvokeFuture extends CompletableFuture<JResponse> implements InvokeFuture {
 
 
     private final InvokeFuture future;
@@ -49,7 +49,7 @@ public class FailsafeInvokeFuture extends CompletableFuture<Object> implements I
 
 
     @Override
-    public Object getResult() throws Throwable {
+    public JResponse getResult() throws Throwable {
         try {
             return future.getResult();
         } catch (Throwable t) {

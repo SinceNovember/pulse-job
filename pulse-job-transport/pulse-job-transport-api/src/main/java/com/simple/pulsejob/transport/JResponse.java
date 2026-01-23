@@ -47,7 +47,6 @@ public class JResponse {
     }
 
     public long instanceId() {
-
         return payload.instanceId();
     }
 

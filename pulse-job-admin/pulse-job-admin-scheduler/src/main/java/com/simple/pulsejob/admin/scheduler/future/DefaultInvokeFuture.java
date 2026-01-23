@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  * 支持流式日志接收
  */
 @Slf4j
-public class DefaultInvokeFuture extends CompletableFuture<Object> implements InvokeFuture {
+public class DefaultInvokeFuture extends CompletableFuture<JResponse> implements InvokeFuture {
 
     private static final ConcurrentMap<Long, DefaultInvokeFuture> roundFutures =
             Maps.newConcurrentMapLong(1024);
@@ -163,30 +163,21 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
      * 处理最终响应
      */
     private void doReceived(JResponse response) {
-        byte status = response.status();
-        ResultWrapper wrapper = response.result();
-
-        if (status == Status.OK.value()) {
-            log.info("任务id:{}, 执行完成", response.instanceId());
-            // 正常完成
-            complete(wrapper != null ? wrapper.getResult() : null);
-        } else {
-            // 任务执行失败，向上游回传异常
-            Object result = wrapper != null ? wrapper.getResult() : null;
-            Throwable cause = (result instanceof Throwable)
-                    ? (Throwable) result
-                    : new RuntimeException("任务执行失败, status=" + Status.parse(status) + ", result=" + result);
-            completeExceptionally(cause);
-        }
-
-        // 拦截器后置处理
-//        List<SchedulerInterceptor> interceptors = this.interceptors;
-//        if (interceptors != null) {
-//            for (int i = interceptors.size() - 1; i >= 0; i--) {
-//                interceptors.get(i).afterSchedule(, channel, response);
-//            }
+//        byte status = response.status();
+//        ResultWrapper wrapper = response.result();
+//
+//        if (status == Status.OK.value()) {
+//            log.info("任务id:{}, 执行完成", response.instanceId());
+//            complete(response);
+//        } else {
+//            // 任务执行失败，向上游回传异常
+//            Object result = wrapper != null ? wrapper.getResult() : null;
+//            Throwable cause = (result instanceof Throwable)
+//                    ? (Throwable) result
+//                    : new RuntimeException("任务执行失败, status=" + Status.parse(status) + ", result=" + result);
+//            completeExceptionally(cause);
 //        }
-        
+        complete(response);
         // ✅ 清理 Future
         cleanup();
     }
@@ -234,14 +225,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
         return this;
     }
     
-    /**
-     * ✅ 标记任务完成
-     */
-    public void markCompleted(Object result) {
-        complete(result);
-        cleanup();
-    }
-    
+
     /**
      * ✅ 标记任务失败
      */
@@ -275,7 +259,7 @@ public class DefaultInvokeFuture extends CompletableFuture<Object> implements In
     }
 
     @Override
-    public Object getResult() throws Throwable {
+    public JResponse getResult() throws Throwable {
         try {
             return get();
         } catch (Exception e) {

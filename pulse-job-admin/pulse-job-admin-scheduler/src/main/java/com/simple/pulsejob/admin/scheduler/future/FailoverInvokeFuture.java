@@ -15,6 +15,8 @@
  */
 package com.simple.pulsejob.admin.scheduler.future;
 
+import com.simple.pulsejob.transport.JResponse;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -27,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author jiachun.fjc
  */
-public class FailoverInvokeFuture extends CompletableFuture<Object> implements InvokeFuture {
+public class FailoverInvokeFuture extends CompletableFuture<JResponse> implements InvokeFuture {
 
 
     public static FailoverInvokeFuture with() {
@@ -36,7 +38,7 @@ public class FailoverInvokeFuture extends CompletableFuture<Object> implements I
 
 
     @Override
-    public Object getResult() throws Throwable {
+    public JResponse getResult() throws Throwable {
         return get();
     }
 }

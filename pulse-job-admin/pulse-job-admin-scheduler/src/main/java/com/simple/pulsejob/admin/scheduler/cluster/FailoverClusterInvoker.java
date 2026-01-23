@@ -71,9 +71,9 @@ public class FailoverClusterInvoker implements ClusterInvoker {
                 future = dispatcher.dispatchRetry(context);
             }
 
-            future.whenComplete((result, throwable) -> {
+            future.whenComplete((response, throwable) -> {
                 if (throwable == null) {
-                    failoverFuture.complete(result);
+                    failoverFuture.complete(response);
                 } else {
                     if (log.isWarnEnabled()) {
                         JChannel channel = future instanceof DefaultInvokeFuture

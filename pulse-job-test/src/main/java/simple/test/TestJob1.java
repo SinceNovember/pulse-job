@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class TestJob1 {
 
     @JobRegister(cron = "111")
-    public void testJob1() {
+    public String testJob1() {
         log.info("log------1");
 
         log.error("log------2");
@@ -28,6 +28,7 @@ public class TestJob1 {
 
         log.info("log------1");
         log.info("log------1");
+        return "test Job result";
 
     }
 }

@@ -6,9 +6,6 @@ import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
-import com.simple.pulsejob.transport.JRequest;
-import com.simple.pulsejob.transport.JResponse;
-import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +41,7 @@ public class JobInstanceLifecycleInterceptor implements SchedulerInterceptor {
     }
 
     @Override
-    public void beforeTransport(ScheduleContext context, JChannel channel) {
+    public void beforeTransport(ScheduleContext context) {
         Integer jobId = context.getJobId();
         Integer executorId = context.getExecutorId();
 
@@ -56,7 +53,7 @@ public class JobInstanceLifecycleInterceptor implements SchedulerInterceptor {
     }
 
     @Override
-    public void afterTransport(ScheduleContext context, JChannel channel, JRequest request) {
+    public void afterTransport(ScheduleContext context) {
         Long instanceId = context.getInstanceId();
         if (instanceId == null) {
             log.warn("Skip markTransported: instanceId is null");
@@ -66,12 +63,7 @@ public class JobInstanceLifecycleInterceptor implements SchedulerInterceptor {
     }
 
     @Override
-    public void onTransportFailure(
-            ScheduleContext context,
-            JChannel channel,
-            JRequest request,
-            Throwable throwable) {
-
+    public void onTransportFailure(ScheduleContext context, Throwable throwable) {
         Long instanceId = context.getInstanceId();
         if (instanceId == null) {
             log.warn("Transport failed before instance creation", throwable);

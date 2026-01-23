@@ -16,6 +16,10 @@ import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import com.simple.pulsejob.transport.payload.JRequestPayload;
 import com.simple.pulsejob.transport.payload.JResponsePayload;
 import com.simple.pulsejob.transport.payload.PayloadSerializer;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
@@ -32,6 +36,25 @@ import java.util.Optional;
  */
 @Slf4j
 public class MessageTask implements RejectedRunnable {
+
+    /** 
+     * JSON 序列化器（线程安全，复用实例）
+     * 用于将任务返回值转为 JSON 字符串，避免用户对象不实现 Serializable 导致的序列化异常
+     * 
+     * 配置说明：
+     * - 允许访问私有字段（用户类可能没有 getter）
+     * - 禁用空 Bean 检查（避免无字段/无 getter 的类报错）
+     */
+    private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+    
+    private static ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        // 允许序列化私有字段（无需 getter）
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        // 禁用空 Bean 序列化异常
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        return mapper;
+    }
 
     private final DefaultClientProcessor processor;
     private final JChannel channel;
@@ -92,7 +115,18 @@ public class MessageTask implements RejectedRunnable {
 
     private void doProcess(Object result) {
         ResultWrapper wrapper = new ResultWrapper();
-        wrapper.setResult(result);
+        // 框架层自动将返回值转为 JSON 字符串，避免用户对象序列化问题
+        // 这样用户返回任意类型（不实现 Serializable）都不会报错
+        if (result != null) {
+            try {
+                wrapper.setResult(OBJECT_MAPPER.writeValueAsString(result));
+            } catch (Exception e) {
+                // JSON 转换失败（如循环引用），记录日志但不影响响应
+                log.warn("Failed to serialize result to JSON, result will be null. instanceId={}, error={}", 
+                        request.instanceId(), e.getMessage());
+                wrapper.setResult(null);
+            }
+        }
 
         SerializerType type = SerializerType.parse(request.serializerCode());
         JResponsePayload response = PayloadSerializer.response()

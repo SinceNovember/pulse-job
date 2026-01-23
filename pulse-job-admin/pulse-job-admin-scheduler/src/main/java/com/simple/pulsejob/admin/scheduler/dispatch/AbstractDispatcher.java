@@ -68,25 +68,29 @@ public abstract class AbstractDispatcher implements Dispatcher {
     }
 
     private DefaultInvokeFuture doWrite(final JChannel channel, ScheduleContext context, boolean isFirstAttempt) {
+        // 保存运行时状态到 context（供拦截器和回调使用）
+        context.setChannel(channel);
+        
         if (isFirstAttempt) {
             // 首次调用：触发 beforeTransport（创建 JobInstance）
-            schedulerInterceptorChain.beforeTransport(context, channel);
+            schedulerInterceptorChain.beforeTransport(context);
         }
 
         JRequest request = createRequest(channel, context);
+        context.setRequest(request);
 
         final DefaultInvokeFuture future = DefaultInvokeFuture
             .with(request.instanceId(), channel, 0, null, type());
 
         channel.write(request.payload(), new JFutureListener<>() {
             @Override
-            public void operationSuccess(JChannel channel) {
-                schedulerInterceptorChain.afterTransport(context, channel, request);
+            public void operationSuccess(JChannel ch) {
+                schedulerInterceptorChain.afterTransport(context);
             }
 
             @Override
-            public void operationFailure(JChannel channel, Throwable cause) {
-                schedulerInterceptorChain.onTransportFailure(context, channel, request, cause);
+            public void operationFailure(JChannel ch, Throwable cause) {
+                schedulerInterceptorChain.onTransportFailure(context, cause);
             }
         });
         return future;

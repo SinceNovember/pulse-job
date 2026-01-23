@@ -6,6 +6,9 @@ import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
+import com.simple.pulsejob.transport.JRequest;
+import com.simple.pulsejob.transport.JResponse;
+import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
@@ -50,6 +53,17 @@ public class ScheduleContext {
 
     /** 超时时间（秒） */
     private int timeoutSeconds;
+
+    // ==================== 运行时状态（调度过程中动态设置） ====================
+
+    /** 当前选中的通道（dispatch 时设置） */
+    private JChannel channel;
+
+    /** 当前请求（transport 时设置） */
+    private JRequest request;
+
+    /** 响应（执行完成时设置） */
+    private JResponse response;
 
     // ==================== 结果 ====================
 

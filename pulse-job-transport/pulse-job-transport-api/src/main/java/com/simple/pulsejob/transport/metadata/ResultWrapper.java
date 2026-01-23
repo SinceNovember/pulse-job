@@ -19,6 +19,8 @@ import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Response data wrapper.
@@ -30,19 +32,13 @@ import java.util.List;
  *
  * @author jiachun.fjc
  */
+@Setter
+@Getter
 public class ResultWrapper implements Serializable {
 
     private static final long serialVersionUID = -1126932930252953428L;
 
     private Object result; // 响应结果对象, 也可能是异常对象, 由响应状态决定
-
-    public Object getResult() {
-        return result;
-    }
-
-    public void setResult(Object result) {
-        this.result = result;
-    }
 
     public void setError(Throwable cause) {
         result = cause;

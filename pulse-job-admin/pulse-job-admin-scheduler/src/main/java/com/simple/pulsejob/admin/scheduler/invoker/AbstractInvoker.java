@@ -7,6 +7,8 @@ import com.simple.pulsejob.admin.scheduler.cluster.ClusterInvoker;
 import com.simple.pulsejob.admin.scheduler.factory.ClusterInvokerFactory;
 import com.simple.pulsejob.admin.scheduler.future.InvokeFuture;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptorChain;
+import com.simple.pulsejob.transport.Status;
+import com.simple.pulsejob.transport.metadata.ResultWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,16 +55,25 @@ public abstract class AbstractInvoker implements Invoker {
             // 3. 执行调用（异步）
             InvokeFuture future = clusterInvoker.invoke(context);
 
+
             // 4. 注册异步回调
-            future.whenComplete((result, throwable) -> {
+            future.whenComplete((response, throwable) -> {
                 if (throwable == null) {
-                    context.markSuccess(result);
-                    log.debug("任务执行成功: jobId={}, instanceId={}",
-                            context.getJobId(), context.getInstanceId());
+                    byte status = response.status();
+                    ResultWrapper wrapper = response.result();
+                    if (status == Status.OK.value()) {
+                        schedulerInterceptorChain.afterSchedule(context, response);
+                    } else {
+                        // 任务执行失败，向上游回传异常
+                        Object result = wrapper != null ? wrapper.getResult() : null;
+                        Throwable cause = (result instanceof Throwable)
+                            ? (Throwable) result
+                            : new RuntimeException("任务执行失败, status=" + Status.parse(status) + ", result=" + result);
+                        schedulerInterceptorChain.onScheduleFailure(context, response, cause);
+                    }
                 } else {
-                    context.markFailed(throwable);
-                    log.error("任务执行失败: jobId={}, instanceId={}",
-                            context.getJobId(), context.getInstanceId(), throwable);
+                    // 网络异常等情况
+                    schedulerInterceptorChain.onScheduleFailure(context, null, throwable);
                 }
             });
 

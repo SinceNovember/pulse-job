@@ -4,8 +4,6 @@ import com.simple.pulsejob.admin.business.service.IJobInstanceService;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.interceptor.SchedulerInterceptor;
-import com.simple.pulsejob.transport.JRequest;
-import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.channel.JChannel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +29,10 @@ public class JobInstanceResultInterceptor implements SchedulerInterceptor {
     private final IJobInstanceService jobInstanceService;
 
     @Override
-    public void afterTransport(ScheduleContext context, JChannel channel, JRequest request) {
+    public void afterTransport(ScheduleContext context) {
         Long instanceId = context.getInstanceId();
+        JChannel channel = context.getChannel();
+        
         if (instanceId == null) {
             return;
         }
@@ -40,7 +40,7 @@ public class JobInstanceResultInterceptor implements SchedulerInterceptor {
         // ✅ 关键：获取 Future 并注册回调，在任务执行完成后更新状态
         DefaultInvokeFuture future = getFuture(instanceId, channel);
         if (future != null) {
-            future.whenComplete((result, throwable) -> {
+            future.whenComplete((response, throwable) -> {
                 try {
                     if (throwable == null) {
                         // 执行成功

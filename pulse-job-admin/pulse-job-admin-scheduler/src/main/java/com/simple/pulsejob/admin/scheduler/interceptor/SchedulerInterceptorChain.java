@@ -1,9 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.interceptor;
 
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
-import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.JResponse;
-import com.simple.pulsejob.transport.channel.JChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
@@ -32,26 +30,26 @@ public class SchedulerInterceptorChain {
         forEach(i -> i.beforeSchedule(context));
     }
 
-    public void beforeTransport(ScheduleContext context, JChannel channel) {
-        forEach(i -> i.beforeTransport(context, channel));
+    public void beforeTransport(ScheduleContext context) {
+        forEach(i -> i.beforeTransport(context));
     }
 
-    public void afterTransport(ScheduleContext context, JChannel channel, JRequest request) {
-        forEach(i -> i.afterTransport(context, channel, request));
+    public void afterTransport(ScheduleContext context) {
+        forEach(i -> i.afterTransport(context));
     }
 
-    public void afterSchedule(ScheduleContext context, JChannel channel, JResponse response) {
-        forEach(i -> i.afterSchedule(context, channel, response));
+    public void afterSchedule(ScheduleContext context, JResponse response) {
+        forEach(i -> i.afterSchedule(context, response));
     }
 
     /* ================== 异常流程 ================== */
 
-    public void onTransportFailure(ScheduleContext context, JChannel channel, JRequest request, Throwable throwable) {
-        forEach(i -> i.onTransportFailure(context, channel, request, throwable));
+    public void onTransportFailure(ScheduleContext context, Throwable throwable) {
+        forEach(i -> i.onTransportFailure(context, throwable));
     }
 
-    public void onScheduleFailure(ScheduleContext context, JChannel channel, JRequest request, Throwable throwable) {
-        forEach(i -> i.onScheduleFailure(context, channel, request, throwable));
+    public void onScheduleFailure(ScheduleContext context, JResponse response, Throwable throwable) {
+        forEach(i -> i.onScheduleFailure(context, response, throwable));
     }
 
     /* ================== 内部工具 ================== */
