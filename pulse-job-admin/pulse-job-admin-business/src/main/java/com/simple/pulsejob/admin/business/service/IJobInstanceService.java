@@ -38,9 +38,33 @@ public interface IJobInstanceService {
     void markSuccess(Long instanceId, LocalDateTime endTime);
 
     /**
+     * 更新实例状态为成功（带结果）
+     *
+     * @param instanceId 实例ID
+     * @param endTime    结束时间
+     * @param result     执行结果（JSON字符串）
+     */
+    void markSuccessWithResult(Long instanceId, LocalDateTime endTime, String result);
+
+    /**
      * 更新实例状态为失败
      */
     void markFailed(Long instanceId, LocalDateTime endTime, String errorMsg);
+
+    /**
+     * 更新实例状态为失败（带详细信息）
+     *
+     * @param instanceId   实例ID
+     * @param endTime      结束时间
+     * @param errorMsg     错误信息
+     * @param errorDetail  错误详情（堆栈等）
+     */
+    void markFailedWithDetail(Long instanceId, LocalDateTime endTime, String errorMsg, String errorDetail);
+
+    /**
+     * 更新执行器地址
+     */
+    void updateExecutorAddress(Long instanceId, String executorAddress);
 
     /**
      * 更新实例状态为超时

@@ -46,6 +46,22 @@ public class JobInstance implements Serializable {
     @Column(name = "retry_count")
     private Integer retryCount = 0;
 
+    /** 执行结果（JSON格式） */
+    @Column(name = "result", columnDefinition = "TEXT")
+    private String result;
+
+    /** 错误信息 */
+    @Column(name = "error_message", length = 2000)
+    private String errorMessage;
+
+    /** 触发类型：auto-自动调度, manual-手动触发, api-API调用 */
+    @Column(name = "trigger_type", length = 20)
+    private String triggerType;
+
+    /** 执行器地址（实际执行的地址） */
+    @Column(name = "executor_address", length = 100)
+    private String executorAddress;
+
     @Column(name = "create_time", nullable = false)
     private LocalDateTime createTime;
 

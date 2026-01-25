@@ -61,15 +61,71 @@ public class JobInstanceServiceImpl implements IJobInstanceService {
     @Override
     @Transactional
     public void markSuccess(Long instanceId, LocalDateTime endTime) {
-        updateStatus(instanceId, JobInstanceStatus.SUCCESS);
+        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
+            instance.setStatus(JobInstanceStatus.SUCCESS.getValue());
+            instance.setEndTime(endTime);
+            jobInstanceMapper.save(instance);
+        });
+    }
 
+    @Override
+    @Transactional
+    public void markSuccessWithResult(Long instanceId, LocalDateTime endTime, String result) {
+        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
+            instance.setStatus(JobInstanceStatus.SUCCESS.getValue());
+            instance.setEndTime(endTime);
+            instance.setResult(result);
+            jobInstanceMapper.save(instance);
+            log.info("任务实例执行成功: instanceId={}, result={}", instanceId, 
+                    result != null && result.length() > 100 ? result.substring(0, 100) + "..." : result);
+        });
     }
 
     @Override
     @Transactional
     public void markFailed(Long instanceId, LocalDateTime endTime, String errorMsg) {
-        updateStatus(instanceId, JobInstanceStatus.FAILED);
+        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
+            instance.setStatus(JobInstanceStatus.FAILED.getValue());
+            instance.setEndTime(endTime);
+            instance.setErrorMessage(truncateErrorMsg(errorMsg));
+            jobInstanceMapper.save(instance);
+        });
+    }
 
+    @Override
+    @Transactional
+    public void markFailedWithDetail(Long instanceId, LocalDateTime endTime, String errorMsg, String errorDetail) {
+        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
+            instance.setStatus(JobInstanceStatus.FAILED.getValue());
+            instance.setEndTime(endTime);
+            // 拼接错误信息和详情
+            String fullError = errorMsg;
+            if (errorDetail != null && !errorDetail.isEmpty()) {
+                fullError = errorMsg + "\n\n" + errorDetail;
+            }
+            instance.setErrorMessage(truncateErrorMsg(fullError));
+            jobInstanceMapper.save(instance);
+            log.error("任务实例执行失败: instanceId={}, error={}", instanceId, errorMsg);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void updateExecutorAddress(Long instanceId, String executorAddress) {
+        jobInstanceMapper.findById(instanceId).ifPresent(instance -> {
+            instance.setExecutorAddress(executorAddress);
+            jobInstanceMapper.save(instance);
+        });
+    }
+
+    /**
+     * 截断错误信息，避免超过数据库字段长度
+     */
+    private String truncateErrorMsg(String errorMsg) {
+        if (errorMsg == null) {
+            return null;
+        }
+        return errorMsg.length() > 2000 ? errorMsg.substring(0, 2000) : errorMsg;
     }
 
     @Override

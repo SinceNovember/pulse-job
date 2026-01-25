@@ -2,7 +2,10 @@ package com.simple.pulsejob.admin.scheduler.dispatch;
 
 import com.simple.plusejob.serialization.Serializer;
 import com.simple.plusejob.serialization.SerializerType;
+import com.simple.pulsejob.admin.common.model.entity.JobInstance;
+import com.simple.pulsejob.admin.common.model.enums.JobInstanceStatus;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
+import com.simple.pulsejob.admin.persistence.mapper.JobInstanceMapper;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
@@ -23,6 +26,8 @@ import com.simple.pulsejob.transport.payload.PayloadSerializer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @RequiredArgsConstructor
 public abstract class AbstractDispatcher implements Dispatcher {
@@ -36,6 +41,9 @@ public abstract class AbstractDispatcher implements Dispatcher {
     protected final JobFilterChains chains;
 
     protected final SerializerFactory serializerFactory;
+
+    /** 直接使用 persistence 层创建 JobInstance，避免循环依赖 */
+    protected final JobInstanceMapper jobInstanceMapper;
 
 
     protected JChannel select(ScheduleContext context) {
@@ -72,28 +80,74 @@ public abstract class AbstractDispatcher implements Dispatcher {
         context.setChannel(channel);
         
         if (isFirstAttempt) {
-            // 首次调用：触发 beforeTransport（创建 JobInstance）
-            schedulerInterceptorChain.beforeTransport(context);
+            // ✅ 核心流程：创建 JobInstance（固定逻辑，不可跳过）
+            Long instanceId = createJobInstance(context);
+            context.setInstanceId(instanceId);
+            
+            log.debug("JobInstance created in core flow: instanceId={}, jobId={}", 
+                    instanceId, context.getJobId());
         }
 
-        JRequest request = createRequest(channel, context);
-        context.setRequest(request);
+        final JRequest request = createRequest(channel, context);
 
+        final long instanceId = request.instanceId();
         final DefaultInvokeFuture future = DefaultInvokeFuture
-            .with(request.instanceId(), channel, 0, null, type());
+            .with(instanceId, channel, 0, null, type());
+
+        // 拦截器扩展点（可选：记录日志等）
+        schedulerInterceptorChain.beforeTransport(context, request);
 
         channel.write(request.payload(), new JFutureListener<>() {
             @Override
             public void operationSuccess(JChannel ch) {
-                schedulerInterceptorChain.afterTransport(context);
+                // ✅ 核心流程：更新状态为已发送
+                updateInstanceStatus(instanceId, JobInstanceStatus.TRANSPORTED);
+                
+                // 拦截器扩展点（可选）- 带上 request 以区分广播/分片的不同实例
+                schedulerInterceptorChain.afterTransport(context, request);
             }
 
             @Override
             public void operationFailure(JChannel ch, Throwable cause) {
-                schedulerInterceptorChain.onTransportFailure(context, cause);
+                // ✅ 核心流程：更新状态为发送失败
+                updateInstanceStatus(instanceId, JobInstanceStatus.TRANSPORT_FAILED);
+                
+                // 拦截器扩展点（可选）- 带上 request 以区分广播/分片的不同实例
+                schedulerInterceptorChain.onTransportFailure(context, request, cause);
             }
         });
         return future;
+    }
+
+    /**
+     * 核心流程：更新 JobInstance 状态
+     */
+    private void updateInstanceStatus(Long instanceId, JobInstanceStatus status) {
+        if (instanceId == null) {
+            log.warn("Skip status update: instanceId is null");
+            return;
+        }
+        jobInstanceMapper.updateStatus(instanceId, status.getValue());
+        log.debug("Instance status updated: instanceId={}, status={}", instanceId, status);
+    }
+
+    /**
+     * 核心流程：创建 JobInstance 记录
+     * <p>直接使用 persistence 层，避免 scheduler ↔ business 循环依赖</p>
+     *
+     * @param context 调度上下文
+     * @return 创建的 instanceId
+     */
+    private Long createJobInstance(ScheduleContext context) {
+        JobInstance instance = new JobInstance();
+        instance.setJobId(context.getJobId());
+        instance.setExecutorId(context.getExecutorId());
+        instance.setTriggerTime(LocalDateTime.now());
+        instance.setStatus(JobInstanceStatus.PENDING.getValue());
+        instance.setRetryCount(0);
+        
+        JobInstance saved = jobInstanceMapper.save(instance);
+        return saved.getId();
     }
 
     private JRequest createRequest(JChannel channel, ScheduleContext context) {

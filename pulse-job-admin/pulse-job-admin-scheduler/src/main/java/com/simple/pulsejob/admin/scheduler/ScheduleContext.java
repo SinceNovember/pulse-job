@@ -59,8 +59,6 @@ public class ScheduleContext {
     /** 当前选中的通道（dispatch 时设置） */
     private JChannel channel;
 
-    /** 当前请求（transport 时设置） */
-    private JRequest request;
 
     /** 响应（执行完成时设置） */
     private JResponse response;

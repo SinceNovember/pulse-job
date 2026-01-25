@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.scheduler.interceptor;
 
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
+import com.simple.pulsejob.transport.JRequest;
 import com.simple.pulsejob.transport.JResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -30,12 +31,18 @@ public class SchedulerInterceptorChain {
         forEach(i -> i.beforeSchedule(context));
     }
 
-    public void beforeTransport(ScheduleContext context) {
-        forEach(i -> i.beforeTransport(context));
+    /**
+     * 网络传输前（广播/分片模式下会被调用多次）
+     */
+    public void beforeTransport(ScheduleContext context, JRequest request) {
+        forEach(i -> i.beforeTransport(context, request));
     }
 
-    public void afterTransport(ScheduleContext context) {
-        forEach(i -> i.afterTransport(context));
+    /**
+     * 网络传输成功后（广播/分片模式下会被调用多次）
+     */
+    public void afterTransport(ScheduleContext context, JRequest request) {
+        forEach(i -> i.afterTransport(context, request));
     }
 
     public void afterSchedule(ScheduleContext context, JResponse response) {
@@ -44,8 +51,11 @@ public class SchedulerInterceptorChain {
 
     /* ================== 异常流程 ================== */
 
-    public void onTransportFailure(ScheduleContext context, Throwable throwable) {
-        forEach(i -> i.onTransportFailure(context, throwable));
+    /**
+     * 网络传输失败（广播/分片模式下会被调用多次）
+     */
+    public void onTransportFailure(ScheduleContext context, JRequest request, Throwable throwable) {
+        forEach(i -> i.onTransportFailure(context, request, throwable));
     }
 
     public void onScheduleFailure(ScheduleContext context, JResponse response, Throwable throwable) {
