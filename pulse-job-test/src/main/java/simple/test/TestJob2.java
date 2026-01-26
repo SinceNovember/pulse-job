@@ -37,6 +37,9 @@ public class TestJob2 {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        if (true) {
+            throw new NullPointerException("test error.");
+        }
 
         log.info("log2------1");
         log.info("log2------1");

@@ -45,6 +45,9 @@ public class MessageWrapper implements Serializable {
     /** 目标方法参数 */
     private String args;
 
+    /** 执行超时时间（秒），0 表示不超时 */
+    private int timeoutSeconds;
+
     public MessageWrapper(String handlerName) {
         this.handlerName = handlerName;
     }
@@ -58,5 +61,12 @@ public class MessageWrapper implements Serializable {
         this.jobId = jobId;
         this.handlerName = handlerName;
         this.args = args;
+    }
+
+    public MessageWrapper(Integer jobId, String handlerName, String args, int timeoutSeconds) {
+        this.jobId = jobId;
+        this.handlerName = handlerName;
+        this.args = args;
+        this.timeoutSeconds = timeoutSeconds;
     }
 }

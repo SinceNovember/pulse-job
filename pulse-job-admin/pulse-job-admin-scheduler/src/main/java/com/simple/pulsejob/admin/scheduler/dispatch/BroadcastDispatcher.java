@@ -2,6 +2,7 @@ package com.simple.pulsejob.admin.scheduler.dispatch;
 
 import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
 import com.simple.pulsejob.admin.persistence.mapper.JobInstanceMapper;
+import com.simple.pulsejob.admin.scheduler.JobInstanceStatusManager;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
@@ -24,9 +25,10 @@ public class BroadcastDispatcher extends AbstractDispatcher {
                                LoadBalancerFactory loadBalancerFactory,
                                JobFilterChains chains, 
                                SerializerFactory serializerFactory,
-                               JobInstanceMapper jobInstanceMapper) {
+                               JobInstanceMapper jobInstanceMapper,
+                               JobInstanceStatusManager statusManager) {
         super(channelGroupManager, schedulerInterceptorChain, loadBalancerFactory, chains, 
-              serializerFactory, jobInstanceMapper);
+              serializerFactory, jobInstanceMapper, statusManager);
     }
 
     @Override

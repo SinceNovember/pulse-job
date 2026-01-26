@@ -5,11 +5,10 @@ import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.persistence.mapper.JobInfoMapper;
 import com.simple.pulsejob.admin.scheduler.JobScheduleEngine;
-import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 /**
  * 任务触发服务实现.
@@ -31,52 +30,25 @@ public class JobTriggerServiceImpl implements IJobTriggerService {
 
     @Override
     public void trigger(Integer jobId, String params) {
-        JobInfoWithExecutorDTO jobInfoWithExecutorDTO = jobInfoMapper.findWithExecutorNameById(jobId)
+        JobInfoWithExecutorDTO jobDetail = jobInfoMapper.findWithExecutorNameById(jobId)
                 .orElseThrow(() -> new IllegalStateException("JobInfo not found, jobId=" + jobId));
 
-        JobInfo jobInfo = jobInfoWithExecutorDTO.getJobInfo();
-
         // 检查任务是否启用
-        if (!jobInfo.isEnabled()) {
+        if (!jobDetail.getJobInfo().isEnabled()) {
             log.warn("任务已禁用，无法触发: jobId={}", jobId);
             throw new IllegalStateException("任务已禁用");
         }
 
-        log.info("手动触发任务开始: jobId={}, handler={}", jobId, jobInfo.getJobHandler());
+        log.info("手动触发任务开始: jobId={}, handler={}, executor={}",
+                jobId, jobDetail.getJobInfo().getJobHandler(), jobDetail.getExecutorName());
 
         try {
-            // 构建调度配置
-            ScheduleConfig config = buildScheduleConfig(jobInfo, params);
-            jobScheduleEngine.schedule(config);
+            // 构建调度上下文（包含 ExecutorKey）
+            ScheduleContext context = ScheduleContext.of(jobDetail, params);
+            jobScheduleEngine.schedule(context);
         } catch (Exception e) {
             log.error("任务触发失败: jobId={}", jobId, e);
             throw new RuntimeException("任务触发失败: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * 从 JobInfo 构建 ScheduleConfig
-     */
-    private ScheduleConfig buildScheduleConfig(JobInfo jobInfo, String overrideParams) {
-        ScheduleConfig config = new ScheduleConfig();
-
-        // 任务基本信息
-        config.setJobId(jobInfo.getId());
-        config.setJobHandler(jobInfo.getJobHandler());
-
-        // 参数：如果传入了 overrideParams 则使用传入的，否则使用任务配置的
-        config.setJobParams(StringUtils.hasText(overrideParams) ? overrideParams : jobInfo.getJobParams());
-
-        // 调度配置
-        config.setScheduleType(jobInfo.getScheduleType());
-        config.setScheduleExpression(jobInfo.getScheduleRate());
-        config.setDispatchType(jobInfo.getDispatchType());
-        config.setLoadBalanceType(jobInfo.getLoadBalanceType());
-        config.setSerializerType(jobInfo.getSerializerType());
-
-        // 重试和同步配置
-        config.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
-
-        return config;
     }
 }

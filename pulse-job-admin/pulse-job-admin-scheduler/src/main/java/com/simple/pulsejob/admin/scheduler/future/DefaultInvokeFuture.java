@@ -47,6 +47,49 @@ public class DefaultInvokeFuture extends CompletableFuture<JResponse> implements
         return broadcastFutures.get(subInstanceId(channelId, instanceId));
     }
 
+    /**
+     * ✅ Channel 断开时清理所有关联的 Future（比等超时更快响应）
+     * <p>在 ChannelHandler 的 channelInactive 中调用</p>
+     *
+     * @param channel 断开的 channel
+     * @return 受影响的 instanceId 列表（用于外部直接更新数据库状态作为双重保障）
+     */
+    public static List<Long> onChannelInactive(JChannel channel) {
+        String channelId = channel.id();
+        List<Long> affectedInstanceIds = new java.util.ArrayList<>();
+        
+        // 1. 清理 roundFutures 中该 channel 的 Future
+        roundFutures.values().removeIf(future -> {
+            if (future.channel != null && channelId.equals(future.channel.id())) {
+                affectedInstanceIds.add(future.instanceId);
+                future.completeExceptionally(
+                    new RuntimeException("Channel disconnected: " + channel.remoteAddress()));
+                future.cleanup();
+                log.warn("Channel 断开，取消 Future: instanceId={}, channel={}", 
+                    future.instanceId, channel.remoteAddress());
+                return true;
+            }
+            return false;
+        });
+        
+        // 2. 清理 broadcastFutures 中该 channel 的 Future
+        broadcastFutures.entrySet().removeIf(entry -> {
+            if (entry.getKey().startsWith(channelId)) {
+                DefaultInvokeFuture future = entry.getValue();
+                affectedInstanceIds.add(future.instanceId);
+                future.completeExceptionally(
+                    new RuntimeException("Channel disconnected: " + channel.remoteAddress()));
+                future.cleanup();
+                log.warn("Channel 断开，取消广播 Future: instanceId={}, channel={}", 
+                    future.instanceId, channel.remoteAddress());
+                return true;
+            }
+            return false;
+        });
+        
+        return affectedInstanceIds;
+    }
+
     /** 超时调度器（守护线程，共享） */
     private static final ScheduledExecutorService TIMEOUT_SCHEDULER =
             Executors.newSingleThreadScheduledExecutor(r -> {
@@ -82,7 +125,7 @@ public class DefaultInvokeFuture extends CompletableFuture<JResponse> implements
             long instanceId, JChannel channel, long timeoutMillis, Class<?> returnType, DispatchTypeEnum dispatchType) {
         this.instanceId = instanceId;
         this.channel = channel;
-        this.timeout = timeoutMillis > 0 ? timeoutMillis : 30000; // 默认 30 秒
+        this.timeout = timeoutMillis;
         this.returnType = returnType;
         this.dispatchType = dispatchType;
 
@@ -98,8 +141,11 @@ public class DefaultInvokeFuture extends CompletableFuture<JResponse> implements
                 throw new IllegalArgumentException("Unsupported " + dispatchType);
         }
 
-        // ✅ 注册超时任务
-//        scheduleTimeout();
+        // ✅ 注册超时任务（仅当设置了超时时间时）
+        // 防止 client 离线导致 Future 永远无法 complete
+        if (timeoutMillis > 0) {
+            scheduleTimeout();
+        }
     }
 
     /**

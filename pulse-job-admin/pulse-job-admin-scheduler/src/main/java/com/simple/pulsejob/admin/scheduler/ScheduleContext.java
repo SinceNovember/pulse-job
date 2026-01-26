@@ -1,35 +1,44 @@
 package com.simple.pulsejob.admin.scheduler;
 
+import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.InvokeStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
-import com.simple.pulsejob.transport.JRequest;
-import com.simple.pulsejob.transport.JResponse;
-import com.simple.pulsejob.transport.channel.JChannel;
+import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 import lombok.Data;
 
+/**
+ * 调度上下文.
+ *
+ * <p>包含调度所需的配置信息和运行时状态</p>
+ */
 @Data
 public class ScheduleContext {
 
     // ==================== 执行器相关 ====================
 
+    /** 执行器标识（用于路由） */
     private ExecutorKey executorKey;
+
+    /** 执行器ID（数据库关联） */
+    private Integer executorId;
 
     // ==================== 任务基本信息 ====================
 
+    /** 任务ID */
     private Integer jobId;
 
-    private Integer executorId;
-
+    /** 实例ID（运行时生成） */
     private Long instanceId;
 
     /** 任务处理器名称 */
     private String jobHandler;
 
+    /** 任务参数 */
     private String jobParams;
 
     // ==================== 调度配置 ====================
@@ -40,89 +49,32 @@ public class ScheduleContext {
     /** 调度类型：CRON、FIXED_RATE、FIXED_DELAY、API */
     private ScheduleTypeEnum scheduleType;
 
+    /** 分发类型：ROUND（单播）、BROADCAST（广播） */
     private DispatchTypeEnum dispatchType;
 
+    /** 负载均衡类型 */
     private LoadBalanceTypeEnum loadBalanceType;
 
+    /** 序列化类型 */
     private SerializerTypeEnum serializerType;
 
-    /** 集群调用策略 */
+    /** 集群调用策略：FAIL_FAST、FAIL_OVER、FAIL_SAFE */
     private InvokeStrategyEnum invokeStrategy;
 
-    private int retries;
+    /** 最大重试次数 */
+    private int maxRetries;
 
     /** 超时时间（秒） */
     private int timeoutSeconds;
 
-    // ==================== 运行时状态（调度过程中动态设置） ====================
-
-    /** 当前选中的通道（dispatch 时设置） */
-    private JChannel channel;
-
-
-    /** 响应（执行完成时设置） */
-    private JResponse response;
-
-    // ==================== 结果 ====================
-
-    private Object result;
-
-    private Throwable error;
-
     // ==================== 静态工厂方法 ====================
 
     /**
-     * 从 ScheduleConfig 创建调度上下文
+     * 从 JobInfo 实体创建调度上下文
      *
-     * @param config 调度配置
+     * @param jobInfo 任务实体
      * @return ScheduleContext
      */
-    public static ScheduleContext of(ScheduleConfig config) {
-        if (config == null) {
-            throw new IllegalArgumentException("ScheduleConfig cannot be null");
-        }
-
-        ScheduleContext context = new ScheduleContext();
-
-        // 任务基本信息
-        context.setJobId(config.getJobId());
-        context.setJobHandler(config.getJobHandler());
-        context.setJobParams(config.getJobParams());
-
-        // 执行器信息
-        context.setExecutorKey(config.getExecutorKey());
-
-        // 调度配置
-        context.setScheduleType(config.getScheduleType());
-        context.setScheduleExpression(config.getScheduleExpression());
-        
-        // 分发与负载均衡（使用配置值，如果为空则使用默认值）
-        if (config.getDispatchType() != null) {
-            context.setDispatchType(config.getDispatchType());
-        }
-        if (config.getLoadBalanceType() != null) {
-            context.setLoadBalanceType(config.getLoadBalanceType());
-        }
-        if (config.getSerializerType() != null) {
-            context.setSerializerType(config.getSerializerType());
-        }
-        if (config.getInvokeStrategy() != null) {
-            context.setInvokeStrategy(config.getInvokeStrategy());
-        }
-
-        // 执行配置
-        context.setRetries(config.getRetries() > 0 ? config.getRetries() : 1);
-
-        return context;
-    }
-
-
-        /**
-         * 从 JobInfo 实体创建调度上下文（无 invoker）
-         *
-         * @param jobInfo 任务实体
-         * @return ScheduleContext
-         */
     public static ScheduleContext of(JobInfo jobInfo) {
         if (jobInfo == null) {
             throw new IllegalArgumentException("JobInfo cannot be null");
@@ -142,21 +94,68 @@ public class ScheduleContext {
         context.setDispatchType(jobInfo.getDispatchType());
         context.setLoadBalanceType(jobInfo.getLoadBalanceType());
         context.setSerializerType(jobInfo.getSerializerType());
-        context.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
+        context.setMaxRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
         context.setTimeoutSeconds(jobInfo.getTimeoutSeconds() != null ? jobInfo.getTimeoutSeconds() : 60);
 
         return context;
     }
 
+    /**
+     * 从 JobInfo 创建调度上下文，可覆盖参数
+     *
+     * @param jobInfo        任务实体
+     * @param overrideParams 覆盖的参数（可为 null）
+     * @return ScheduleContext
+     */
+    public static ScheduleContext of(JobInfo jobInfo, String overrideParams) {
+        ScheduleContext context = of(jobInfo);
+        if (StringUtil.isNotBlank(overrideParams)) {
+            context.setJobParams(overrideParams);
+        }
+        return context;
+    }
+
+    /**
+     * 从 JobInfoWithExecutorDTO 创建调度上下文（推荐）
+     *
+     * @param jobDetail            包含 JobInfo 和 executorName 的 DTO
+     * @param overrideParams 覆盖的参数（可为 null）
+     * @return ScheduleContext
+     */
+    public static ScheduleContext of(JobInfoWithExecutorDTO jobDetail, String overrideParams) {
+        if (jobDetail == null || jobDetail.getJobInfo() == null) {
+            throw new IllegalArgumentException("jobDetail cannot be null");
+        }
+
+        ScheduleContext context = of(jobDetail.getJobInfo(), overrideParams);
+
+        // 设置 ExecutorKey
+        if (StringUtil.isNotBlank(jobDetail.getExecutorName())) {
+            context.setExecutorKey(ExecutorKey.of(jobDetail.getExecutorName()));
+        }
+
+        return context;
+    }
+
+    /**
+     * 从 JobInfoWithExecutorDTO 创建调度上下文
+     *
+     * @param dto 包含 JobInfo 和 executorName 的 DTO
+     * @return ScheduleContext
+     */
+    public static ScheduleContext of(JobInfoWithExecutorDTO dto) {
+        return of(dto, null);
+    }
+
     // ==================== 构造函数 ====================
 
     public ScheduleContext() {
-        // 默认构造函数，设置默认值
+        // 默认值
         this.dispatchType = DispatchTypeEnum.ROUND;
         this.loadBalanceType = LoadBalanceTypeEnum.RANDOM;
         this.serializerType = SerializerTypeEnum.JAVA;
         this.invokeStrategy = InvokeStrategyEnum.getDefault();
-        this.retries = 1;
+        this.maxRetries = 1;
         this.timeoutSeconds = 60;
     }
 
@@ -165,46 +164,26 @@ public class ScheduleContext {
         this.executorKey = ExecutorKey.of(executorName);
     }
 
-    /**
-     * 完整构造函数（推荐）
-     */
     public ScheduleContext(String executorName, Integer jobId, Integer executorId) {
         this(executorName);
         this.jobId = jobId;
         this.executorId = executorId;
     }
 
+    // ==================== 便捷方法 ====================
+
     /**
-     * 获取 instanceId（即 instanceId）
+     * 获取重试次数（兼容旧 API）
      */
-    public Long getInstanceId() {
-        return instanceId;
+    public int getRetries() {
+        return maxRetries;
     }
 
     /**
-     * 判断是否已创建实例
+     * 设置重试次数（兼容旧 API）
      */
-    public boolean hasInstance() {
-        return instanceId != null;
-    }
-
-    /**
-     * 标记执行成功
-     */
-    public void markSuccess(Object result) {
-        this.result = result;
-        this.error = null;
-    }
-
-    /**
-     * 标记执行失败
-     */
-    public void markFailed(Throwable error) {
-        this.error = error;
-    }
-
-    public boolean isSuccess() {
-        return error == null;
+    public void setRetries(int retries) {
+        this.maxRetries = retries;
     }
 }
 

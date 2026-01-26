@@ -21,11 +21,11 @@ public interface JobScheduler {
     void stop();
 
     /**
-     * 调度任务到时间轮
+     * 调度任务
      *
-     * @param jobInfo 任务信息
+     * @param context 调度上下文
      */
-    void schedule(ScheduleConfig config);
+    void schedule(ScheduleContext context);
 
     /**
      * 取消任务调度

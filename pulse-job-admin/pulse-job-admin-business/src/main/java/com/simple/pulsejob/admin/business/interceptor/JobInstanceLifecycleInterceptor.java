@@ -39,24 +39,7 @@ public class JobInstanceLifecycleInterceptor implements SchedulerInterceptor {
 
     @Override
     public void beforeSchedule(ScheduleContext context) {
-        Integer jobId = context.getJobId();
 
-        JobInfoWithExecutorDTO dto = jobInfoService.getJobInfoWithExecutorNameById(jobId)
-                .orElseThrow(() -> new IllegalStateException("JobInfo not found, jobId=" + jobId));
-
-        JobInfo jobInfo = dto.getJobInfo();
-
-        context.setExecutorId(jobInfo.getExecutorId());
-        context.setExecutorKey(ExecutorKey.of(dto.getExecutorName()));
-        context.setDispatchType(jobInfo.getDispatchType());
-        context.setScheduleType(jobInfo.getScheduleType());
-        context.setLoadBalanceType(jobInfo.getLoadBalanceType());
-        context.setSerializerType(jobInfo.getSerializerType());
-        context.setJobHandler(jobInfo.getJobHandler());
-        context.setJobParams(jobInfo.getJobParams());
-        
-        log.debug("Schedule prepared: jobId={}, executorId={}, executorName={}",
-                jobId, jobInfo.getExecutorId(), dto.getExecutorName());
     }
 
     @Override

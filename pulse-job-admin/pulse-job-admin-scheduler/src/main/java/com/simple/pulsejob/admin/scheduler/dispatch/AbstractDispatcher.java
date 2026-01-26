@@ -6,6 +6,7 @@ import com.simple.pulsejob.admin.common.model.entity.JobInstance;
 import com.simple.pulsejob.admin.common.model.enums.JobInstanceStatus;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
 import com.simple.pulsejob.admin.persistence.mapper.JobInstanceMapper;
+import com.simple.pulsejob.admin.scheduler.JobInstanceStatusManager;
 import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.LoadBalancerFactory;
@@ -33,17 +34,12 @@ import java.time.LocalDateTime;
 public abstract class AbstractDispatcher implements Dispatcher {
 
     protected final ExecutorChannelGroupManager channelGroupManager;
-
     protected final SchedulerInterceptorChain schedulerInterceptorChain;
-
     protected final LoadBalancerFactory loadBalancerFactory;
-
     protected final JobFilterChains chains;
-
     protected final SerializerFactory serializerFactory;
-
-    /** 直接使用 persistence 层创建 JobInstance，避免循环依赖 */
     protected final JobInstanceMapper jobInstanceMapper;
+    protected final JobInstanceStatusManager statusManager;
 
 
     protected JChannel select(ScheduleContext context) {
@@ -76,9 +72,6 @@ public abstract class AbstractDispatcher implements Dispatcher {
     }
 
     private DefaultInvokeFuture doWrite(final JChannel channel, ScheduleContext context, boolean isFirstAttempt) {
-        // 保存运行时状态到 context（供拦截器和回调使用）
-        context.setChannel(channel);
-        
         if (isFirstAttempt) {
             // ✅ 核心流程：创建 JobInstance（固定逻辑，不可跳过）
             Long instanceId = createJobInstance(context);
@@ -89,10 +82,14 @@ public abstract class AbstractDispatcher implements Dispatcher {
         }
 
         final JRequest request = createRequest(channel, context);
-
         final long instanceId = request.instanceId();
+
+        // 计算 Admin 侧超时时间（比客户端多 5 秒，确保客户端有时间返回超时错误）
+        int timeoutSeconds = context.getTimeoutSeconds();
+        long timeoutMillis = timeoutSeconds > 0 ? (timeoutSeconds + 5) * 1000L : 0;
+
         final DefaultInvokeFuture future = DefaultInvokeFuture
-            .with(instanceId, channel, 0, null, type());
+            .with(instanceId, channel, timeoutMillis, null, type());
 
         // 拦截器扩展点（可选：记录日志等）
         schedulerInterceptorChain.beforeTransport(context, request);
@@ -101,34 +98,25 @@ public abstract class AbstractDispatcher implements Dispatcher {
             @Override
             public void operationSuccess(JChannel ch) {
                 // ✅ 核心流程：更新状态为已发送
-                updateInstanceStatus(instanceId, JobInstanceStatus.TRANSPORTED);
+                statusManager.markTransported(instanceId);
                 
-                // 拦截器扩展点（可选）- 带上 request 以区分广播/分片的不同实例
+                // 拦截器扩展点（可选）
                 schedulerInterceptorChain.afterTransport(context, request);
             }
 
             @Override
             public void operationFailure(JChannel ch, Throwable cause) {
+                // ⚠️ 重要：让 Future 失败，触发上层 whenComplete 回调
+                future.completeExceptionally(cause);
+
                 // ✅ 核心流程：更新状态为发送失败
-                updateInstanceStatus(instanceId, JobInstanceStatus.TRANSPORT_FAILED);
+                statusManager.markTransportFailed(instanceId);
                 
-                // 拦截器扩展点（可选）- 带上 request 以区分广播/分片的不同实例
+                // 拦截器扩展点（可选）
                 schedulerInterceptorChain.onTransportFailure(context, request, cause);
             }
         });
         return future;
-    }
-
-    /**
-     * 核心流程：更新 JobInstance 状态
-     */
-    private void updateInstanceStatus(Long instanceId, JobInstanceStatus status) {
-        if (instanceId == null) {
-            log.warn("Skip status update: instanceId is null");
-            return;
-        }
-        jobInstanceMapper.updateStatus(instanceId, status.getValue());
-        log.debug("Instance status updated: instanceId={}, status={}", instanceId, status);
     }
 
     /**
@@ -155,8 +143,9 @@ public abstract class AbstractDispatcher implements Dispatcher {
         String handlerName = context.getJobHandler();
         String args = context.getJobParams();
         Long instanceId = context.getInstanceId();
+        int timeoutSeconds = context.getTimeoutSeconds();
 
-        MessageWrapper message = new MessageWrapper(jobId, handlerName, args);
+        MessageWrapper message = new MessageWrapper(jobId, handlerName, args, timeoutSeconds);
         // 将 SerializerTypeEnum 转换为 SerializerType
         SerializerTypeEnum serializerTypeEnum = context.getSerializerType();
         SerializerType serializerType = serializerTypeEnum != null 

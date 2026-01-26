@@ -345,8 +345,8 @@ public class CronJobScheduler {
         try {
             log.info("开始执行任务: jobId={}, handler={}", jobId, jobInfo.getJobHandler());
 
-            ScheduleConfig config = buildScheduleConfig(jobInfo);
-            Object result = invoker.invoke(config);
+            ScheduleContext context = ScheduleContext.of(jobInfo);
+            Object result = invoker.invoke(context);
 
             log.info("任务执行成功: jobId={}, result={}", jobId, result);
             jobInfo.resetRetryTimes();
@@ -394,20 +394,6 @@ public class CronJobScheduler {
                 scheduleToWheel(jobId, delayMs);
             }
         }
-    }
-
-    private ScheduleConfig buildScheduleConfig(JobInfo jobInfo) {
-        ScheduleConfig config = new ScheduleConfig();
-        config.setJobId(jobInfo.getId());
-        config.setJobHandler(jobInfo.getJobHandler());
-        config.setJobParams(jobInfo.getJobParams());
-        config.setScheduleType(jobInfo.getScheduleType());
-        config.setScheduleExpression(jobInfo.getScheduleRate());
-        config.setDispatchType(jobInfo.getDispatchType());
-        config.setLoadBalanceType(jobInfo.getLoadBalanceType());
-        config.setSerializerType(jobInfo.getSerializerType());
-        config.setRetries(jobInfo.getMaxRetryTimes() != null ? jobInfo.getMaxRetryTimes() : 1);
-        return config;
     }
 
     private void handleExecutionError(JobInfo jobInfo, Throwable e) {

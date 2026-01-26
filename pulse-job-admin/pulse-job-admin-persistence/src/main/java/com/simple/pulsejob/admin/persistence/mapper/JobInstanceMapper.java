@@ -17,5 +17,21 @@ public interface JobInstanceMapper extends JpaRepository<JobInstance, Long>, Jpa
     @Query("update JobInstance ji set ji.status = :status, ji.updateTime = CURRENT_TIMESTAMP where ji.id = :instanceId")
     int updateStatus(@Param("instanceId") Long instanceId, @Param("status") byte status);
 
+    /**
+     * 更新状态和执行结果（成功时调用）
+     */
+    @Transactional
+    @Modifying
+    @Query("update JobInstance ji set ji.status = :status, ji.result = :result, ji.endTime = CURRENT_TIMESTAMP, ji.updateTime = CURRENT_TIMESTAMP where ji.id = :instanceId")
+    int updateStatusWithResult(@Param("instanceId") Long instanceId, @Param("status") byte status, @Param("result") String result);
+
+    /**
+     * 更新状态和错误信息（失败时调用）
+     */
+    @Transactional
+    @Modifying
+    @Query("update JobInstance ji set ji.status = :status, ji.errorMessage = :errorMessage, ji.endTime = CURRENT_TIMESTAMP, ji.updateTime = CURRENT_TIMESTAMP where ji.id = :instanceId")
+    int updateStatusWithError(@Param("instanceId") Long instanceId, @Param("status") byte status, @Param("errorMessage") String errorMessage);
+
 }
 

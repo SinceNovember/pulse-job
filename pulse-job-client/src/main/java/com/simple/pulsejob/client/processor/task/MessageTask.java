@@ -23,6 +23,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 任务执行消息处理任务.
@@ -102,14 +106,71 @@ public class MessageTask implements RejectedRunnable {
     }
 
     /**
-     * 处理任务
+     * 处理任务（带超时控制）
      */
     private void process(JobContext jobContext) {
+        int timeoutSeconds = jobContext.getTimeoutSeconds();
+        
+        if (timeoutSeconds > 0) {
+            // 有超时限制：使用 CompletableFuture 包装执行
+            processWithTimeout(jobContext, timeoutSeconds);
+        } else {
+            // 无超时限制：直接执行
+            processWithoutTimeout(jobContext);
+        }
+    }
+
+    /**
+     * 无超时控制的任务执行
+     */
+    private void processWithoutTimeout(JobContext jobContext) {
         try {
             Object invokeResult = processor.invoke(jobContext);
             doProcess(invokeResult);
         } catch (Throwable t) {
-            handleFail(jobContext, t);
+            handleFail(t);
+        }
+    }
+
+    /**
+     * 带超时控制的任务执行
+     */
+    private void processWithTimeout(JobContext jobContext, int timeoutSeconds) {
+        // 使用 CompletableFuture 包装任务执行
+        CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> {
+            try {
+                return processor.invoke(jobContext);
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
+            }
+        });
+
+        try {
+            // 等待执行结果，超时则抛出 TimeoutException
+            Object result = future.get(timeoutSeconds, TimeUnit.SECONDS);
+            doProcess(result);
+        } catch (TimeoutException e) {
+            // ⚠️ 执行超时
+            log.warn("Task execution timeout after {}s, instanceId={}, handler={}", 
+                    timeoutSeconds, request.instanceId(), jobContext.getHandlerName());
+            
+            // 尝试取消任务（如果任务还在执行）
+            future.cancel(true);
+            
+            // 返回超时错误
+            handleFail(new TimeoutException(
+                    "Task execution timeout after " + timeoutSeconds + " seconds"), Status.CLIENT_TIMEOUT);
+        } catch (ExecutionException e) {
+            // 执行异常
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            if (cause instanceof RuntimeException && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            handleFail(cause);
+        } catch (InterruptedException e) {
+            // 线程被中断
+            Thread.currentThread().interrupt();
+            handleFail(e);
         }
     }
 
@@ -119,7 +180,8 @@ public class MessageTask implements RejectedRunnable {
         // 这样用户返回任意类型（不实现 Serializable）都不会报错
         if (result != null) {
             try {
-                wrapper.setResult(OBJECT_MAPPER.writeValueAsString(result));
+                String jsonResult = OBJECT_MAPPER.writeValueAsString(result);
+                wrapper.setResult(jsonResult);
             } catch (Exception e) {
                 // JSON 转换失败（如循环引用），记录日志但不影响响应
                 log.warn("Failed to serialize result to JSON, result will be null. instanceId={}, error={}", 
@@ -142,10 +204,12 @@ public class MessageTask implements RejectedRunnable {
         channel.write(response, ResponseListener.INSTANCE);
     }
 
+    private void handleFail(Throwable t) {
+        handleFail(t, Status.CLIENT_ERROR);
+    }
 
-    private void handleFail(JobContext jobContext, Throwable t) {
-        processor.handleRequestException(channel, request, Status.CLIENT_ERROR, t);
-
+    private void handleFail(Throwable t, Status status) {
+        processor.handleRequestException(channel, request, status, t);
     }
     /**
      * 响应发送监听器（单例复用）

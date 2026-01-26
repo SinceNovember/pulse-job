@@ -1,6 +1,6 @@
 package com.simple.pulsejob.admin.scheduler.invoker;
 
-import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
+import com.simple.pulsejob.admin.scheduler.ScheduleContext;
 
 /**
  * 任务调用器接口.
@@ -9,5 +9,5 @@ import com.simple.pulsejob.admin.scheduler.ScheduleConfig;
  */
 public interface Invoker {
 
-    Object invoke(ScheduleConfig scheduleConfig) throws Throwable;
+    Object invoke(ScheduleContext context) throws Throwable;
 }

@@ -81,12 +81,12 @@ public class JobScheduleEngine implements JobScheduler {
     }
 
     @Override
-    public void schedule(ScheduleConfig config) {
+    public void schedule(ScheduleContext context) {
         try {
-            Object result = invoker.invoke(config);
-            log.info("手动触发任务成功: jobId={}, handler={}, result={}", config.getJobId(), config.getJobHandler(), result);
+            Object result = invoker.invoke(context);
+            log.info("手动触发任务成功: jobId={}, handler={}, result={}", context.getJobId(), context.getJobHandler(), result);
         } catch (Throwable e) {
-            log.error("手动触发任务失败: jobId={}, handler={}, result={}", config.getJobId(), config.getJobHandler());
+            log.error("手动触发任务失败: jobId={}, handler={}", context.getJobId(), context.getJobHandler());
             throw new RuntimeException("任务触发失败: " + e.getMessage(), e);
         }
     }

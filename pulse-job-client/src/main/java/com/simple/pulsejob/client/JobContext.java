@@ -83,6 +83,16 @@ public class JobContext {
     }
 
     /**
+     * 获取执行超时时间（秒）
+     *
+     * @return 超时时间，0 表示不限制
+     */
+    public int getTimeoutSeconds() {
+        MessageWrapper message = request.getMessage();
+        return message != null ? message.getTimeoutSeconds() : 0;
+    }
+
+    /**
      * 是否执行成功
      */
     public boolean isSuccess() {
