@@ -43,12 +43,20 @@
         </li>
         <!-- 调度系统分组 -->
         <li class="nav-section">调度管理</li>
+        <li class="nav-item" :class="{ active: activeNav === 'task-management' }">
+          <a href="#" class="nav-link" @click.prevent="$emit('nav-click', 'task-management')">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+            </svg>
+            <span>任务管理</span>
+          </a>
+        </li>
         <li class="nav-item" :class="{ active: activeNav === 'job-info' }">
           <a href="#" class="nav-link" @click.prevent="$emit('nav-click', 'job-info')">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
             </svg>
-            <span>任务管理</span>
+            <span>任务配置</span>
           </a>
         </li>
         <li class="nav-item" :class="{ active: activeNav === 'job-executor' }">
@@ -80,14 +88,6 @@
         
         <!-- 其他功能分组 -->
         <li class="nav-section">系统功能</li>
-        <li class="nav-item" :class="{ active: activeNav === 'task-management' }">
-          <a href="#" class="nav-link" @click.prevent="$emit('nav-click', 'task-management')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
-            </svg>
-            <span>任务看板</span>
-          </a>
-        </li>
         <li class="nav-item" :class="{ active: activeNav === 'reports' }">
           <a href="#" class="nav-link" @click.prevent="$emit('nav-click', 'reports')">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

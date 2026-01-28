@@ -107,7 +107,7 @@ const pageTitles = {
   'dashboard-original': '仪表板(原版)',
   projects: '项目',
   'task-management': '任务管理',
-  'job-info': '任务管理',
+  'job-info': '任务配置',
   'job-executor': '执行器管理',
   'job-instance': '执行记录',
   'job-log': '执行日志',
@@ -119,9 +119,9 @@ const pageTitles = {
   products: '产品',
   invoices: '发票',
   files: '文件',
-  notifications: '通知',
-  reports: '报表',
-  help: '帮助'
+  notifications: '告警通知',
+  reports: '统计报表',
+  help: '帮助中心'
 }
 
 // 计算页面标题

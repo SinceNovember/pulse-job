@@ -1,78 +1,120 @@
 <template>
   <div class="task-management">
-    <!-- 筛选区域 -->
-    <n-card class="filter-card" :bordered="false">
-      <div class="filter-row">
-        <div class="filter-item">
-          <label>任务ID</label>
-          <n-input v-model:value="filters.taskId" placeholder="请输入任务ID" clearable size="small" />
-        </div>
-        <div class="filter-item">
-          <label>任务描述</label>
-          <n-input v-model:value="filters.description" placeholder="请输入任务描述" clearable size="small" />
-        </div>
-        <div class="filter-item">
-          <label>调度类型</label>
-          <n-select 
-            v-model:value="filters.scheduleType" 
-            :options="scheduleTypeOptions" 
-            placeholder="请选择"
-            clearable
-            size="small"
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input 
+            v-model="filters.keyword" 
+            type="text" 
+            class="search-input" 
+            placeholder="搜索任务名称或ID..."
+            @keyup.enter="handleSearch"
           />
         </div>
-        <div class="filter-item">
-          <label>运行模式</label>
-          <n-select 
-            v-model:value="filters.runMode" 
-            :options="runModeOptions" 
-            placeholder="请选择"
-            clearable
-            size="small"
-          />
-        </div>
-        <div class="filter-item">
-          <label>负责人</label>
-          <n-input v-model:value="filters.owner" placeholder="请输入负责人" clearable size="small" />
-        </div>
-        <div class="filter-item">
-          <label>状态</label>
-          <n-select 
-            v-model:value="filters.status" 
-            :options="statusOptions" 
-            placeholder="请选择"
-            clearable
-            size="small"
-          />
-        </div>
-        <div class="filter-actions">
-          <n-button type="primary" @click="handleSearch">
-            <template #icon>
-              <n-icon><SearchIcon /></n-icon>
-            </template>
-            搜索
-          </n-button>
-          <n-button @click="handleReset">重置</n-button>
-        </div>
+        <button class="filter-btn" :class="{ active: showAdvancedFilter }" @click="showAdvancedFilter = !showAdvancedFilter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span v-if="activeFilterCount > 0" class="filter-badge">{{ activeFilterCount }}</span>
+        </button>
       </div>
-    </n-card>
-
-    <!-- 表格卡片 -->
-    <n-card class="table-card" :bordered="false">
-      <!-- 操作栏 -->
-      <div class="action-bar">
-        <n-button type="primary" @click="handleCreate">
-          <template #icon>
-            <n-icon><AddIcon /></n-icon>
+      
+      <div class="toolbar-right">
+        <n-tooltip trigger="hover">
+          <template #trigger>
+            <button class="tool-btn" @click="handleRefresh">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+              </svg>
+            </button>
+          </template>
+          刷新
+        </n-tooltip>
+        <n-tooltip trigger="hover">
+          <template #trigger>
+            <button class="tool-btn" @click="handleCreate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
           </template>
           新建任务
-        </n-button>
-        <n-button @click="handleBatchDelete" :disabled="checkedRowKeys.length === 0">
+        </n-tooltip>
+        <n-tooltip trigger="hover">
+          <template #trigger>
+            <button class="tool-btn" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+              </svg>
+            </button>
+          </template>
           批量删除
-        </n-button>
+        </n-tooltip>
+        <div class="tool-divider"></div>
+        <n-tooltip trigger="hover">
+          <template #trigger>
+            <button class="tool-btn" @click="tableExpanded = !tableExpanded">
+              <svg v-if="!tableExpanded" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+                <line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
+            </button>
+          </template>
+          {{ tableExpanded ? '收起' : '展开' }}
+        </n-tooltip>
+        <n-dropdown trigger="click" :options="moreOptions" @select="handleMoreAction">
+          <button class="tool-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+        </n-dropdown>
       </div>
+    </div>
 
-      <!-- 表格 -->
+    <!-- 高级筛选面板 -->
+    <transition name="slide-down">
+      <div v-if="showAdvancedFilter" class="advanced-filter">
+        <div class="filter-row">
+          <div class="filter-field">
+            <label>任务ID</label>
+            <n-input v-model:value="filters.taskId" placeholder="输入任务ID" clearable size="small" />
+          </div>
+          <div class="filter-field">
+            <label>调度类型</label>
+            <n-select v-model:value="filters.scheduleType" :options="scheduleTypeOptions" placeholder="全部" clearable size="small" />
+          </div>
+          <div class="filter-field">
+            <label>运行模式</label>
+            <n-select v-model:value="filters.runMode" :options="runModeOptions" placeholder="全部" clearable size="small" />
+          </div>
+          <div class="filter-field">
+            <label>负责人</label>
+            <n-input v-model:value="filters.owner" placeholder="输入负责人" clearable size="small" />
+          </div>
+          <div class="filter-field">
+            <label>状态</label>
+            <n-select v-model:value="filters.status" :options="statusOptions" placeholder="全部" clearable size="small" />
+          </div>
+          <div class="filter-field filter-actions">
+            <n-button size="small" @click="handleReset">重置</n-button>
+            <n-button size="small" type="primary" @click="handleSearch">查询</n-button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 表格卡片 -->
+    <div class="table-section">
       <n-data-table
         :columns="columns"
         :data="filteredTasks"
@@ -82,46 +124,51 @@
         @update:checked-row-keys="handleCheck"
         class="task-table"
       />
-    </n-card>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, h } from 'vue'
 import { 
-  NCard, NInput, NSelect, NButton, NIcon, NDataTable, NTag, NSpace, NPopconfirm, NTooltip,
+  NInput, NSelect, NButton, NDataTable, NTag, NPopconfirm, NTooltip, NDropdown,
   useMessage
 } from 'naive-ui'
 
 const message = useMessage()
 
-// 图标组件
-const SearchIcon = {
-  render() {
-    return h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('circle', { cx: '11', cy: '11', r: '8' }),
-      h('line', { x1: '21', y1: '21', x2: '16.65', y2: '16.65' })
-    ])
-  }
-}
+// 状态
+const showAdvancedFilter = ref(false)
+const tableExpanded = ref(false)
 
-const AddIcon = {
-  render() {
-    return h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('line', { x1: '12', y1: '5', x2: '12', y2: '19' }),
-      h('line', { x1: '5', y1: '12', x2: '19', y2: '12' })
-    ])
-  }
-}
+// 更多操作选项
+const moreOptions = [
+  { label: '导出数据', key: 'export' },
+  { label: '导入任务', key: 'import' },
+  { type: 'divider' },
+  { label: '批量启用', key: 'batch-enable' },
+  { label: '批量禁用', key: 'batch-disable' }
+]
 
 // 筛选条件
 const filters = reactive({
+  keyword: '',
   taskId: '',
-  description: '',
   scheduleType: null,
   runMode: null,
   owner: '',
   status: null
+})
+
+// 计算激活的筛选条件数量
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (filters.taskId) count++
+  if (filters.scheduleType) count++
+  if (filters.runMode) count++
+  if (filters.owner) count++
+  if (filters.status) count++
+  return count
 })
 
 // 下拉选项
@@ -174,8 +221,14 @@ const tasks = ref([
 // 筛选后的数据
 const filteredTasks = computed(() => {
   return tasks.value.filter(task => {
+    // 关键词搜索 - 匹配ID或描述
+    if (filters.keyword) {
+      const kw = filters.keyword.toLowerCase()
+      if (!task.id.toLowerCase().includes(kw) && !task.description.toLowerCase().includes(kw)) {
+        return false
+      }
+    }
     if (filters.taskId && !task.id.toLowerCase().includes(filters.taskId.toLowerCase())) return false
-    if (filters.description && !task.description.includes(filters.description)) return false
     if (filters.scheduleType && task.scheduleType !== filters.scheduleType) return false
     if (filters.runMode && task.runMode !== filters.runMode) return false
     if (filters.owner && !task.owner.includes(filters.owner)) return false
@@ -223,7 +276,7 @@ const columns = [
   {
     title: '调度类型',
     key: 'scheduleType',
-    width: 120,
+    width: 140,
     render(row) {
       const typeMap = {
         cron: 'Cron',
@@ -349,13 +402,27 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
+  filters.keyword = ''
   filters.taskId = ''
-  filters.description = ''
   filters.scheduleType = null
   filters.runMode = null
   filters.owner = ''
   filters.status = null
   pagination.page = 1
+}
+
+const handleRefresh = () => {
+  message.success('刷新成功')
+}
+
+const handleMoreAction = (key) => {
+  const actionMap = {
+    'export': '导出数据',
+    'import': '导入任务',
+    'batch-enable': '批量启用',
+    'batch-disable': '批量禁用'
+  }
+  message.info(actionMap[key] || key)
 }
 
 const handleCreate = () => {
@@ -396,58 +463,235 @@ const handleDelete = (row) => {
 .task-management {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
 }
 
-.filter-card {
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+/* ==================== 工具栏样式 ==================== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #fff;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.filter-card :deep(.n-card__content) {
-  padding: 20px 24px;
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  width: 240px;
+  height: 36px;
+  padding: 0 12px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.search-box:focus-within {
+  background: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(94, 129, 244, 0.1);
+}
+
+.search-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-left: 8px;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.filter-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+
+.filter-btn:hover {
+  background: #7d9df7;
+}
+
+.filter-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text-secondary);
+}
+
+.tool-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tool-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+}
+
+.tool-btn:hover svg {
+  color: var(--primary-color);
+}
+
+.tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tool-btn:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.tool-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 6px;
+}
+
+/* ==================== 高级筛选面板 ==================== */
+.advanced-filter {
+  background: #fff;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .filter-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
   align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.filter-item {
+.filter-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 160px;
+  min-width: 140px;
+  flex: 1;
+  max-width: 180px;
 }
 
-.filter-item label {
-  font-size: 0.8125rem;
-  color: var(--text-secondary);
+.filter-field label {
+  font-size: 0.75rem;
   font-weight: 500;
+  color: var(--text-muted);
 }
 
-.filter-actions {
-  display: flex;
+.filter-field.filter-actions {
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
+  max-width: none;
+  flex: none;
   margin-left: auto;
 }
 
-.table-card {
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+/* 去掉下拉框聚焦时的蓝色边框 */
+.filter-field :deep(.n-base-selection:focus),
+.filter-field :deep(.n-base-selection--focus) {
+  box-shadow: none !important;
 }
 
-.table-card :deep(.n-card__content) {
-  padding: 20px 24px;
+.filter-field :deep(.n-base-selection--active) {
+  box-shadow: none !important;
 }
 
-.action-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+/* 动画 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
 }
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.slide-down-enter-to,
+.slide-down-leave-from {
+  opacity: 1;
+  max-height: 100px;
+}
+
+/* ==================== 表格区域 ==================== */
+.table-section {
+  background: #fff;
+  border-radius: 0 0 10px 10px;
+  padding: 16px 20px;
+}
+
 
 /* 任务ID单元格 */
 .task-table :deep(.task-id-cell) {
@@ -471,41 +715,22 @@ const handleDelete = (row) => {
 .task-table :deep(.schedule-cell) {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .task-table :deep(.schedule-type) {
-  font-weight: 500;
   font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 .task-table :deep(.schedule-expr) {
+  display: inline-block;
   font-size: 0.75rem;
-  color: #8b8fa3;
-  font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-  font-weight: 500;
-  background: rgba(148, 163, 184, 0.08);
+  color: #8b95a5;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  background: #f4f6f8;
   padding: 4px 10px;
   border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  letter-spacing: 0.02em;
-  transition: all 0.2s ease;
-}
-
-.task-table :deep(.schedule-expr)::before {
-  content: '⏱';
-  font-size: 0.7rem;
-  opacity: 0.6;
-}
-
-.task-table :deep(.schedule-expr:hover) {
-  color: #6b7280;
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.2);
 }
 
 /* 运行模式标签 */
@@ -607,25 +832,53 @@ const handleDelete = (row) => {
 }
 
 /* 响应式 */
-@media (max-width: 1200px) {
-  .filter-item {
-    min-width: 140px;
+@media (max-width: 900px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
   }
-}
-
-@media (max-width: 768px) {
+  
+  .toolbar-left {
+    order: 1;
+    width: 100%;
+  }
+  
+  .search-box {
+    flex: 1;
+  }
+  
+  .toolbar-right {
+    order: 2;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
   .filter-row {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .filter-item {
+  .filter-field {
+    max-width: none;
+  }
+  
+  .filter-field.filter-actions {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    padding: 12px 16px;
+  }
+  
+  .search-box {
     width: 100%;
   }
   
-  .filter-actions {
-    margin-left: 0;
-    justify-content: flex-end;
+  .table-section {
+    padding: 12px 16px;
   }
 }
 </style>

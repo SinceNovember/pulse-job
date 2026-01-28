@@ -2,11 +2,12 @@
    CSS Variables - 主题配置
    ================================ */
 :root {
-  /* 主色调 - 原版蓝色 */
-  --primary-color: #5E81F4;
-  --primary-light: #7B9CF5;
-  --primary-dark: #4A6CD4;
-  --primary-bg: #eff2fe;
+  /* 主色调 - 柔和蓝色 */
+  --primary-color: #6a8cf2;
+  --primary-hover: #5A7DE8;
+  --primary-light: #8AA4F7;
+  --primary-dark: #5276E0;
+  --primary-bg: #f0f4fe;
 
   /* 背景色 */
   --bg-main: #f4f5f7;
@@ -232,4 +233,25 @@ img {
 
 .n-data-table .n-data-table-tr:hover .n-data-table-td {
   background: var(--bg-hover) !important;
+}
+
+/* ================================
+   全局下拉框样式 - 去掉聚焦蓝色边框
+   ================================ */
+.n-base-selection.n-base-selection--focus .n-base-selection__state-border,
+.n-base-selection--active .n-base-selection__state-border {
+  box-shadow: none !important;
+  border-color: var(--border-color) !important;
+}
+
+.n-base-selection:focus .n-base-selection__state-border {
+  box-shadow: none !important;
+}
+
+.n-base-selection .n-base-selection__state-border {
+  box-shadow: none !important;
+}
+
+.n-input.n-input--focus .n-input__state-border {
+  box-shadow: none !important;
 }
