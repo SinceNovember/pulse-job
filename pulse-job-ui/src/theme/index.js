@@ -111,7 +111,7 @@ export const themeOverrides = {
     boxShadowFocus: 'none',
     color: '#ffffff',
     colorFocus: '#ffffff',
-    textColor: '#11142d',
+    textColor: '#6f767e',
     placeholderColor: '#b2b3bd',
     caretColor: primaryColor,
     heightMedium: '40px',

@@ -1,165 +1,207 @@
 <template>
-  <div class="log-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <h2 class="page-title">执行日志</h2>
-      <div class="header-actions">
-        <n-input-group>
-          <n-select 
-            v-model:value="filterJobId" 
-            :options="jobOptions" 
-            placeholder="全部任务" 
-            clearable 
-            style="width: 160px"
-          />
-          <n-select 
-            v-model:value="filterInstanceId" 
-            :options="instanceOptions" 
-            placeholder="全部实例" 
-            clearable 
-            style="width: 160px"
-          />
-          <n-select 
-            v-model:value="filterLevel" 
-            :options="levelOptions" 
-            placeholder="全部级别" 
-            clearable 
-            style="width: 120px"
-          />
-        </n-input-group>
-        <n-input 
-          v-model:value="searchKeyword" 
-          placeholder="搜索日志内容..." 
-          clearable 
-          style="width: 200px"
-        >
-          <template #prefix>
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-          </template>
-        </n-input>
-        <n-date-picker 
-          v-model:value="filterDateRange" 
-          type="datetimerange" 
-          clearable
-          :shortcuts="dateShortcuts"
-        />
-        <n-button @click="handleRefresh">
-          <template #icon>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
-              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-            </svg>
-          </template>
-          刷新
-        </n-button>
-        <n-button type="error" @click="handleClearLogs" :disabled="filteredLogs.length === 0">
-          <template #icon>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-            </svg>
-          </template>
-          清空
-        </n-button>
-      </div>
-    </div>
-
+  <div class="log-management">
     <!-- 统计卡片 -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-icon blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-            <path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
-          </svg>
+    <div class="stats-card">
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ logList.length }}</span>
+            <span class="stat-label">总日志数</span>
+          </div>
         </div>
-        <div class="stat-content">
-          <span class="stat-value">{{ logList.length }}</span>
-          <span class="stat-label">总日志数</span>
+        <div class="stat-item">
+          <div class="stat-icon cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ logList.filter(l => l.logLevel === 'INFO').length }}</span>
+            <span class="stat-label">INFO</span>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon cyan">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-          </svg>
+        <div class="stat-item">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ logList.filter(l => l.logLevel === 'WARN').length }}</span>
+            <span class="stat-label">WARN</span>
+          </div>
         </div>
-        <div class="stat-content">
-          <span class="stat-value">{{ logList.filter(l => l.logLevel === 'INFO').length }}</span>
-          <span class="stat-label">INFO</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon orange">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-            <path d="M12 9v4"/><path d="M12 17h.01"/>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <span class="stat-value">{{ logList.filter(l => l.logLevel === 'WARN').length }}</span>
-          <span class="stat-label">WARN</span>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon red">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <span class="stat-value">{{ logList.filter(l => l.logLevel === 'ERROR').length }}</span>
-          <span class="stat-label">ERROR</span>
+        <div class="stat-item">
+          <div class="stat-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value">{{ logList.filter(l => l.logLevel === 'ERROR').length }}</span>
+            <span class="stat-label">ERROR</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- 日志控制台 -->
-    <div class="log-console">
+    <div class="log-console" :class="{ 'light-theme': isLightTheme }">
+      <!-- 控制台头部 -->
       <div class="console-header">
-        <div class="console-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-          </svg>
-          <span>日志控制台</span>
-          <n-tag size="small" :bordered="false">{{ filteredLogs.length }} 条记录</n-tag>
+        <div class="header-left">
+          <div class="window-dots">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+          </div>
+          <div class="console-title">
+            <span class="title-text">Job Instance #{{ currentInstanceId }}</span>
+            <span class="title-separator">·</span>
+            <span class="title-job">{{ currentJobName }}</span>
+          </div>
         </div>
-        <div class="console-actions">
-          <n-switch v-model:value="autoScroll" size="small">
-            <template #checked>自动滚动</template>
-            <template #unchecked>自动滚动</template>
-          </n-switch>
-          <n-button quaternary size="small" @click="handleExport">
-            <template #icon>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </template>
-            导出
-          </n-button>
+        <div class="header-actions">
+          <button class="header-btn icon-btn" @click="isLightTheme = !isLightTheme" :title="isLightTheme ? '切换暗色' : '切换亮色'">
+            <svg v-if="isLightTheme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+          <div class="header-divider"></div>
+          <button class="header-btn" @click="handleExport">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>下载</span>
+          </button>
+          <button class="header-btn" @click="handleRefresh">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+            <span>刷新</span>
+          </button>
         </div>
       </div>
-      <div class="console-body" ref="consoleRef">
+
+      <!-- 工具栏 -->
+      <div class="console-toolbar">
+        <div class="filter-group">
+          <button 
+            class="filter-tab" 
+            :class="{ active: filterLevel === null }"
+            @click="filterLevel = null"
+          >
+            <span class="tab-label">ALL</span>
+            <span class="tab-count">{{ logList.length }}</span>
+          </button>
+          <button 
+            class="filter-tab info" 
+            :class="{ active: filterLevel === 'INFO' }"
+            @click="filterLevel = 'INFO'"
+          >
+            <span class="tab-label">INFO</span>
+            <span class="tab-count">{{ logList.filter(l => l.logLevel === 'INFO').length }}</span>
+          </button>
+          <button 
+            class="filter-tab warn" 
+            :class="{ active: filterLevel === 'WARN' }"
+            @click="filterLevel = 'WARN'"
+          >
+            <span class="tab-label">WARN</span>
+            <span class="tab-count">{{ logList.filter(l => l.logLevel === 'WARN').length }}</span>
+          </button>
+          <button 
+            class="filter-tab error" 
+            :class="{ active: filterLevel === 'ERROR' }"
+            @click="filterLevel = 'ERROR'"
+          >
+            <span class="tab-label">ERROR</span>
+            <span class="tab-count">{{ logList.filter(l => l.logLevel === 'ERROR').length }}</span>
+          </button>
+        </div>
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input 
+            v-model="searchKeyword" 
+            type="text" 
+            class="search-input" 
+            placeholder="搜索日志内容..."
+          />
+          <button v-if="searchKeyword" class="search-clear" @click="searchKeyword = ''">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 日志内容 -->
+      <div class="console-logs" ref="consoleRef">
         <div 
-          v-for="log in filteredLogs" 
+          v-for="(log, index) in filteredLogs" 
           :key="log.id" 
-          class="log-entry"
+          class="log-row"
           :class="log.logLevel.toLowerCase()"
         >
-          <span class="log-time">{{ formatTime(log.createTime) }}</span>
-          <span class="log-level" :class="log.logLevel.toLowerCase()">{{ log.logLevel }}</span>
-          <span class="log-instance">[Job:{{ log.jobId }} / Instance:{{ log.instanceId }}]</span>
-          <span class="log-content">{{ log.content }}</span>
+          <span class="log-line">{{ String(index + 1).padStart(3, ' ') }}</span>
+          <span class="log-time">{{ log.createTime }}</span>
+          <span class="log-level" :class="log.logLevel.toLowerCase()">
+            <span class="level-dot"></span>
+            {{ log.logLevel }}
+          </span>
+          <span class="log-thread">[{{ log.thread }}]</span>
+          <span class="log-logger">{{ log.logger }}</span>
+          <span class="log-msg">{{ log.content }}</span>
         </div>
         <div v-if="filteredLogs.length === 0" class="no-logs">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-            <path d="M14 2v6h6"/>
-          </svg>
-          <span>暂无日志数据</span>
+          <div class="empty-illustration">
+            <svg viewBox="0 0 120 120" fill="none">
+              <circle cx="60" cy="60" r="50" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+              <path d="M40 45h40M40 60h30M40 75h35" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+              <circle cx="85" cy="85" r="20" stroke="currentColor" stroke-width="3" opacity="0.4"/>
+              <line x1="100" y1="100" x2="115" y2="115" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+            </svg>
+          </div>
+          <span class="empty-title">暂无日志数据</span>
+          <span class="empty-desc">日志将在任务执行时自动产生</span>
+        </div>
+      </div>
+
+      <!-- 底部状态栏 -->
+      <div class="console-footer">
+        <div class="footer-left">
+          <span class="footer-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <path d="M14 2v6h6"/>
+            </svg>
+            {{ filteredLogs.length }} 条记录
+          </span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            最后更新: {{ lastUpdateTime }}
+          </span>
         </div>
       </div>
     </div>
@@ -172,6 +214,8 @@
             <n-descriptions-item label="日志ID">{{ detailLog.id }}</n-descriptions-item>
             <n-descriptions-item label="任务ID">{{ detailLog.jobId }}</n-descriptions-item>
             <n-descriptions-item label="实例ID">{{ detailLog.instanceId }}</n-descriptions-item>
+            <n-descriptions-item label="线程">{{ detailLog.thread }}</n-descriptions-item>
+            <n-descriptions-item label="类名">{{ detailLog.logger }}</n-descriptions-item>
             <n-descriptions-item label="日志级别">
               <n-tag :type="getLevelType(detailLog.logLevel)">{{ detailLog.logLevel }}</n-tag>
             </n-descriptions-item>
@@ -189,223 +233,117 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { useMessage } from 'naive-ui'
 
 const message = useMessage()
 
-// 筛选条件
-const filterJobId = ref(null)
-const filterInstanceId = ref(null)
-const filterLevel = ref(null)
-const filterDateRange = ref(null)
+// 主题切换
+const isLightTheme = ref(false)
+
+// 当前实例信息
+const currentInstanceId = ref(12345)
+const currentJobName = ref('TestJob1')
+const lastUpdateTime = ref('13:26:49')
+
+// 搜索关键词
 const searchKeyword = ref('')
-const autoScroll = ref(true)
+
+// 筛选条件
+const filterLevel = ref(null)
 
 // 详情抽屉
 const showDetail = ref(false)
 const detailLog = ref(null)
 const consoleRef = ref(null)
 
-// 选项
-const jobOptions = [
-  { label: 'dataSyncHandler', value: 1 },
-  { label: 'reportGenHandler', value: 2 },
-  { label: 'emailSendHandler', value: 3 },
-  { label: 'cacheRefreshHandler', value: 4 }
-]
-
-const instanceOptions = [
-  { label: '实例 #10001', value: 10001 },
-  { label: '实例 #10002', value: 10002 },
-  { label: '实例 #10003', value: 10003 },
-  { label: '实例 #10004', value: 10004 }
-]
-
-const levelOptions = [
-  { label: 'DEBUG', value: 'DEBUG' },
-  { label: 'INFO', value: 'INFO' },
-  { label: 'WARN', value: 'WARN' },
-  { label: 'ERROR', value: 'ERROR' }
-]
-
-const dateShortcuts = {
-  '最近1小时': () => {
-    const end = Date.now()
-    const start = end - 60 * 60 * 1000
-    return [start, end]
-  },
-  '最近6小时': () => {
-    const end = Date.now()
-    const start = end - 6 * 60 * 60 * 1000
-    return [start, end]
-  },
-  '今天': () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return [today.getTime(), Date.now()]
-  },
-  '最近7天': () => {
-    const end = Date.now()
-    const start = end - 7 * 24 * 60 * 60 * 1000
-    return [start, end]
-  }
-}
-
 // 日志列表
 const logList = ref([
   {
     id: 1,
-    jobId: 1,
-    instanceId: 10001,
+    jobId: 32,
+    instanceId: 12345,
     logLevel: 'INFO',
-    content: '任务开始执行: dataSyncHandler',
-    createTime: '2026-01-26 02:00:01'
+    thread: 'job-worker-1',
+    logger: 'c.s.p.c.i.LoggingJobInterceptor',
+    content: '[Job-32] 开始执行: handler=TestJob1#testJob1()',
+    createTime: '2026-01-09 13:26:48.493'
   },
   {
     id: 2,
-    jobId: 1,
-    instanceId: 10001,
-    logLevel: 'DEBUG',
-    content: '连接数据库: jdbc:mysql://localhost:3306/pulse_job',
-    createTime: '2026-01-26 02:00:02'
+    jobId: 32,
+    instanceId: 12345,
+    logLevel: 'INFO',
+    thread: 'job-worker-1',
+    logger: 'c.e.demo.job.TestJob1',
+    content: '正在处理订单数据，共 1000 条记录',
+    createTime: '2026-01-09 13:26:48.512'
   },
   {
     id: 3,
-    jobId: 1,
-    instanceId: 10001,
-    logLevel: 'INFO',
-    content: '开始同步数据表: user_info, 预计同步 1024 条记录',
-    createTime: '2026-01-26 02:00:02'
+    jobId: 32,
+    instanceId: 12345,
+    logLevel: 'WARN',
+    thread: 'job-worker-1',
+    logger: 'c.e.demo.job.TestJob1',
+    content: '发现 3 条数据格式异常，已跳过处理',
+    createTime: '2026-01-09 13:26:48.623'
   },
   {
     id: 4,
-    jobId: 1,
-    instanceId: 10001,
-    logLevel: 'INFO',
-    content: '数据同步完成: 成功 1020 条, 跳过 4 条',
-    createTime: '2026-01-26 02:00:04'
+    jobId: 32,
+    instanceId: 12345,
+    logLevel: 'ERROR',
+    thread: 'job-worker-1',
+    logger: 'c.e.demo.job.TestJob1',
+    content: '数据库连接超时: Connection timed out after 30000ms',
+    createTime: '2026-01-09 13:26:49.156'
   },
   {
     id: 5,
-    jobId: 1,
-    instanceId: 10001,
+    jobId: 32,
+    instanceId: 12345,
     logLevel: 'INFO',
-    content: '任务执行完成, 耗时: 3.2s',
-    createTime: '2026-01-26 02:00:05'
+    thread: 'job-worker-1',
+    logger: 'c.s.p.c.i.LoggingJobInterceptor',
+    content: '[Job-32] 执行完成，耗时: 741ms，结果: PARTIAL_SUCCESS',
+    createTime: '2026-01-09 13:26:49.234'
   },
   {
     id: 6,
-    jobId: 2,
-    instanceId: 10002,
-    logLevel: 'INFO',
-    content: '任务开始执行: reportGenHandler',
-    createTime: '2026-01-26 08:00:01'
+    jobId: 32,
+    instanceId: 12345,
+    logLevel: 'DEBUG',
+    thread: 'job-worker-1',
+    logger: 'c.s.p.c.i.LoggingJobInterceptor',
+    content: '清理任务上下文资源...',
+    createTime: '2026-01-09 13:26:49.240'
   },
   {
     id: 7,
-    jobId: 2,
-    instanceId: 10002,
+    jobId: 32,
+    instanceId: 12345,
     logLevel: 'INFO',
-    content: '正在生成日报表: report_2026-01-26.pdf',
-    createTime: '2026-01-26 08:00:05'
-  },
-  {
-    id: 8,
-    jobId: 2,
-    instanceId: 10002,
-    logLevel: 'WARN',
-    content: '部分数据缺失, 已使用默认值填充: region=华东',
-    createTime: '2026-01-26 08:00:08'
-  },
-  {
-    id: 9,
-    jobId: 2,
-    instanceId: 10002,
-    logLevel: 'INFO',
-    content: '报表生成完成, 文件大小: 2.3MB',
-    createTime: '2026-01-26 08:00:12'
-  },
-  {
-    id: 10,
-    jobId: 3,
-    instanceId: 10003,
-    logLevel: 'INFO',
-    content: '任务开始执行: emailSendHandler',
-    createTime: '2026-01-26 09:30:01'
-  },
-  {
-    id: 11,
-    jobId: 3,
-    instanceId: 10003,
-    logLevel: 'WARN',
-    content: 'SMTP服务器响应缓慢, 正在重试连接...',
-    createTime: '2026-01-26 09:30:02'
-  },
-  {
-    id: 12,
-    jobId: 3,
-    instanceId: 10003,
-    logLevel: 'ERROR',
-    content: 'SMTP连接超时: Connection timed out after 30000ms. Host: smtp.example.com:465',
-    createTime: '2026-01-26 09:30:03'
-  },
-  {
-    id: 13,
-    jobId: 4,
-    instanceId: 10004,
-    logLevel: 'INFO',
-    content: '任务开始执行: cacheRefreshHandler',
-    createTime: '2026-01-26 11:00:01'
-  },
-  {
-    id: 14,
-    jobId: 4,
-    instanceId: 10004,
-    logLevel: 'DEBUG',
-    content: '正在刷新缓存键: user:*, product:*, order:recent',
-    createTime: '2026-01-26 11:00:02'
-  },
-  {
-    id: 15,
-    jobId: 4,
-    instanceId: 10004,
-    logLevel: 'INFO',
-    content: '缓存刷新完成: 清理 256 个键, 预热 128 个键',
-    createTime: '2026-01-26 11:00:03'
+    thread: 'job-worker-2',
+    logger: 'c.s.p.c.scheduler.TaskScheduler',
+    content: '任务调度完成, 下次执行时间: 2026-01-09 14:00:00',
+    createTime: '2026-01-09 13:26:49.256'
   }
 ])
 
 // 过滤后的列表
 const filteredLogs = computed(() => {
-  let list = logList.value
-  
-  if (filterJobId.value) {
-    list = list.filter(l => l.jobId === filterJobId.value)
-  }
-  if (filterInstanceId.value) {
-    list = list.filter(l => l.instanceId === filterInstanceId.value)
-  }
-  if (filterLevel.value) {
-    list = list.filter(l => l.logLevel === filterLevel.value)
-  }
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    list = list.filter(l => l.content.toLowerCase().includes(keyword))
-  }
-  
-  return list
-})
-
-// 监听日志变化，自动滚动
-watch(filteredLogs, () => {
-  if (autoScroll.value) {
-    nextTick(() => {
-      if (consoleRef.value) {
-        consoleRef.value.scrollTop = consoleRef.value.scrollHeight
-      }
-    })
-  }
+  return logList.value.filter(log => {
+    if (searchKeyword.value) {
+      const keyword = searchKeyword.value.toLowerCase()
+      if (!log.content.toLowerCase().includes(keyword) && 
+          !log.logger.toLowerCase().includes(keyword)) return false
+    }
+    if (filterLevel.value && log.logLevel !== filterLevel.value) {
+      return false
+    }
+    return true
+  })
 })
 
 // 工具方法
@@ -414,99 +352,53 @@ const getLevelType = (level) => {
   return map[level] || 'default'
 }
 
-const formatTime = (time) => {
-  if (!time) return '-'
-  // 只显示时间部分
-  const date = new Date(time.replace(' ', 'T'))
-  return date.toLocaleTimeString('zh-CN', { 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit',
-    hour12: false
-  })
-}
-
 // 事件处理
 const handleRefresh = () => {
   message.success('刷新成功')
 }
 
-const handleClearLogs = () => {
-  logList.value = []
-  message.success('日志已清空')
-}
-
 const handleExport = () => {
   const content = filteredLogs.value.map(log => 
-    `[${log.createTime}] [${log.logLevel}] [Job:${log.jobId}/Instance:${log.instanceId}] ${log.content}`
+    `${log.createTime} ${log.logLevel.padEnd(5)} [${log.thread}] ${log.logger} ${log.content}`
   ).join('\n')
   
   const blob = new Blob([content], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `pulse-job-logs-${new Date().toISOString().slice(0, 10)}.log`
+  a.download = `pulse-job-logs-${currentInstanceId.value}-${new Date().toISOString().slice(0, 10)}.log`
   a.click()
   URL.revokeObjectURL(url)
   
   message.success('导出成功')
 }
-
-const handleViewDetail = (log) => {
-  detailLog.value = log
-  showDetail.value = true
-}
 </script>
 
 <style scoped>
-.log-page {
-  padding: 0;
-}
-
-.page-header {
+.log-management {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.search-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--text-muted);
+/* ==================== 统计卡片 ==================== */
+.stats-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
 }
 
-.stat-card {
-  background: var(--bg-card);
-  border-radius: 12px;
-  padding: 20px;
+.stat-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  border: 1px solid var(--border-color);
+  gap: 14px;
 }
 
 .stat-icon {
@@ -546,119 +438,523 @@ const handleViewDetail = (log) => {
   margin-top: 4px;
 }
 
-/* 日志控制台 */
+/* ==================== 日志控制台 ==================== */
 .log-console {
-  background: #1e1e2e;
-  border-radius: 12px;
+  background: #0c1018;
+  border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--border-color);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 20px 50px -10px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
 }
 
+/* 控制台头部 */
 .console-header {
+  background: linear-gradient(180deg, #161b26 0%, #12161f 100%);
+  padding: 14px 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: #181825;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.window-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.dot:hover {
+  transform: scale(1.1);
+}
+
+.dot.red { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%); box-shadow: 0 0 8px rgba(255, 90, 90, 0.3); }
+.dot.yellow { background: linear-gradient(135deg, #ffd93d 0%, #f0c419 100%); box-shadow: 0 0 8px rgba(255, 217, 61, 0.3); }
+.dot.green { background: linear-gradient(135deg, #6bcb77 0%, #4ade80 100%); box-shadow: 0 0 8px rgba(74, 222, 128, 0.3); }
 
 .console-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #cdd6f4;
-  font-size: 0.875rem;
+  font-size: 13px;
+}
+
+.title-text {
+  color: #8b949e;
   font-weight: 500;
 }
 
-.console-title svg {
-  width: 16px;
-  height: 16px;
-  color: #89b4fa;
+.title-separator {
+  color: #484f58;
 }
 
-.console-actions {
+.title-job {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.console-body {
-  padding: 16px;
-  max-height: 500px;
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 4px;
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #8b949e;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #c9d1d9;
+}
+
+.header-btn.icon-btn {
+  padding: 7px 10px;
+}
+
+/* 工具栏 */
+.console-toolbar {
+  background: rgba(22, 27, 34, 0.8);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #6e7681;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #8b949e;
+}
+
+.filter-tab.active {
+  background: #238636;
+  color: white;
+  box-shadow: 0 2px 8px rgba(35, 134, 54, 0.3);
+}
+
+.filter-tab.info.active {
+  background: #238636;
+}
+
+.filter-tab.warn.active {
+  background: #9e6a03;
+  box-shadow: 0 2px 8px rgba(158, 106, 3, 0.3);
+}
+
+.filter-tab.error.active {
+  background: #da3633;
+  box-shadow: 0 2px 8px rgba(218, 54, 51, 0.3);
+}
+
+.tab-count {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.filter-tab.active .tab-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 320px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0 14px;
+  transition: all 0.2s ease;
+}
+
+.search-box:focus-within {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.search-icon {
+  width: 16px;
+  height: 16px;
+  color: #484f58;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #c9d1d9;
+  font-size: 13px;
+  padding: 10px 0;
+}
+
+.search-input::placeholder {
+  color: #484f58;
+}
+
+.search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: #6e7681;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.search-clear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.search-clear:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #c9d1d9;
+}
+
+/* 日志内容 */
+.console-logs {
+  padding: 16px 0;
+  min-height: 450px;
+  max-height: calc(100vh - 420px);
   overflow-y: auto;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', monospace;
-  font-size: 0.8125rem;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
   line-height: 1.6;
 }
 
-.log-entry {
+.log-row {
+  padding: 10px 20px;
   display: flex;
-  gap: 8px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 2px;
-  transition: background 0.15s ease;
+  align-items: flex-start;
+  gap: 16px;
+  border-left: 3px solid transparent;
+  transition: all 0.15s ease;
 }
 
-.log-entry:hover {
-  background: rgba(255, 255, 255, 0.03);
+.log-row:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.log-entry.debug { border-left: 2px solid #6c7086; }
-.log-entry.info { border-left: 2px solid #89b4fa; }
-.log-entry.warn { border-left: 2px solid #f9e2af; }
-.log-entry.error { border-left: 2px solid #f38ba8; }
+.log-row.info { border-left-color: transparent; }
+.log-row.warn { border-left-color: #d29922; background: rgba(210, 153, 34, 0.05); }
+.log-row.error { border-left-color: #f85149; background: rgba(248, 81, 73, 0.08); }
+.log-row.debug { border-left-color: transparent; opacity: 0.7; }
+
+.log-line {
+  color: #484f58;
+  min-width: 32px;
+  text-align: right;
+  font-size: 12px;
+  user-select: none;
+}
 
 .log-time {
-  color: #6c7086;
+  color: #6e7681;
+  min-width: 190px;
   flex-shrink: 0;
-  font-size: 0.75rem;
 }
 
 .log-level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 60px;
   font-weight: 600;
   flex-shrink: 0;
-  padding: 0 4px;
-  border-radius: 2px;
-  font-size: 0.6875rem;
-  text-transform: uppercase;
 }
 
-.log-level.debug { color: #6c7086; background: rgba(108, 112, 134, 0.15); }
-.log-level.info { color: #89b4fa; background: rgba(137, 180, 250, 0.15); }
-.log-level.warn { color: #f9e2af; background: rgba(249, 226, 175, 0.15); }
-.log-level.error { color: #f38ba8; background: rgba(243, 139, 168, 0.15); }
+.level-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
 
-.log-instance {
-  color: #a6adc8;
+.log-level.info { color: #3fb950; }
+.log-level.info .level-dot { background: #3fb950; box-shadow: 0 0 6px rgba(63, 185, 80, 0.5); }
+.log-level.warn { color: #d29922; }
+.log-level.warn .level-dot { background: #d29922; box-shadow: 0 0 6px rgba(210, 153, 34, 0.5); }
+.log-level.error { color: #f85149; }
+.log-level.error .level-dot { background: #f85149; box-shadow: 0 0 6px rgba(248, 81, 73, 0.5); }
+.log-level.debug { color: #8b949e; }
+.log-level.debug .level-dot { background: #8b949e; }
+
+.log-thread {
+  color: #a371f7;
+  min-width: 130px;
   flex-shrink: 0;
-  font-size: 0.75rem;
 }
 
-.log-content {
-  color: #cdd6f4;
-  word-break: break-all;
+.log-logger {
+  color: #58a6ff;
+  min-width: 260px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+.log-msg {
+  color: #c9d1d9;
+  flex: 1;
+}
+
+.log-row.error .log-msg {
+  color: #ffa198;
+}
+
+/* 底部状态栏 */
+.console-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(22, 27, 34, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6e7681;
+  font-size: 12px;
+}
+
+.footer-item svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 空状态 */
 .no-logs {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #6c7086;
-  gap: 12px;
+  gap: 16px;
 }
 
-.no-logs svg {
-  width: 48px;
-  height: 48px;
-  opacity: 0.5;
+.empty-illustration {
+  width: 120px;
+  height: 120px;
+  color: #30363d;
 }
 
-/* 详情部分 */
+.empty-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #8b949e;
+}
+
+.empty-desc {
+  font-size: 13px;
+  color: #6e7681;
+}
+
+/* ==================== 白色主题 ==================== */
+.log-console.light-theme {
+  background: #ffffff;
+  box-shadow: 
+    0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 10px 40px -10px rgba(0, 0, 0, 0.1);
+}
+
+.log-console.light-theme .console-header {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.log-console.light-theme .title-text { color: #64748b; }
+.log-console.light-theme .title-separator { color: #cbd5e1; }
+.log-console.light-theme .title-job { color: #2563eb; }
+
+.log-console.light-theme .header-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.log-console.light-theme .header-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.log-console.light-theme .header-divider {
+  background: #e2e8f0;
+}
+
+.log-console.light-theme .console-toolbar {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.log-console.light-theme .filter-group {
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.log-console.light-theme .filter-tab {
+  color: #64748b;
+}
+
+.log-console.light-theme .filter-tab:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.log-console.light-theme .filter-tab.active {
+  background: #10b981;
+}
+
+.log-console.light-theme .filter-tab.warn.active {
+  background: #f59e0b;
+}
+
+.log-console.light-theme .filter-tab.error.active {
+  background: #ef4444;
+}
+
+.log-console.light-theme .tab-count {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.log-console.light-theme .search-box {
+  background: white;
+  border: 1px solid #e2e8f0;
+}
+
+.log-console.light-theme .search-box:focus-within {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.log-console.light-theme .search-icon { color: #94a3b8; }
+.log-console.light-theme .search-input { color: #1e293b; }
+.log-console.light-theme .search-input::placeholder { color: #94a3b8; }
+
+.log-console.light-theme .console-logs { background: #ffffff; }
+
+.log-console.light-theme .log-row:hover { background: #f8fafc; }
+.log-console.light-theme .log-row.warn { background: rgba(245, 158, 11, 0.06); }
+.log-console.light-theme .log-row.error { background: rgba(239, 68, 68, 0.06); }
+
+.log-console.light-theme .log-line { color: #cbd5e1; }
+.log-console.light-theme .log-time { color: #94a3b8; }
+.log-console.light-theme .log-level.info { color: #059669; }
+.log-console.light-theme .log-level.info .level-dot { background: #059669; }
+.log-console.light-theme .log-level.warn { color: #d97706; }
+.log-console.light-theme .log-level.warn .level-dot { background: #d97706; }
+.log-console.light-theme .log-level.error { color: #dc2626; }
+.log-console.light-theme .log-level.error .level-dot { background: #dc2626; }
+.log-console.light-theme .log-level.debug { color: #94a3b8; }
+.log-console.light-theme .log-thread { color: #7c3aed; }
+.log-console.light-theme .log-logger { color: #2563eb; }
+.log-console.light-theme .log-msg { color: #334155; }
+.log-console.light-theme .log-row.error .log-msg { color: #dc2626; }
+
+.log-console.light-theme .console-footer {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.log-console.light-theme .footer-item { color: #64748b; }
+
+.log-console.light-theme .empty-illustration { color: #e2e8f0; }
+.log-console.light-theme .empty-title { color: #64748b; }
+.log-console.light-theme .empty-desc { color: #94a3b8; }
+
+/* 白色主题滚动条 */
+.log-console.light-theme .console-logs::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.log-console.light-theme .console-logs::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==================== 详情部分 ==================== */
 .content-section {
   margin-top: 20px;
 }
@@ -669,27 +965,45 @@ const handleViewDetail = (log) => {
   color: var(--text-primary);
 }
 
-/* 滚动条样式 */
-.console-body::-webkit-scrollbar {
-  width: 8px;
+/* ==================== 滚动条样式 ==================== */
+.console-logs::-webkit-scrollbar {
+  width: 10px;
 }
 
-.console-body::-webkit-scrollbar-track {
+.console-logs::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.console-body::-webkit-scrollbar-thumb {
+.console-logs::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
-.console-body::-webkit-scrollbar-thumb:hover {
+.console-logs::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+  background-clip: content-box;
 }
 
+/* ==================== 响应式 ==================== */
 @media (max-width: 1200px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stat-item {
+    padding: 12px;
+    background: #fafbfc;
+    border-radius: 10px;
+  }
+  
+  .log-logger {
+    display: none;
+  }
+  
+  .log-time {
+    min-width: 160px;
   }
 }
 
@@ -697,6 +1011,31 @@ const handleViewDetail = (log) => {
   .stats-row {
     grid-template-columns: 1fr;
   }
+  
+  .console-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    max-width: none;
+  }
+  
+  .log-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .log-time {
+    min-width: auto;
+  }
+  
+  .log-thread {
+    min-width: auto;
+  }
+  
+  .log-msg {
+    width: 100%;
+  }
 }
 </style>
-

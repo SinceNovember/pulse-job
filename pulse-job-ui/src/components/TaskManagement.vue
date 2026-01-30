@@ -127,6 +127,7 @@
     </div>
 
     <!-- 创建任务弹窗 -->
+    <transition name="modal">
     <div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
       <div 
         class="modal-container" 
@@ -257,8 +258,10 @@
         </div>
       </div>
     </div>
+    </transition>
 
     <!-- 查看详情弹窗 -->
+    <transition name="modal">
     <div v-if="showDetailModal" class="modal-overlay" @click.self="showDetailModal = false">
       <div 
         class="modal-container" 
@@ -326,8 +329,10 @@
         </div>
       </div>
     </div>
+    </transition>
 
     <!-- 编辑任务弹窗 -->
+    <transition name="modal">
     <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
       <div 
         class="modal-container" 
@@ -416,6 +421,16 @@
                 <n-select v-model:value="editForm.routeStrategy" :options="routeStrategyOptions" placeholder="请选择" />
               </div>
               <div class="form-item">
+                <label class="form-label">子任务ID</label>
+                <n-input v-model:value="editForm.childJobId" placeholder="多个用逗号分隔" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-item">
+                <label class="form-label required">调度过期策略</label>
+                <n-select v-model:value="editForm.misfireStrategy" :options="misfireStrategyOptions" placeholder="请选择" />
+              </div>
+              <div class="form-item">
                 <label class="form-label required">阻塞处理策略</label>
                 <n-select v-model:value="editForm.blockStrategy" :options="blockStrategyOptions" placeholder="请选择" />
               </div>
@@ -423,7 +438,7 @@
             <div class="form-row">
               <div class="form-item">
                 <label class="form-label">任务超时时间</label>
-                <n-input-number v-model:value="editForm.timeout" :min="0" placeholder="单位秒" style="width: 100%" />
+                <n-input-number v-model:value="editForm.timeout" :min="0" placeholder="单位秒，0=不限制" style="width: 100%" />
               </div>
               <div class="form-item">
                 <label class="form-label">失败重试次数</label>
@@ -438,6 +453,7 @@
         </div>
       </div>
     </div>
+    </transition>
   </div>
 </template>
 
@@ -565,6 +581,8 @@ const editForm = reactive({
   runMode: 'BEAN',
   handler: '',
   routeStrategy: 'FIRST',
+  childJobId: '',
+  misfireStrategy: 'DO_NOTHING',
   blockStrategy: 'SERIAL_EXECUTION',
   timeout: 0,
   retryCount: 0
@@ -714,7 +732,9 @@ const pagination = reactive({
   page: 1,
   pageSize: 10,
   showSizePicker: true,
-  pageSizes: [10, 20, 50],
+  showQuickJumper: true,
+  pageSizes: [10, 20, 50, 100],
+  prefix: ({ itemCount }) => `共 ${itemCount} 条`,
   onChange: (page) => {
     pagination.page = page
   },
@@ -723,6 +743,13 @@ const pagination = reactive({
     pagination.page = 1
   }
 })
+
+// 状态切换处理
+const handleStatusSwitch = (row, value) => {
+  row.status = value ? 'running' : 'stopped'
+  const action = value ? '启动' : '停止'
+  message.success(`${action}任务: ${row.name}`)
+}
 
 // 表格列定义
 const columns = [
@@ -796,14 +823,97 @@ const columns = [
   {
     title: '状态',
     key: 'status',
-    width: 90,
+    width: 80,
+    align: 'center',
     render(row) {
-      const config = statusConfig[row.status] || { label: row.status, type: 'default' }
-      return h(NTag, {
-        type: config.type,
-        size: 'small',
-        round: false
-      }, { default: () => config.label })
+      const isRunning = row.status === 'running'
+      return h(NPopconfirm, {
+        onPositiveClick: () => handleStatusSwitch(row, !isRunning),
+        positiveText: isRunning ? '停止' : '启动',
+        negativeText: '取消',
+        positiveButtonProps: {
+          type: isRunning ? 'warning' : 'primary',
+          size: 'small'
+        },
+        negativeButtonProps: {
+          size: 'small',
+          quaternary: true
+        },
+        showIcon: false
+      }, {
+        trigger: () => h('div', { 
+          class: 'status-switch-wrapper'
+        }, [
+          h('div', { 
+            class: ['status-switch', isRunning ? 'active' : '']
+          }, [
+            h('div', { class: 'switch-dot' })
+          ])
+        ]),
+        default: () => h('div', { 
+          style: {
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            padding: '4px 0'
+          }
+        }, [
+          h('div', { 
+            style: {
+              flexShrink: 0,
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: isRunning ? 'rgba(245, 158, 11, 0.1)' : 'rgba(94, 129, 244, 0.1)'
+            }
+          }, [
+            h('svg', { 
+              viewBox: '0 0 24 24', 
+              fill: 'none', 
+              stroke: 'currentColor', 
+              'stroke-width': '2',
+              style: {
+                width: '20px',
+                height: '20px',
+                color: isRunning ? '#f59e0b' : '#5E81F4'
+              }
+            }, isRunning ? [
+              h('circle', { cx: '12', cy: '12', r: '10', fill: 'none' }),
+              h('line', { x1: '12', y1: '8', x2: '12', y2: '12', 'stroke-linecap': 'round' }),
+              h('circle', { cx: '12', cy: '16', r: '0.5', fill: 'currentColor', stroke: 'none' })
+            ] : [
+              h('polygon', { points: '5 3 19 12 5 21 5 3' })
+            ])
+          ]),
+          h('div', { 
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }
+          }, [
+            h('div', { 
+              style: {
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#1f2937'
+              }
+            }, isRunning ? '停止任务' : '启动任务'),
+            h('div', { 
+              style: {
+                fontSize: '13px',
+                color: '#6b7280',
+                lineHeight: '1.4'
+              }
+            }, isRunning 
+              ? '停止后任务将不再自动执行' 
+              : '启动后任务将按计划自动执行')
+          ])
+        ])
+      })
     }
   },
   {
@@ -819,8 +929,8 @@ const columns = [
             onClick: () => handleViewDetail(row)
           }, [
             h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-              h('circle', { cx: '12', cy: '12', r: '3' }),
-              h('path', { d: 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z' })
+              h('circle', { cx: '11', cy: '11', r: '8' }),
+              h('line', { x1: '21', y1: '21', x2: '16.65', y2: '16.65' })
             ])
           ]),
           default: () => '详情'
@@ -848,22 +958,6 @@ const columns = [
           ]),
           default: () => '编辑'
         }),
-        h(NTooltip, { trigger: 'hover' }, {
-          trigger: () => h('button', {
-            class: ['action-btn', row.status === 'running' ? 'action-btn-warning' : 'action-btn-success'],
-            onClick: () => handleToggleStatus(row)
-          }, [
-            row.status === 'running' 
-              ? h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-                  h('rect', { x: '6', y: '4', width: '4', height: '16' }),
-                  h('rect', { x: '14', y: '4', width: '4', height: '16' })
-                ])
-              : h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-                  h('polygon', { points: '5 3 19 12 5 21 5 3' })
-                ])
-          ]),
-          default: () => row.status === 'running' ? '暂停' : '启动'
-        }),
         h(NPopconfirm, {
           onPositiveClick: () => handleDelete(row)
         }, {
@@ -881,6 +975,27 @@ const columns = [
             default: () => '删除'
           }),
           default: () => '确定删除该任务吗？'
+        }),
+        h(NDropdown, {
+          trigger: 'click',
+          options: [
+            { label: '执行一次', key: 'executeOnce' },
+            { label: '下次执行时间', key: 'nextExecuteTime' }
+          ],
+          onSelect: (key) => handleRowMoreAction(key, row)
+        }, {
+          default: () => h(NTooltip, { trigger: 'hover' }, {
+            trigger: () => h('button', {
+              class: 'action-btn action-btn-secondary'
+            }, [
+              h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+                h('circle', { cx: '12', cy: '12', r: '1' }),
+                h('circle', { cx: '19', cy: '12', r: '1' }),
+                h('circle', { cx: '5', cy: '12', r: '1' })
+              ])
+            ]),
+            default: () => '更多'
+          })
         })
       ])
     }
@@ -1011,6 +1126,8 @@ const handleEdit = (row) => {
   editForm.runMode = row.runMode === 'standalone' ? 'BEAN' : 'GLUE_SHELL'
   editForm.handler = row.handler
   editForm.routeStrategy = 'FIRST'
+  editForm.childJobId = ''
+  editForm.misfireStrategy = 'DO_NOTHING'
   editForm.blockStrategy = 'SERIAL_EXECUTION'
   editForm.timeout = 0
   editForm.retryCount = 0
@@ -1050,11 +1167,31 @@ const handleToggleStatus = (row) => {
   message.success(`${action}任务: ${row.id}`)
 }
 
+
 const handleDelete = (row) => {
   const index = tasks.value.findIndex(t => t.id === row.id)
   if (index > -1) {
     tasks.value.splice(index, 1)
     message.success(`删除任务: ${row.id}`)
+  }
+}
+
+const handleRowMoreAction = (key, row) => {
+  if (key === 'executeOnce') {
+    message.success(`执行一次任务: ${row.name}`)
+  } else if (key === 'nextExecuteTime') {
+    // 计算下次执行时间（示例）
+    const nextTime = new Date()
+    nextTime.setMinutes(nextTime.getMinutes() + 5)
+    const timeStr = nextTime.toLocaleString('zh-CN', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+    message.info(`任务 "${row.name}" 下次执行时间: ${timeStr}`)
   }
 }
 </script>
@@ -1292,6 +1429,17 @@ const handleDelete = (row) => {
   padding: 16px 20px;
 }
 
+/* 分页样式 */
+.task-table :deep(.n-data-table__pagination) {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.task-table :deep(.n-pagination-prefix) {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
 
 /* 任务处理器单元格 */
 .task-table :deep(.handler-cell) {
@@ -1512,6 +1660,63 @@ const handleDelete = (row) => {
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+/* 弹窗动画 */
+.modal-enter-active {
+  animation: modal-overlay-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-leave-active {
+  animation: modal-overlay-out 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.modal-enter-active .modal-container {
+  animation: modal-content-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-leave-active .modal-container {
+  animation: modal-content-out 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+
+@keyframes modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-content-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modal-content-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -1640,7 +1845,8 @@ const handleDelete = (row) => {
   --n-border-radius: 8px;
 }
 
-.form-item :deep(.n-input) {
+.form-item :deep(.n-input),
+.form-item :deep(.n-input-number) {
   --n-border: 1px solid #e8e8e8;
   --n-border-hover: 1px solid #d0d0d0;
   --n-border-focus: 1px solid var(--primary-color);
@@ -1724,4 +1930,45 @@ const handleDelete = (row) => {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== 状态开关样式 ==================== */
+.task-table :deep(.status-switch-wrapper) {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.task-table :deep(.status-switch) {
+  position: relative;
+  width: 44px;
+  height: 22px;
+  background: #e0e0e0;
+  border-radius: 11px;
+  transition: all 0.25s ease;
+}
+
+.task-table :deep(.status-switch .switch-dot) {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s ease;
+}
+
+.task-table :deep(.status-switch.active) {
+  background: linear-gradient(135deg, #7c9cff, #5E81F4);
+}
+
+.task-table :deep(.status-switch.active .switch-dot) {
+  left: 24px;
+}
+
+.task-table :deep(.status-switch:hover) {
+  box-shadow: 0 0 0 2px rgba(94, 129, 244, 0.15);
+}
+
 </style>
