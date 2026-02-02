@@ -51,14 +51,6 @@
             <span>任务管理</span>
           </a>
         </li>
-        <li class="nav-item" :class="{ active: activeNav === 'job-info' }">
-          <a href="#" class="nav-link" @click.prevent="$emit('nav-click', 'job-info')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-            </svg>
-            <span>任务配置</span>
-          </a>
-        </li>
         <li class="nav-item" :class="{ active: activeNav === 'job-executor' }">
           <a href="#" class="nav-link" @click.prevent="$emit('nav-click', 'job-executor')">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

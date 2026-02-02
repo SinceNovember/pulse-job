@@ -24,7 +24,6 @@
         <TaskManagement v-else-if="activeNav === 'task-management'" />
 
         <!-- 调度系统页面 -->
-        <JobInfoList v-else-if="activeNav === 'job-info'" />
         <JobExecutorList v-else-if="activeNav === 'job-executor'" />
         <JobInstanceList v-else-if="activeNav === 'job-instance'" />
         <JobLogList v-else-if="activeNav === 'job-log'" />
@@ -87,7 +86,6 @@ import TaskList from './components/TaskList.vue'
 import Dashboard from './components/Dashboard.vue'
 import DashboardOriginal from './components/DashboardOriginal.vue'
 import TaskManagement from './components/TaskManagement.vue'
-import JobInfoList from './components/JobInfoList.vue'
 import JobExecutorList from './components/JobExecutorList.vue'
 import JobInstanceList from './components/JobInstanceList.vue'
 import JobLogList from './components/JobLogList.vue'
@@ -107,7 +105,6 @@ const pageTitles = {
   'dashboard-original': '仪表板(原版)',
   projects: '项目',
   'task-management': '任务管理',
-  'job-info': '任务配置',
   'job-executor': '执行器管理',
   'job-instance': '执行记录',
   'job-log': '执行日志',

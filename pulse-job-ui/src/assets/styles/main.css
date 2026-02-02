@@ -255,3 +255,26 @@ img {
 .n-input.n-input--focus .n-input__state-border {
   box-shadow: none !important;
 }
+
+/* ================================
+   全局弹窗样式
+   ================================ */
+/* 弹窗表头高度调整 */
+.n-card > .n-card-header {
+  padding: 14px 20px !important;
+}
+
+.n-card > .n-card-header .n-card-header__main {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+/* 弹窗内容区域 */
+.n-card > .n-card__content {
+  padding: 16px 20px !important;
+}
+
+/* 弹窗底部按钮区域 */
+.n-card > .n-card__footer {
+  padding: 12px 20px !important;
+}

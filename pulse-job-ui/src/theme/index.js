@@ -152,20 +152,30 @@ export const themeOverrides = {
   
   // 卡片定制
   Card: {
-    borderRadius: '12px',
+    borderRadius: '8px',
     borderColor: '#eff0f6',
     color: '#ffffff',
     boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     paddingMedium: '20px',
-    paddingLarge: '24px'
+    paddingLarge: '24px',
+    // 表头高度调整
+    titleFontSizeMedium: '16px',
+    titleFontSizeLarge: '16px',
+    titleFontSizeHuge: '18px',
+    titleFontWeight: '600'
   },
   
   // 对话框定制
   Dialog: {
-    borderRadius: '16px',
+    borderRadius: '8px',
     padding: '24px',
     titleFontSize: '18px',
     titleFontWeight: '600'
+  },
+  
+  // 模态框定制
+  Modal: {
+    borderRadius: '8px'
   },
   
   // 消息定制

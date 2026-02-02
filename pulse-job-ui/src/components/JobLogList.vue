@@ -691,15 +691,15 @@ const handleExport = () => {
   max-height: calc(100vh - 420px);
   overflow-y: auto;
   font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .log-row {
-  padding: 10px 20px;
+  padding: 6px 20px;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   border-left: 3px solid transparent;
   transition: all 0.15s ease;
 }
@@ -715,9 +715,9 @@ const handleExport = () => {
 
 .log-line {
   color: #484f58;
-  min-width: 32px;
+  min-width: 28px;
   text-align: right;
-  font-size: 12px;
+  font-size: 11px;
   user-select: none;
 }
 
