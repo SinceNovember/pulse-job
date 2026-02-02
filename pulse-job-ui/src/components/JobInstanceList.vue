@@ -64,7 +64,7 @@
               v-model="searchKeyword" 
               type="text" 
               class="search-input" 
-              placeholder="搜索实例ID或执行器地址..."
+              placeholder="搜索实例ID..."
             />
           </div>
           <button class="filter-btn" :class="{ active: showAdvancedFilter }" @click="showAdvancedFilter = !showAdvancedFilter">
@@ -136,45 +136,104 @@
       </div>
     </div>
 
-    <!-- 详情抽屉 -->
-    <n-drawer v-model:show="showDetail" :width="500">
-      <n-drawer-content :title="`执行详情 #${detailInstance?.id}`">
-        <template v-if="detailInstance">
-          <n-descriptions :column="1" bordered>
-            <n-descriptions-item label="实例ID">{{ detailInstance.id }}</n-descriptions-item>
-            <n-descriptions-item label="任务ID">{{ detailInstance.jobId }}</n-descriptions-item>
-            <n-descriptions-item label="执行器ID">{{ detailInstance.executorId }}</n-descriptions-item>
-            <n-descriptions-item label="执行器地址">
-              <n-tag size="small">{{ detailInstance.executorAddress || '-' }}</n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item label="触发类型">
-              <n-tag size="small" :type="getTriggerTypeColor(detailInstance.triggerType)">
-                {{ getTriggerTypeLabel(detailInstance.triggerType) }}
-              </n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item label="执行状态">
-              <n-tag :type="getStatusType(detailInstance.status)">
-                {{ getStatusLabel(detailInstance.status) }}
-              </n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item label="触发时间">{{ detailInstance.triggerTime }}</n-descriptions-item>
-            <n-descriptions-item label="开始时间">{{ detailInstance.startTime || '-' }}</n-descriptions-item>
-            <n-descriptions-item label="结束时间">{{ detailInstance.endTime || '-' }}</n-descriptions-item>
-            <n-descriptions-item label="重试次数">{{ detailInstance.retryCount }}</n-descriptions-item>
-          </n-descriptions>
-
-          <div v-if="detailInstance.result" class="result-section">
-            <h4>执行结果</h4>
-            <n-code :code="formatJson(detailInstance.result)" language="json" />
+    <!-- 详情弹窗 -->
+    <transition name="modal">
+      <div v-if="showDetail" class="detail-modal-overlay" @click.self="showDetail = false">
+        <div class="detail-modal">
+          <div class="detail-modal-header">
+            <div class="header-left">
+              <div class="header-logo">
+                <svg width="22" height="22" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path opacity="0.25" d="M14.684 25.388C20.3284 25.388 24.904 20.8123 24.904 15.168C24.904 9.52365 20.3284 4.948 14.684 4.948C9.03965 4.948 4.464 9.52365 4.464 15.168C4.464 20.8123 9.03965 25.388 14.684 25.388Z" fill="#5E81F4"/>
+                  <path opacity="0.5" d="M6.292 13.272C3.74884 13.2711 1.45629 11.7393 0.482133 9.39014C-0.492025 7.04096 0.0437846 4.33633 1.84 2.53598C4.29692 0.080291 8.27908 0.080291 10.736 2.53598C11.9163 3.71535 12.5794 5.31546 12.5794 6.98398C12.5794 8.6525 11.9163 10.2526 10.736 11.432C9.56032 12.6149 7.95978 13.2776 6.292 13.272Z" fill="#5E81F4"/>
+                  <path opacity="0.5" d="M23.308 29.8959C20.3057 29.897 17.7208 27.7767 17.1348 24.8321C16.5488 21.8875 18.1248 18.9391 20.8988 17.7905C23.6728 16.642 26.8717 17.6133 28.5388 20.1104C30.2058 22.6074 29.8764 25.9343 27.752 28.0559C26.5753 29.2373 24.9754 29.8997 23.308 29.8959Z" fill="#5E81F4"/>
+                  <path d="M6.46 29.828C3.91539 29.8303 1.61987 28.2997 0.643664 25.9498C-0.332546 23.5999 0.202755 20.8934 2 19.092C2.27475 18.8241 2.57332 18.5818 2.892 18.368L3.2 18.172C3.416 18.044 3.64 17.928 3.876 17.816C3.996 17.764 4.116 17.708 4.248 17.66C4.49358 17.5703 4.74479 17.4968 5 17.44L5.16 17.396C5.18744 17.3861 5.2155 17.3781 5.244 17.372L6.668 17.268C6.852 17.268 7.068 17.304 7.264 17.332H7.308H7.496H7.556H7.616H8C10.4617 17.3091 12.8115 16.3006 14.524 14.532C16.2459 12.7768 17.1888 10.4023 17.14 7.94398V7.87598V7.80798C17.1259 7.73141 17.1178 7.65383 17.116 7.57598V7.38398L17.064 7.19998C17.064 7.08798 17.036 6.96798 17.032 6.85198L17.128 5.53198V5.49998V5.47598C17.128 5.44398 17.188 5.26798 17.188 5.26798C17.2488 4.9968 17.3263 4.72962 17.42 4.46798C17.464 4.34798 17.52 4.22798 17.576 4.10798C17.681 3.87112 17.8013 3.6413 17.936 3.41998V3.38398C17.992 3.29198 18.044 3.19998 18.108 3.11198C18.3181 2.7953 18.5579 2.49931 18.824 2.22798C21.285 -0.237417 25.2786 -0.240013 27.7428 2.22178C30.207 4.68357 30.2096 8.67716 27.7488 11.1441C27.4763 11.4106 27.1803 11.6522 26.864 11.8659C26.7693 11.9299 26.676 11.9899 26.5813 12.0519C26.36 12.188 26.1293 12.3087 25.892 12.4139C25.772 12.4699 25.652 12.5259 25.532 12.5699C25.2697 12.665 25.0019 12.7425 24.73 12.802L24.538 12.842L24.468 12.858L23.148 12.966C23.0306 12.974 22.9126 12.974 22.7947 12.9667C22.6067 12.958 22.42 12.934 22 12.934H21.94H21.88H21.792H21.504H21.46C21.2605 12.9023 21.0623 12.8613 20.866 12.812C18.2167 12.1374 16.0588 10.1847 15.1213 7.61605C14.1838 5.04743 14.5963 2.18606 16.2213 0" fill="#5E81F4"/>
+                </svg>
+              </div>
+              <span class="header-title">执行详情 #{{ detailInstance?.id }}</span>
+            </div>
+            <button class="close-btn" @click="showDetail = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
+          <div class="detail-modal-body" v-if="detailInstance">
+            <n-descriptions :column="2" label-placement="left" bordered size="small">
+              <n-descriptions-item label="实例ID">{{ detailInstance.id }}</n-descriptions-item>
+              <n-descriptions-item label="任务ID">{{ detailInstance.jobId }}</n-descriptions-item>
+              <n-descriptions-item label="任务名称" :span="2">{{ getJobName(detailInstance.jobId) }}</n-descriptions-item>
+              <n-descriptions-item label="执行器ID">{{ detailInstance.executorId }}</n-descriptions-item>
+              <n-descriptions-item label="执行器地址">
+                <n-tag size="small">{{ detailInstance.executorAddress || '-' }}</n-tag>
+              </n-descriptions-item>
+              <n-descriptions-item label="触发类型">
+                <n-tag size="small" :type="getTriggerTypeColor(detailInstance.triggerType)">
+                  {{ getTriggerTypeLabel(detailInstance.triggerType) }}
+                </n-tag>
+              </n-descriptions-item>
+              <n-descriptions-item label="重试次数">{{ detailInstance.retryCount }}</n-descriptions-item>
+            </n-descriptions>
 
-          <div v-if="detailInstance.errorMessage" class="error-section">
-            <h4>错误信息</h4>
-            <n-alert type="error" :title="detailInstance.errorMessage" />
+            <div class="detail-section">
+              <div class="section-title">调度信息</div>
+              <n-descriptions :column="2" label-placement="left" bordered size="small">
+                <n-descriptions-item label="调度时间">{{ detailInstance.triggerTime }}</n-descriptions-item>
+                <n-descriptions-item label="调度结果">
+                  <n-tag :type="getScheduleResultType(detailInstance.status)" size="small">
+                    {{ getScheduleResultLabel(detailInstance.status) }}
+                  </n-tag>
+                </n-descriptions-item>
+                <n-descriptions-item label="调度备注" :span="2">{{ getScheduleRemark(detailInstance) }}</n-descriptions-item>
+              </n-descriptions>
+            </div>
+
+            <div class="detail-section">
+              <div class="section-title">执行信息</div>
+              <n-descriptions :column="2" label-placement="left" bordered size="small">
+                <n-descriptions-item label="执行时间">{{ detailInstance.startTime || '-' }}</n-descriptions-item>
+                <n-descriptions-item label="结束时间">{{ detailInstance.endTime || '-' }}</n-descriptions-item>
+                <n-descriptions-item label="执行耗时">{{ getDuration(detailInstance.startTime, detailInstance.endTime) }}</n-descriptions-item>
+                <n-descriptions-item label="执行结果">
+                  <n-tag v-if="detailInstance.status >= 3" :type="getStatusType(detailInstance.status)" size="small">
+                    {{ getExecResultLabel(detailInstance.status) }}
+                  </n-tag>
+                  <span v-else style="color: #9ca3af;">-</span>
+                </n-descriptions-item>
+                <n-descriptions-item label="执行备注" :span="2">{{ getExecRemark(detailInstance) }}</n-descriptions-item>
+              </n-descriptions>
+            </div>
+
+            <div v-if="detailInstance.result" class="detail-section">
+              <div class="section-title">执行结果详情</div>
+              <div class="result-code-wrapper">
+                <div class="result-code-header">
+                  <div class="code-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                  </div>
+                  <span class="code-label">JSON</span>
+                </div>
+                <div class="result-code-body">
+                  <n-code :code="formatJson(detailInstance.result)" language="json" />
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="detailInstance.errorMessage" class="detail-section">
+              <div class="section-title">错误信息</div>
+              <n-alert type="error" :show-icon="false">{{ detailInstance.errorMessage }}</n-alert>
+            </div>
+            
+            <div v-if="detailInstance.scheduleError" class="detail-section">
+              <div class="section-title">调度错误</div>
+              <n-alert type="error" :show-icon="false">{{ detailInstance.scheduleError }}</n-alert>
+            </div>
           </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
+        </div>
+      </div>
+    </transition>
 
     <!-- 日志弹窗 -->
     <transition name="modal">
@@ -514,6 +573,21 @@ const instanceList = ref([
     errorMessage: '任务执行超时',
     triggerType: 'api',
     executorAddress: '192.168.1.103:9999'
+  },
+  {
+    id: 10006,
+    jobId: 2,
+    executorId: 1,
+    triggerTime: '2026-01-26 12:00:00',
+    startTime: null,
+    endTime: null,
+    status: 2,
+    retryCount: 0,
+    result: null,
+    errorMessage: null,
+    scheduleError: '执行器离线，无法建立连接',
+    triggerType: 'auto',
+    executorAddress: '192.168.1.105:9999'
   }
 ])
 
@@ -685,6 +759,27 @@ const getJobName = (jobId) => {
   return map[jobId] || `Job-${jobId}`
 }
 
+// 计算执行耗时
+const getDuration = (startTime, endTime) => {
+  if (!startTime) return '-'
+  if (!endTime) return '执行中...'
+  
+  const start = new Date(startTime).getTime()
+  const end = new Date(endTime).getTime()
+  const diff = end - start
+  
+  if (diff < 1000) return `${diff}ms`
+  if (diff < 60000) return `${(diff / 1000).toFixed(1)}s`
+  if (diff < 3600000) {
+    const minutes = Math.floor(diff / 60000)
+    const seconds = Math.floor((diff % 60000) / 1000)
+    return `${minutes}m ${seconds}s`
+  }
+  const hours = Math.floor(diff / 3600000)
+  const minutes = Math.floor((diff % 3600000) / 60000)
+  return `${hours}h ${minutes}m`
+}
+
 const formatJson = (str) => {
   try {
     return JSON.stringify(JSON.parse(str), null, 2)
@@ -695,34 +790,53 @@ const formatJson = (str) => {
 
 // 表格列
 const columns = [
-  { title: 'ID', key: 'id', width: 90 },
-  { title: '任务ID', key: 'jobId', width: 80 },
+  { title: 'ID', key: 'id', width: 80 },
   { 
-    title: '触发类型', 
-    key: 'triggerType',
-    width: 100,
-    render: (row) => h(NTag, { size: 'small', type: getTriggerTypeColor(row.triggerType) }, () => getTriggerTypeLabel(row.triggerType))
+    title: '任务名称', 
+    key: 'jobName',
+    width: 150,
+    ellipsis: { tooltip: true },
+    render: (row) => h('span', { 
+      style: { 
+        fontWeight: '500',
+        color: 'var(--text-primary)'
+      } 
+    }, getJobName(row.jobId))
   },
+  { title: '调度时间', key: 'triggerTime', width: 155 },
   { 
-    title: '状态', 
-    key: 'status',
-    width: 90,
-    render: (row) => h(NTag, { type: getStatusType(row.status), size: 'small' }, () => getStatusLabel(row.status))
+    title: '调度结果', 
+    key: 'scheduleResult',
+    width: 85,
+    render: (row) => {
+      // status 2 是发送失败(调度失败)，其他 >= 1 都是调度成功
+      const isSuccess = row.status >= 1 && row.status !== 2
+      return h(NTag, { 
+        type: isSuccess ? 'success' : 'error', 
+        size: 'small' 
+      }, () => isSuccess ? '成功' : '失败')
+    }
   },
+  { title: '执行时间', key: 'startTime', width: 155 },
   { 
-    title: '执行器地址', 
-    key: 'executorAddress', 
-    width: 160,
-    render: (row) => h('code', { class: 'address-cell' }, row.executorAddress || '-')
+    title: '执行结果', 
+    key: 'execResult',
+    width: 85,
+    render: (row) => {
+      if (row.status < 3) return h('span', { style: { color: '#9ca3af' } }, '-')
+      if (row.status === 3) return h(NTag, { type: 'warning', size: 'small' }, () => '执行中')
+      const isSuccess = row.status === 4
+      return h(NTag, { 
+        type: isSuccess ? 'success' : 'error', 
+        size: 'small' 
+      }, () => isSuccess ? '成功' : '失败')
+    }
   },
-  { title: '触发时间', key: 'triggerTime', width: 160 },
-  { title: '开始时间', key: 'startTime', width: 160 },
-  { title: '结束时间', key: 'endTime', width: 160 },
-  { title: '重试', key: 'retryCount', width: 60 },
   {
     title: '操作',
     key: 'actions',
     width: 120,
+    fixed: 'right',
     render: (row) => h('div', { class: 'action-buttons' }, [
       h(NTooltip, { trigger: 'hover' }, {
         trigger: () => h('button', {
@@ -742,11 +856,9 @@ const columns = [
           onClick: () => handleViewLog(row)
         }, [
           h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            h('path', { d: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z' }),
-            h('polyline', { points: '14 2 14 8 20 8' }),
-            h('line', { x1: '16', y1: '13', x2: '8', y2: '13' }),
-            h('line', { x1: '16', y1: '17', x2: '8', y2: '17' }),
-            h('polyline', { points: '10 9 9 9 8 9' })
+            h('rect', { x: '3', y: '3', width: '18', height: '18', rx: '2' }),
+            h('path', { d: 'M7 8l4 4-4 4', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+            h('line', { x1: '13', y1: '16', x2: '17', y2: '16', 'stroke-linecap': 'round' })
           ])
         ]),
         default: () => '日志'
@@ -770,6 +882,7 @@ const handleReset = () => {
   pagination.page = 1
 }
 
+
 const handleRefresh = () => {
   message.success('刷新成功')
 }
@@ -784,6 +897,37 @@ const handleViewLog = (row) => {
   logFilterLevel.value = null
   logSearchKeyword.value = ''
   showLogModal.value = true
+}
+
+// 调度结果相关函数
+const getScheduleResultType = (status) => {
+  return (status >= 1 && status !== 2) ? 'success' : 'error'
+}
+
+const getScheduleResultLabel = (status) => {
+  return (status >= 1 && status !== 2) ? '成功' : '失败'
+}
+
+const getScheduleRemark = (row) => {
+  const isSuccess = row.status >= 1 && row.status !== 2
+  if (isSuccess) {
+    return '调度成功，任务已发送至执行器'
+  }
+  return row.scheduleError || '无法连接执行器，请检查执行器是否在线'
+}
+
+// 执行结果相关函数
+const getExecResultLabel = (status) => {
+  if (status === 3) return '执行中'
+  if (status === 4) return '成功'
+  return '失败'
+}
+
+const getExecRemark = (row) => {
+  if (row.status < 3) return '-'
+  if (row.status === 3) return '任务正在执行中...'
+  if (row.status === 4) return '执行完成'
+  return row.errorMessage || '执行异常'
 }
 
 const handleRefreshLog = () => {
@@ -1099,6 +1243,8 @@ const handleExportLog = () => {
   background: transparent;
 }
 
+
+
 .instance-table :deep(.action-buttons) {
   display: flex;
   align-items: center;
@@ -1138,16 +1284,169 @@ const handleExportLog = () => {
 }
 
 /* ==================== 详情抽屉 ==================== */
-.result-section,
-.error-section {
+/* ==================== 详情弹窗 ==================== */
+.detail-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.detail-modal {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  width: 680px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.detail-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: linear-gradient(to bottom, #fafbfc, #fff);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-modal-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-modal-header .header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+.detail-modal-header .header-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #555;
+  letter-spacing: 0.01em;
+}
+
+.detail-modal-header .close-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.detail-modal-header .close-btn:hover {
+  background: #f5f5f5;
+}
+
+.detail-modal-header .close-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #999;
+  transition: color 0.15s ease;
+}
+
+.detail-modal-header .close-btn:hover svg {
+  color: #666;
+}
+
+.detail-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  background: #fff;
+}
+
+.detail-section {
   margin-top: 20px;
 }
 
-.result-section h4,
-.error-section h4 {
-  margin: 0 0 12px 0;
+.detail-section .section-title {
   font-size: 0.875rem;
+  font-weight: 600;
   color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 3px solid #5E81F4;
+}
+
+/* 结果代码块样式 */
+.result-code-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafbfc;
+  border: 1px solid #e5e7eb;
+}
+
+.result-code-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.result-code-header .code-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5E81F4;
+}
+
+.result-code-header .code-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.result-code-header .code-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.result-code-body {
+  padding: 14px 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.result-code-body :deep(.n-code) {
+  background: transparent !important;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.result-code-body :deep(pre) {
+  margin: 0;
+  background: transparent !important;
+}
+
+.result-code-body :deep(code) {
+  background: transparent !important;
+  color: #334155;
 }
 
 /* ==================== 日志弹窗 ==================== */
