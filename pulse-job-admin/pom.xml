@@ -17,6 +17,7 @@
         <module>pulse-job-admin-scheduler</module>
         <module>pulse-job-admin-persistence</module>
         <module>pulse-job-admin-web</module>
+        <module>pulse-job-admin-websocket</module>
     </modules>
 
     <properties>
@@ -52,6 +53,11 @@
                 <artifactId>pulse-job-admin-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>pulse-job-admin-websocket</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -75,6 +81,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

@@ -10,6 +10,7 @@ import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
 import com.simple.pulsejob.admin.scheduler.factory.SerializerFactory;
 import com.simple.pulsejob.admin.scheduler.future.DefaultInvokeFuture;
 import com.simple.pulsejob.admin.scheduler.log.JobLogDispatcher;
+import com.simple.pulsejob.admin.websocket.service.WebSocketBroadcastService;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.transport.JResponse;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -47,7 +48,7 @@ public class AdminServerProcessor implements AcceptorProcessor {
     private final ExecutorRegistryService executorRegistryService;
     private final SerializerFactory serializerFactory;
     private final JobLogDispatcher jobLogDispatcher;
-    private final JobInstanceMapper jobInstanceMapper;
+    private final WebSocketBroadcastService broadcastService;
 
     /** 缓存默认序列化器 */
     private volatile Serializer defaultSerializer;
@@ -169,6 +170,7 @@ public class AdminServerProcessor implements AcceptorProcessor {
 
         // 持久化
         executorRegistryService.register(executorKey, channel);
+        broadcastService.pushExecutorOnline(executorKey.getExecutorName(), channel.remoteAddress().toString());
     }
 
     /**

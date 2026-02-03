@@ -11,6 +11,25 @@ pulse:
     admin:
       host: localhost
       port: 10410
+      # WebSocket 配置
+      websocket:
+        enabled: true
+        # 心跳间隔（毫秒）
+        heartbeat-interval: 30000
+        # 心跳超时（毫秒）
+        heartbeat-timeout: 90000
+        # 最大会话数
+        max-sessions: 1000
+        # 消息发送超时（毫秒）
+        send-timeout: 10000
+        # 消息缓冲区大小
+        buffer-size: 8192
+        # 最大文本消息大小
+        max-text-message-size: 65536
+        # 是否启用消息压缩
+        compression-enabled: true
+        # 会话空闲超时（毫秒，5分钟）
+        session-idle-timeout: 300000
       # 线程池配置
       thread-pool:
         # 任务调度线程池配置

@@ -23,6 +23,12 @@
       </div>
       
       <div class="toolbar-right">
+        <!-- WebSocket 连接状态 -->
+        <div class="ws-status" :class="wsStatusClass" @click="toggleWsConnection">
+          <span class="ws-dot"></span>
+          <span class="ws-text">{{ wsStatusText }}</span>
+        </div>
+        <div class="tool-divider"></div>
         <n-tooltip trigger="hover">
           <template #trigger>
             <button class="tool-btn" @click="handleRefresh">
@@ -208,10 +214,167 @@
 </template>
 
 <script setup>
-import { ref, h, computed, reactive } from 'vue'
+import { ref, h, computed, reactive, onMounted, onUnmounted } from 'vue'
 import { NTag, NButton, NDropdown, NTooltip, useMessage } from 'naive-ui'
+import { useWebSocket, useExecutorStatus, ConnectionState, MessageType } from '@/websocket'
 
 const message = useMessage()
+
+// WebSocket 连接
+const { state: wsState, connect: wsConnect, disconnect: wsDisconnect, isConnected, subscribe, on } = useWebSocket()
+
+// 执行器实时状态
+const executorStatusMap = reactive(new Map()) // executorName -> status info
+
+// 连接统计
+const connectionStats = reactive({
+  totalSessions: 0,
+  executorSessions: 0,
+  browserSessions: 0,
+  timestamp: null
+})
+
+// 最后更新时间
+const lastUpdateTime = ref(null)
+
+// 实时执行器列表（从 WebSocket 消息中收集）
+const realtimeExecutors = computed(() => {
+  const executors = []
+  for (const [id, status] of executorStatusMap) {
+    executors.push({
+      executorId: id,
+      ...status
+    })
+  }
+  // 按最后更新时间排序，最新的在前
+  return executors.sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
+})
+
+// 连接 WebSocket 并订阅执行器状态
+onMounted(() => {
+  // 连接 WebSocket
+  wsConnect()
+  
+  // 订阅执行器状态主题
+  subscribe('executor.status', handleExecutorStatus)
+  
+  // 订阅连接统计主题
+  subscribe('connection.stats', handleConnectionStats)
+  
+  // 监听执行器上线/下线事件
+  on(MessageType.EXECUTOR_ONLINE, handleExecutorOnline)
+  on(MessageType.EXECUTOR_OFFLINE, handleExecutorOffline)
+  on(MessageType.EXECUTOR_HEARTBEAT, handleExecutorHeartbeat)
+  on(MessageType.STATS_UPDATE, handleConnectionStats)
+})
+
+// 处理执行器状态更新
+function handleExecutorStatus(msg) {
+  const data = msg.data
+  if (data && data.executorId) {
+    executorStatusMap.set(data.executorId, {
+      ...data,
+      lastUpdate: Date.now()
+    })
+    // 更新对应执行器的信息
+    updateExecutorFromWs(data)
+  }
+}
+
+// 处理执行器上线
+function handleExecutorOnline(msg) {
+  const { executorId, address } = msg.data
+  message.success(`执行器 ${executorId} 上线: ${address}`)
+  executorStatusMap.set(executorId, {
+    executorId,
+    address,
+    status: 'online',
+    lastUpdate: Date.now()
+  })
+  updateExecutorFromWs(msg.data)
+}
+
+// 处理执行器下线
+function handleExecutorOffline(msg) {
+  const { executorId, reason } = msg.data
+  message.warning(`执行器 ${executorId} 下线: ${reason || '未知原因'}`)
+  const existing = executorStatusMap.get(executorId)
+  if (existing) {
+    existing.status = 'offline'
+    existing.lastUpdate = Date.now()
+  }
+}
+
+// 处理执行器心跳
+function handleExecutorHeartbeat(msg) {
+  const data = msg.data
+  if (data && data.executorId) {
+    const existing = executorStatusMap.get(data.executorId)
+    if (existing) {
+      // 更新现有数据
+      Object.assign(existing, data)
+      existing.lastHeartbeat = Date.now()
+      existing.lastUpdate = Date.now()
+      existing.status = 'online'
+    } else {
+      // 新增执行器
+      executorStatusMap.set(data.executorId, {
+        ...data,
+        status: 'online',
+        lastHeartbeat: Date.now(),
+        lastUpdate: Date.now()
+      })
+    }
+    lastUpdateTime.value = Date.now()
+  }
+}
+
+// 处理连接统计更新
+function handleConnectionStats(msg) {
+  const data = msg.data
+  if (data) {
+    connectionStats.totalSessions = data.totalSessions || 0
+    connectionStats.executorSessions = data.executorSessions || 0
+    connectionStats.browserSessions = data.browserSessions || 0
+    connectionStats.timestamp = data.timestamp || Date.now()
+    lastUpdateTime.value = Date.now()
+  }
+}
+
+// 格式化最后更新时间
+function formatLastUpdate() {
+  if (!lastUpdateTime.value) return '未知'
+  const diff = Date.now() - lastUpdateTime.value
+  if (diff < 1000) return '刚刚'
+  if (diff < 60000) return `${Math.floor(diff / 1000)} 秒前`
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`
+  return new Date(lastUpdateTime.value).toLocaleTimeString()
+}
+
+// 格式化实时时间
+function formatRealtimeTime(timestamp) {
+  if (!timestamp) return '-'
+  const diff = Date.now() - timestamp
+  if (diff < 1000) return '刚刚'
+  if (diff < 60000) return `${Math.floor(diff / 1000)}秒前`
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+  return new Date(timestamp).toLocaleTimeString()
+}
+
+// 从 WebSocket 消息更新执行器列表
+function updateExecutorFromWs(data) {
+  if (!data.executorId) return
+  
+  const executor = executorList.value.find(e => e.executorName === data.executorId)
+  if (executor) {
+    executor.updateTime = new Date().toISOString()
+    if (data.address && !executor.executorAddress.includes(data.address)) {
+      executor.executorAddress = executor.executorAddress 
+        ? executor.executorAddress + ';' + data.address 
+        : data.address
+    }
+  }
+}
 
 // 视图模式
 const viewMode = ref('card')
@@ -473,6 +636,43 @@ const tableColumns = [
   }
 ]
 
+// WebSocket 状态计算属性
+const wsStatusClass = computed(() => {
+  switch (wsState.state) {
+    case ConnectionState.CONNECTED:
+      return 'connected'
+    case ConnectionState.CONNECTING:
+    case ConnectionState.RECONNECTING:
+      return 'connecting'
+    default:
+      return 'disconnected'
+  }
+})
+
+const wsStatusText = computed(() => {
+  switch (wsState.state) {
+    case ConnectionState.CONNECTED:
+      return '实时同步'
+    case ConnectionState.CONNECTING:
+      return '连接中...'
+    case ConnectionState.RECONNECTING:
+      return '重连中...'
+    default:
+      return '未连接'
+  }
+})
+
+// 切换 WebSocket 连接
+function toggleWsConnection() {
+  if (isConnected.value) {
+    wsDisconnect()
+    message.info('已断开实时连接')
+  } else {
+    wsConnect()
+    message.info('正在连接...')
+  }
+}
+
 // 工具方法
 const getAddresses = (executor) => {
   if (!executor.executorAddress) return []
@@ -480,12 +680,31 @@ const getAddresses = (executor) => {
 }
 
 const isOnline = (executor) => {
+  // 优先使用 WebSocket 实时状态
+  const wsStatus = executorStatusMap.get(executor.executorName)
+  if (wsStatus) {
+    // 如果有 WebSocket 状态，检查最后心跳时间
+    const heartbeatTimeout = 90000 // 90秒无心跳视为离线
+    if (wsStatus.lastHeartbeat && Date.now() - wsStatus.lastHeartbeat < heartbeatTimeout) {
+      return true
+    }
+    return wsStatus.status === 'online'
+  }
+  
+  // 降级：使用更新时间判断
   const updateTime = new Date(executor.updateTime)
   const now = new Date()
-  return (now - updateTime) < 5 * 60 * 1000 || Math.random() > 0.2
+  return (now - updateTime) < 5 * 60 * 1000
 }
 
 const isAddressOnline = (addr) => {
+  // 检查地址是否在任何执行器的实时状态中
+  for (const [, status] of executorStatusMap) {
+    if (status.address === addr && status.status === 'online') {
+      return true
+    }
+  }
+  // 降级：随机模拟
   return Math.random() > 0.1
 }
 
@@ -710,6 +929,65 @@ const handleSubmit = () => {
   height: 20px;
   background: var(--border-color);
   margin: 0 6px;
+}
+
+/* WebSocket 状态指示器 */
+.ws-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.ws-status:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.ws-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.ws-status.connected .ws-dot {
+  background: #52c41a;
+  box-shadow: 0 0 8px rgba(82, 196, 26, 0.5);
+}
+
+.ws-status.connecting .ws-dot {
+  background: #faad14;
+  animation: ws-pulse 1s ease-in-out infinite;
+}
+
+.ws-status.disconnected .ws-dot {
+  background: #d9d9d9;
+}
+
+@keyframes ws-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.ws-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ws-status.connected .ws-text {
+  color: #52c41a;
+}
+
+.ws-status.connecting .ws-text {
+  color: #faad14;
+}
+
+.ws-status.disconnected .ws-text {
+  color: #999;
 }
 
 /* ==================== 高级筛选面板 ==================== */

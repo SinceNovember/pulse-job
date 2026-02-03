@@ -26,6 +26,10 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>pulse-job-admin-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pulse-job-admin-websocket</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

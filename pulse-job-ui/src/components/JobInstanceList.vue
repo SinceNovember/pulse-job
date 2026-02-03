@@ -231,6 +231,7 @@
               <n-alert type="error" :show-icon="false">{{ detailInstance.scheduleError }}</n-alert>
             </div>
           </div>
+          <div class="detail-modal-footer"></div>
         </div>
       </div>
     </transition>
@@ -1283,111 +1284,9 @@ const handleExportLog = () => {
   color: #10b981;
 }
 
-/* ==================== 详情抽屉 ==================== */
 /* ==================== 详情弹窗 ==================== */
-.detail-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
 .detail-modal {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.06);
   width: 680px;
-  max-width: 90vw;
-  max-height: 85vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.detail-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: linear-gradient(to bottom, #fafbfc, #fff);
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.detail-modal-header .header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.detail-modal-header .header-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.9;
-}
-
-.detail-modal-header .header-title {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: #555;
-  letter-spacing: 0.01em;
-}
-
-.detail-modal-header .close-btn {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.detail-modal-header .close-btn:hover {
-  background: #f5f5f5;
-}
-
-.detail-modal-header .close-btn svg {
-  width: 16px;
-  height: 16px;
-  color: #999;
-  transition: color 0.15s ease;
-}
-
-.detail-modal-header .close-btn:hover svg {
-  color: #666;
-}
-
-.detail-modal-body {
-  padding: 20px 24px;
-  overflow-y: auto;
-  flex: 1;
-  background: #fff;
-}
-
-.detail-section {
-  margin-top: 20px;
-}
-
-.detail-section .section-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-  padding-left: 10px;
-  border-left: 3px solid #5E81F4;
 }
 
 /* 结果代码块样式 */
@@ -1771,7 +1670,7 @@ const handleExportLog = () => {
 }
 
 .log-row {
-  padding: 10px 20px;
+  padding: 6px 20px;
   display: flex;
   align-items: flex-start;
   gap: 16px;

@@ -53,5 +53,6 @@ declare module 'vue' {
     TaskItem: typeof import('./components/TaskItem.vue')['default']
     TaskList: typeof import('./components/TaskList.vue')['default']
     TaskManagement: typeof import('./components/TaskManagement.vue')['default']
+    WebSocketIndicator: typeof import('./components/WebSocketIndicator.vue')['default']
   }
 }

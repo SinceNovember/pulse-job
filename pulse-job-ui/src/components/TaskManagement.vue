@@ -189,9 +189,27 @@
                 <label class="form-label required">调度类型</label>
                 <n-select v-model:value="createForm.scheduleType" :options="scheduleTypeOptions" placeholder="请选择" />
               </div>
-              <div class="form-item">
+              <div class="form-item" v-if="createForm.scheduleType === 'cron'">
                 <label class="form-label required">Cron表达式</label>
-                <n-input v-model:value="createForm.cronExpr" placeholder="如: 0 0 0 * * ?" />
+                <div class="cron-input-wrapper">
+                  <n-input v-model:value="createForm.cronExpr" placeholder="如: 0 0 0 * * ?" />
+                  <button type="button" class="cron-picker-btn" @click="openCronPicker('create')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-item" v-else-if="createForm.scheduleType === 'fixed_rate' || createForm.scheduleType === 'fixed_delay'">
+                <label class="form-label required">{{ createForm.scheduleType === 'fixed_rate' ? '执行间隔' : '延迟时间' }}</label>
+                <div class="interval-input-wrapper">
+                  <n-input-number v-model:value="createForm.intervalValue" :min="1" placeholder="请输入" style="flex: 1" />
+                  <n-select v-model:value="createForm.intervalUnit" :options="intervalUnitOptions" style="width: 100px" />
+                </div>
+              </div>
+              <div class="form-item" v-else-if="createForm.scheduleType === 'once'">
+                <label class="form-label">执行时间</label>
+                <n-date-picker v-model:value="createForm.onceTime" type="datetime" placeholder="留空则立即执行" clearable style="width: 100%" />
               </div>
             </div>
           </div>
@@ -262,14 +280,11 @@
 
     <!-- 查看详情弹窗 -->
     <transition name="modal">
-    <div v-if="showDetailModal" class="modal-overlay" @click.self="showDetailModal = false">
-      <div 
-        class="modal-container" 
-        :style="{ transform: `translate(${detailModalPosition.x}px, ${detailModalPosition.y}px)` }"
-      >
-        <div class="modal-header" @mousedown="startDetailDrag" style="cursor: move;">
-          <div class="modal-header-left">
-            <div class="modal-logo">
+    <div v-if="showDetailModal" class="detail-modal-overlay" @click.self="showDetailModal = false">
+      <div class="detail-modal">
+        <div class="detail-modal-header">
+          <div class="header-left">
+            <div class="header-logo">
               <svg width="22" height="22" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path opacity="0.25" d="M14.684 25.388C20.3284 25.388 24.904 20.8123 24.904 15.168C24.904 9.52365 20.3284 4.948 14.684 4.948C9.03965 4.948 4.464 9.52365 4.464 15.168C4.464 20.8123 9.03965 25.388 14.684 25.388Z" fill="#5E81F4"/>
                 <path opacity="0.5" d="M6.292 13.272C3.74884 13.2711 1.45629 11.7393 0.482133 9.39014C-0.492025 7.04096 0.0437846 4.33633 1.84 2.53598C4.29692 0.080291 8.27908 0.080291 10.736 2.53598C11.9163 3.71535 12.5794 5.31546 12.5794 6.98398C12.5794 8.6525 11.9163 10.2526 10.736 11.432C9.56032 12.6149 7.95978 13.2776 6.292 13.272Z" fill="#5E81F4"/>
@@ -277,56 +292,61 @@
                 <path d="M6.46 29.828C3.91539 29.8303 1.61987 28.2997 0.643664 25.9498C-0.332546 23.5999 0.202755 20.8934 2 19.092C2.27475 18.8241 2.57332 18.5818 2.892 18.368L3.2 18.172C3.416 18.044 3.64 17.928 3.876 17.816C3.996 17.764 4.116 17.708 4.248 17.66C4.49358 17.5703 4.74479 17.4968 5 17.44L5.16 17.396C5.18744 17.3861 5.2155 17.3781 5.244 17.372L6.668 17.268C6.852 17.268 7.068 17.304 7.264 17.332H7.308H7.496H7.556H7.616H8C10.4617 17.3091 12.8115 16.3006 14.524 14.532C16.2459 12.7768 17.1888 10.4023 17.14 7.94398V7.87598V7.80798C17.1259 7.73141 17.1178 7.65383 17.116 7.57598V7.38398L17.064 7.19998C17.064 7.08798 17.036 6.96798 17.032 6.85198L17.128 5.53198V5.49998V5.47598C17.128 5.44398 17.188 5.26798 17.188 5.26798C17.2488 4.9968 17.3263 4.72962 17.42 4.46798C17.464 4.34798 17.52 4.22798 17.576 4.10798C17.681 3.87112 17.8013 3.6413 17.936 3.41998V3.38398C17.992 3.29198 18.044 3.19998 18.108 3.11198C18.3181 2.7953 18.5579 2.49931 18.824 2.22798C21.285 -0.237417 25.2786 -0.240999 27.744 2.21998C30.2094 4.68096 30.213 8.67458 27.752 11.14C27.4788 11.4056 27.1815 11.6453 26.864 11.856C26.768 11.924 26.684 11.972 26.6 12.024L26.552 12.052C26.32 12.188 26.096 12.308 25.88 12.408C25.752 12.464 25.636 12.52 25.516 12.564C25.2636 12.6556 25.0057 12.7318 24.744 12.792C24.6886 12.8037 24.6339 12.8184 24.58 12.836L24.48 12.864L23.084 12.96C22.908 12.96 22.72 12.928 22.524 12.904H22.436H22.256H22.14H22.076H21.764C16.6622 12.9786 12.5777 17.1579 12.62 22.26V22.328V22.4C12.6308 22.4702 12.6375 22.541 12.64 22.612C12.64 22.688 12.64 22.76 12.66 22.832C12.68 22.904 12.66 22.968 12.684 23.04C12.698 23.1434 12.706 23.2476 12.708 23.352L12.608 24.724C12.6005 24.7604 12.5912 24.7965 12.58 24.832L12.544 24.956C12.4868 25.2276 12.4106 25.495 12.316 25.756C12.272 25.876 12.212 26 12.156 26.124C12.0543 26.355 11.9408 26.5806 11.816 26.8C11.752 26.912 11.692 27.012 11.624 27.108C11.4121 27.428 11.1696 27.7267 10.9 28C9.72428 29.1804 8.12605 29.8427 6.46 29.84V29.828Z" fill="#5E81F4"/>
               </svg>
             </div>
-            <span class="modal-title">任务详情</span>
+            <span class="header-title">任务详情 #{{ currentTask.id }}</span>
           </div>
-          <button class="modal-close" @click="showDetailModal = false">
+          <button class="close-btn" @click="showDetailModal = false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
         </div>
-        <div class="modal-body">
-          <div class="detail-grid">
-            <div class="detail-item">
-              <label>任务ID</label>
-              <span>{{ currentTask.id }}</span>
-            </div>
-            <div class="detail-item">
-              <label>执行器</label>
-              <span>{{ currentTask.handler }}</span>
-            </div>
-            <div class="detail-item">
-              <label>任务描述</label>
-              <span>{{ currentTask.description }}</span>
-            </div>
-            <div class="detail-item">
-              <label>负责人</label>
-              <span>{{ currentTask.owner }}</span>
-            </div>
-            <div class="detail-item">
-              <label>调度类型</label>
-              <span>{{ getScheduleTypeLabel(currentTask.scheduleType) }}</span>
-            </div>
-            <div class="detail-item">
-              <label>调度表达式</label>
-              <span class="code-text">{{ currentTask.scheduleExpr }}</span>
-            </div>
-            <div class="detail-item">
-              <label>运行模式</label>
-              <span>{{ getRunModeLabel(currentTask.runMode) }}</span>
-            </div>
-            <div class="detail-item">
-              <label>状态</label>
-              <n-tag :type="statusConfig[currentTask.status]?.type" size="small">
-                {{ statusConfig[currentTask.status]?.label }}
-              </n-tag>
-            </div>
+        <div class="detail-modal-body">
+          <div class="detail-section first">
+            <div class="section-title">基础配置</div>
+            <n-descriptions :column="2" label-placement="left" bordered size="small">
+              <n-descriptions-item label="任务ID">{{ currentTask.id }}</n-descriptions-item>
+              <n-descriptions-item label="状态">
+                <n-tag :type="statusConfig[currentTask.status]?.type" size="small">
+                  {{ statusConfig[currentTask.status]?.label }}
+                </n-tag>
+              </n-descriptions-item>
+              <n-descriptions-item label="任务描述" :span="2">{{ currentTask.description }}</n-descriptions-item>
+              <n-descriptions-item label="执行器">{{ currentTask.executor || '示例执行器' }}</n-descriptions-item>
+              <n-descriptions-item label="负责人">{{ currentTask.owner }}</n-descriptions-item>
+            </n-descriptions>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">调度配置</div>
+            <n-descriptions :column="2" label-placement="left" bordered size="small">
+              <n-descriptions-item label="调度类型">{{ getScheduleTypeLabel(currentTask.scheduleType) }}</n-descriptions-item>
+              <n-descriptions-item label="Cron表达式">
+                <span class="code-text">{{ currentTask.scheduleExpr }}</span>
+              </n-descriptions-item>
+            </n-descriptions>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">任务配置</div>
+            <n-descriptions :column="2" label-placement="left" bordered size="small">
+              <n-descriptions-item label="运行模式">{{ getRunModeLabel(currentTask.runMode) }}</n-descriptions-item>
+              <n-descriptions-item label="JobHandler">{{ currentTask.handler }}</n-descriptions-item>
+            </n-descriptions>
+          </div>
+
+          <div class="detail-section">
+            <div class="section-title">高级配置</div>
+            <n-descriptions :column="2" label-placement="left" bordered size="small">
+              <n-descriptions-item label="路由策略">{{ currentTask.routeStrategy || '第一个' }}</n-descriptions-item>
+              <n-descriptions-item label="子任务ID">{{ currentTask.childJobId || '-' }}</n-descriptions-item>
+              <n-descriptions-item label="调度过期策略">{{ currentTask.misfireStrategy || '忽略' }}</n-descriptions-item>
+              <n-descriptions-item label="阻塞处理策略">{{ currentTask.blockStrategy || '单机串行' }}</n-descriptions-item>
+              <n-descriptions-item label="任务超时时间">{{ currentTask.timeout || 0 }}秒</n-descriptions-item>
+              <n-descriptions-item label="失败重试次数">{{ currentTask.retryCount || 0 }}次</n-descriptions-item>
+            </n-descriptions>
           </div>
         </div>
-        <div class="modal-footer">
-          <n-button @click="showDetailModal = false">关闭</n-button>
-          <n-button type="primary" @click="openEditFromDetail">编辑</n-button>
-        </div>
+        <div class="detail-modal-footer"></div>
       </div>
     </div>
     </transition>
@@ -390,9 +410,27 @@
                 <label class="form-label required">调度类型</label>
                 <n-select v-model:value="editForm.scheduleType" :options="scheduleTypeOptions" placeholder="请选择" />
               </div>
-              <div class="form-item">
+              <div class="form-item" v-if="editForm.scheduleType === 'cron'">
                 <label class="form-label required">Cron表达式</label>
-                <n-input v-model:value="editForm.cronExpr" placeholder="如: 0 0 0 * * ?" />
+                <div class="cron-input-wrapper">
+                  <n-input v-model:value="editForm.cronExpr" placeholder="如: 0 0 0 * * ?" />
+                  <button type="button" class="cron-picker-btn" @click="openCronPicker('edit')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-item" v-else-if="editForm.scheduleType === 'fixed_rate' || editForm.scheduleType === 'fixed_delay'">
+                <label class="form-label required">{{ editForm.scheduleType === 'fixed_rate' ? '执行间隔' : '延迟时间' }}</label>
+                <div class="interval-input-wrapper">
+                  <n-input-number v-model:value="editForm.intervalValue" :min="1" placeholder="请输入" style="flex: 1" />
+                  <n-select v-model:value="editForm.intervalUnit" :options="intervalUnitOptions" style="width: 100px" />
+                </div>
+              </div>
+              <div class="form-item" v-else-if="editForm.scheduleType === 'once'">
+                <label class="form-label">执行时间</label>
+                <n-date-picker v-model:value="editForm.onceTime" type="datetime" placeholder="留空则立即执行" clearable style="width: 100%" />
               </div>
             </div>
           </div>
@@ -454,6 +492,233 @@
       </div>
     </div>
     </transition>
+
+    <!-- Cron选择器弹窗 -->
+    <transition name="modal">
+    <div v-if="showCronPicker" class="detail-modal-overlay" @click.self="showCronPicker = false">
+      <div class="cron-picker-modal">
+        <div class="detail-modal-header">
+          <div class="header-left">
+            <div class="header-logo">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5E81F4" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+              </svg>
+            </div>
+            <span class="header-title">Cron表达式生成器</span>
+          </div>
+          <button class="close-btn" @click="showCronPicker = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="cron-picker-body">
+          <!-- Tab 导航 -->
+          <div class="cron-tabs">
+            <button 
+              v-for="tab in cronTabs" 
+              :key="tab.key" 
+              class="cron-tab"
+              :class="{ active: cronConfig.activeTab === tab.key }"
+              @click="cronConfig.activeTab = tab.key"
+            >
+              {{ tab.label }}
+              <span class="tab-value">{{ getTabValue(tab.key) }}</span>
+            </button>
+          </div>
+
+          <!-- Tab 内容 -->
+          <div class="cron-tab-content">
+            <!-- 秒 -->
+            <div v-if="cronConfig.activeTab === 'second'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.secondType" value="every" />
+                  <span>每秒</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.secondType" value="interval" />
+                  <span>每隔</span>
+                  <n-input-number v-model:value="cronConfig.secondInterval" :min="1" :max="59" size="small" style="width: 70px" />
+                  <span>秒执行</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.secondType" value="specific" />
+                  <span>指定秒</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.secondType === 'specific'" class="value-grid">
+                <label v-for="i in 60" :key="i" class="checkbox-item">
+                  <input type="checkbox" :value="i-1" v-model="cronConfig.secondValues" />
+                  <span>{{ String(i-1).padStart(2, '0') }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 分钟 -->
+            <div v-if="cronConfig.activeTab === 'minute'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.minuteType" value="every" />
+                  <span>每分钟</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.minuteType" value="interval" />
+                  <span>每隔</span>
+                  <n-input-number v-model:value="cronConfig.minuteInterval" :min="1" :max="59" size="small" style="width: 70px" />
+                  <span>分钟执行</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.minuteType" value="specific" />
+                  <span>指定分钟</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.minuteType === 'specific'" class="value-grid">
+                <label v-for="i in 60" :key="i" class="checkbox-item">
+                  <input type="checkbox" :value="i-1" v-model="cronConfig.minuteValues" />
+                  <span>{{ String(i-1).padStart(2, '0') }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 小时 -->
+            <div v-if="cronConfig.activeTab === 'hour'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.hourType" value="every" />
+                  <span>每小时</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.hourType" value="interval" />
+                  <span>每隔</span>
+                  <n-input-number v-model:value="cronConfig.hourInterval" :min="1" :max="23" size="small" style="width: 70px" />
+                  <span>小时执行</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.hourType" value="specific" />
+                  <span>指定小时</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.hourType === 'specific'" class="value-grid cols-12">
+                <label v-for="i in 24" :key="i" class="checkbox-item">
+                  <input type="checkbox" :value="i-1" v-model="cronConfig.hourValues" />
+                  <span>{{ String(i-1).padStart(2, '0') }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 日 -->
+            <div v-if="cronConfig.activeTab === 'day'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.dayType" value="every" />
+                  <span>每天</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.dayType" value="none" />
+                  <span>不指定（使用周）</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.dayType" value="last" />
+                  <span>每月最后一天</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.dayType" value="specific" />
+                  <span>指定日期</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.dayType === 'specific'" class="value-grid cols-10">
+                <label v-for="i in 31" :key="i" class="checkbox-item">
+                  <input type="checkbox" :value="i" v-model="cronConfig.dayValues" />
+                  <span>{{ i }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 月 -->
+            <div v-if="cronConfig.activeTab === 'month'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.monthType" value="every" />
+                  <span>每月</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.monthType" value="specific" />
+                  <span>指定月份</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.monthType === 'specific'" class="value-grid cols-6">
+                <label v-for="i in 12" :key="i" class="checkbox-item">
+                  <input type="checkbox" :value="i" v-model="cronConfig.monthValues" />
+                  <span>{{ i }}月</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 周 -->
+            <div v-if="cronConfig.activeTab === 'week'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.weekType" value="none" />
+                  <span>不指定（使用日）</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.weekType" value="every" />
+                  <span>每天</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.weekType" value="specific" />
+                  <span>指定星期</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.weekType === 'specific'" class="value-grid cols-7">
+                <label v-for="item in weekDays" :key="item.value" class="checkbox-item">
+                  <input type="checkbox" :value="item.value" v-model="cronConfig.weekValues" />
+                  <span>{{ item.label }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 年 -->
+            <div v-if="cronConfig.activeTab === 'year'" class="tab-panel">
+              <div class="panel-options">
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.yearType" value="every" />
+                  <span>每年</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" v-model="cronConfig.yearType" value="specific" />
+                  <span>指定年份</span>
+                </label>
+              </div>
+              <div v-if="cronConfig.yearType === 'specific'" class="value-grid cols-5">
+                <label v-for="year in yearOptions" :key="year" class="checkbox-item">
+                  <input type="checkbox" :value="year" v-model="cronConfig.yearValues" />
+                  <span>{{ year }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 预览 -->
+          <div class="cron-preview">
+            <div class="preview-fields">
+              <span class="field" v-for="(field, index) in cronFields" :key="index" :class="{ active: cronConfig.activeTab === field.key }">
+                <em>{{ field.label }}</em>
+                {{ field.value }}
+              </span>
+            </div>
+            <div class="preview-expression">{{ generatedCronExpression }}</div>
+            <div class="preview-desc">{{ cronDescription }}</div>
+          </div>
+        </div>
+        <div class="detail-modal-footer" style="justify-content: flex-end; gap: 12px; display: flex;">
+          <n-button @click="showCronPicker = false">取消</n-button>
+          <n-button type="primary" @click="applyCronExpression">确定</n-button>
+        </div>
+      </div>
+    </div>
+    </transition>
   </div>
 </template>
 
@@ -461,7 +726,7 @@
 import { ref, reactive, computed, h } from 'vue'
 import { 
   NInput, NInputNumber, NSelect, NButton, NDataTable, NTag, NPopconfirm, NTooltip, NDropdown,
-  useMessage
+  NDatePicker, useMessage
 } from 'naive-ui'
 
 const message = useMessage()
@@ -473,6 +738,447 @@ const showCreateModal = ref(false)
 const showDetailModal = ref(false)
 const showEditModal = ref(false)
 const currentTask = ref({})
+
+// Cron选择器
+const showCronPicker = ref(false)
+const cronPickerTarget = ref('create') // 'create' or 'edit'
+const cronConfig = reactive({
+  activeTab: 'second',
+  // 秒
+  secondType: 'every',
+  secondInterval: 5,
+  secondValues: [],
+  // 分钟
+  minuteType: 'specific',
+  minuteInterval: 5,
+  minuteValues: [0],
+  // 小时
+  hourType: 'specific',
+  hourInterval: 2,
+  hourValues: [0],
+  // 日
+  dayType: 'every',
+  dayValues: [],
+  // 月
+  monthType: 'every',
+  monthValues: [],
+  // 周
+  weekType: 'none',
+  weekValues: [],
+  // 年
+  yearType: 'every',
+  yearValues: [],
+})
+
+// Tab 配置
+const cronTabs = [
+  { key: 'second', label: '秒' },
+  { key: 'minute', label: '分' },
+  { key: 'hour', label: '时' },
+  { key: 'day', label: '日' },
+  { key: 'month', label: '月' },
+  { key: 'week', label: '周' },
+  { key: 'year', label: '年' },
+]
+
+// 星期选项
+const weekDays = [
+  { label: '周一', value: 'MON' },
+  { label: '周二', value: 'TUE' },
+  { label: '周三', value: 'WED' },
+  { label: '周四', value: 'THU' },
+  { label: '周五', value: 'FRI' },
+  { label: '周六', value: 'SAT' },
+  { label: '周日', value: 'SUN' },
+]
+
+// 年份选项（当前年份往后10年）
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear + i)
+
+// 获取各字段的值
+const getSecondValue = () => {
+  if (cronConfig.secondType === 'every') return '*'
+  if (cronConfig.secondType === 'interval') return `0/${cronConfig.secondInterval}`
+  if (cronConfig.secondValues.length > 0) return cronConfig.secondValues.sort((a, b) => a - b).join(',')
+  return '0'
+}
+
+const getMinuteValue = () => {
+  if (cronConfig.minuteType === 'every') return '*'
+  if (cronConfig.minuteType === 'interval') return `0/${cronConfig.minuteInterval}`
+  if (cronConfig.minuteValues.length > 0) return cronConfig.minuteValues.sort((a, b) => a - b).join(',')
+  return '0'
+}
+
+const getHourValue = () => {
+  if (cronConfig.hourType === 'every') return '*'
+  if (cronConfig.hourType === 'interval') return `0/${cronConfig.hourInterval}`
+  if (cronConfig.hourValues.length > 0) return cronConfig.hourValues.sort((a, b) => a - b).join(',')
+  return '0'
+}
+
+const getDayValue = () => {
+  if (cronConfig.dayType === 'every') return '*'
+  if (cronConfig.dayType === 'none') return '?'
+  if (cronConfig.dayType === 'last') return 'L'
+  if (cronConfig.dayValues.length > 0) return cronConfig.dayValues.sort((a, b) => a - b).join(',')
+  return '*'
+}
+
+const getMonthValue = () => {
+  if (cronConfig.monthType === 'every') return '*'
+  if (cronConfig.monthValues.length > 0) return cronConfig.monthValues.sort((a, b) => a - b).join(',')
+  return '*'
+}
+
+const getWeekValue = () => {
+  if (cronConfig.weekType === 'none') return '?'
+  if (cronConfig.weekType === 'every') return '*'
+  if (cronConfig.weekValues.length > 0) return cronConfig.weekValues.join(',')
+  return '?'
+}
+
+const getYearValue = () => {
+  if (cronConfig.yearType === 'every') return '*'
+  if (cronConfig.yearValues.length > 0) return cronConfig.yearValues.sort((a, b) => a - b).join(',')
+  return '*'
+}
+
+// 获取Tab显示值
+const getTabValue = (key) => {
+  switch (key) {
+    case 'second': return getSecondValue()
+    case 'minute': return getMinuteValue()
+    case 'hour': return getHourValue()
+    case 'day': return getDayValue()
+    case 'month': return getMonthValue()
+    case 'week': return getWeekValue()
+    case 'year': return getYearValue()
+  }
+}
+
+// Cron字段
+const cronFields = computed(() => [
+  { key: 'second', label: '秒', value: getSecondValue() },
+  { key: 'minute', label: '分', value: getMinuteValue() },
+  { key: 'hour', label: '时', value: getHourValue() },
+  { key: 'day', label: '日', value: getDayValue() },
+  { key: 'month', label: '月', value: getMonthValue() },
+  { key: 'week', label: '周', value: getWeekValue() },
+  { key: 'year', label: '年', value: getYearValue() },
+])
+
+// 生成的Cron表达式
+const generatedCronExpression = computed(() => {
+  const year = getYearValue()
+  const base = `${getSecondValue()} ${getMinuteValue()} ${getHourValue()} ${getDayValue()} ${getMonthValue()} ${getWeekValue()}`
+  return year === '*' ? base : `${base} ${year}`
+})
+
+// 解析Cron字段
+const parseCronField = (field, type) => {
+  if (field === '*') return { type: 'every' }
+  if (field === '?') return { type: 'any' }
+  if (field === 'L') return { type: 'last' }
+  if (field.includes('/')) {
+    const [start, interval] = field.split('/')
+    return { type: 'interval', start: start === '*' ? 0 : parseInt(start), interval: parseInt(interval) }
+  }
+  if (field.includes('-') && !field.includes(',')) {
+    const [start, end] = field.split('-')
+    return { type: 'range', start, end }
+  }
+  if (field.includes(',')) {
+    return { type: 'list', values: field.split(',') }
+  }
+  return { type: 'fixed', value: field }
+}
+
+// 生成Cron描述
+const cronDescription = computed(() => {
+  const expr = generatedCronExpression.value
+  if (!expr) return '请配置执行时间'
+  
+  const parts = expr.split(' ')
+  if (parts.length < 6) return '表达式格式错误'
+  
+  const [secondStr, minuteStr, hourStr, dayStr, monthStr, weekStr, yearStr] = parts
+  
+  const second = parseCronField(secondStr, 'second')
+  const minute = parseCronField(minuteStr, 'minute')
+  const hour = parseCronField(hourStr, 'hour')
+  const day = parseCronField(dayStr, 'day')
+  const month = parseCronField(monthStr, 'month')
+  const week = parseCronField(weekStr, 'week')
+  const year = yearStr ? parseCronField(yearStr, 'year') : { type: 'every' }
+  
+  const weekNameMap = { 
+    'MON': '一', 'TUE': '二', 'WED': '三', 'THU': '四', 
+    'FRI': '五', 'SAT': '六', 'SUN': '日',
+    '1': '日', '2': '一', '3': '二', '4': '三', '5': '四', '6': '五', '7': '六'
+  }
+  
+  let desc = []
+  
+  // 年
+  if (year.type === 'fixed') {
+    desc.push(`${year.value}年`)
+  } else if (year.type === 'list') {
+    desc.push(`${year.values.join('/')}年`)
+  } else if (year.type === 'range') {
+    desc.push(`${year.start}-${year.end}年`)
+  }
+  
+  // 月
+  if (month.type === 'fixed') {
+    desc.push(`${month.value}月`)
+  } else if (month.type === 'list') {
+    desc.push(`${month.values.join('、')}月`)
+  } else if (month.type === 'range') {
+    desc.push(`${month.start}-${month.end}月`)
+  } else if (month.type === 'interval') {
+    desc.push(`从${month.start}月开始每${month.interval}个月`)
+  }
+  
+  // 日/周 - 只在有具体约束时显示
+  if (week.type !== 'any' && week.type !== 'every') {
+    if (week.type === 'fixed') {
+      desc.push(`每周${weekNameMap[week.value] || week.value}`)
+    } else if (week.type === 'list') {
+      const names = week.values.map(v => weekNameMap[v] || v)
+      // 检查工作日
+      if (names.length === 5 && ['一','二','三','四','五'].every(d => names.includes(d))) {
+        desc.push('工作日')
+      } else if (names.length === 2 && names.includes('六') && names.includes('日')) {
+        desc.push('周末')
+      } else {
+        desc.push(`每周${names.join('、')}`)
+      }
+    } else if (week.type === 'range') {
+      desc.push(`每周${weekNameMap[week.start] || week.start}至周${weekNameMap[week.end] || week.end}`)
+    }
+  } else if (day.type !== 'any' && day.type !== 'every') {
+    if (day.type === 'last') {
+      desc.push('每月最后一天')
+    } else if (day.type === 'fixed') {
+      desc.push(`每月${day.value}日`)
+    } else if (day.type === 'list') {
+      desc.push(`每月${day.values.join('、')}日`)
+    } else if (day.type === 'range') {
+      desc.push(`每月${day.start}-${day.end}日`)
+    } else if (day.type === 'interval') {
+      desc.push(`每${day.interval}天`)
+    }
+  }
+  // 不再显示"每天"，因为这是默认行为
+  
+  // 构建时间描述
+  let timeParts = []
+  
+  // 判断最高频率级别
+  const hasSecondFreq = second.type === 'every' || second.type === 'interval'
+  const hasMinuteFreq = minute.type === 'every' || minute.type === 'interval'
+  const hasHourFreq = hour.type === 'every' || hour.type === 'interval'
+  
+  // 小时 - 只在有具体值或有间隔时显示
+  if (hour.type === 'interval') {
+    timeParts.push(`每${hour.interval}小时`)
+  } else if (hour.type === 'fixed') {
+    timeParts.push(`${hour.value}点`)
+  } else if (hour.type === 'list') {
+    timeParts.push(`${hour.values.join('、')}点`)
+  } else if (hour.type === 'range') {
+    timeParts.push(`${hour.start}-${hour.end}点`)
+  }
+  // hour.type === 'every' 时不显示"每小时"，因为这是默认行为
+  
+  // 分钟 - 只在有具体值或有间隔时显示
+  if (minute.type === 'interval') {
+    timeParts.push(`每${minute.interval}分钟`)
+  } else if (minute.type === 'fixed' && minute.value !== '0') {
+    timeParts.push(`${minute.value}分`)
+  } else if (minute.type === 'list') {
+    timeParts.push(`${minute.values.join('、')}分`)
+  } else if (minute.type === 'range') {
+    timeParts.push(`${minute.start}-${minute.end}分`)
+  }
+  // minute.type === 'every' 时不显示"每分钟"
+  
+  // 秒 - 只在有具体值或有频率时显示
+  if (second.type === 'every') {
+    timeParts.push('每秒')
+  } else if (second.type === 'interval') {
+    timeParts.push(`每${second.interval}秒`)
+  } else if (second.type === 'fixed' && second.value !== '0') {
+    timeParts.push(`${second.value}秒`)
+  } else if (second.type === 'list') {
+    timeParts.push(`${second.values.join('、')}秒`)
+  }
+  
+  // 处理特殊情况
+  // 每小时整点: 0 0 * * * ?
+  if (timeParts.length === 0 && hour.type === 'every' && 
+      (minute.type === 'fixed' && minute.value === '0') && 
+      (second.type === 'fixed' && second.value === '0')) {
+    timeParts.push('每小时整点')
+  }
+  
+  // 每分钟: 0 * * * * ?
+  if (timeParts.length === 0 && minute.type === 'every' && 
+      (second.type === 'fixed' && second.value === '0')) {
+    timeParts.push('每分钟')
+  }
+  
+  // 如果还是没有时间描述，添加默认
+  if (timeParts.length === 0 && desc.length === 0) {
+    if (second.type === 'every') {
+      timeParts.push('每秒')
+    } else {
+      timeParts.push('每秒')
+    }
+  }
+  
+  // 组合描述
+  let result = ''
+  if (desc.length > 0) {
+    result += desc.join(' ') + ' '
+  }
+  if (timeParts.length > 0) {
+    result += timeParts.join(' ') + ' '
+  }
+  result += '执行'
+  
+  return result.replace(/\s+/g, ' ').trim()
+})
+
+// 解析Cron表达式并设置配置
+const parseCronExpression = (expr) => {
+  if (!expr) return
+  
+  const parts = expr.trim().split(/\s+/)
+  if (parts.length < 6) return
+  
+  const [secondStr, minuteStr, hourStr, dayStr, monthStr, weekStr, yearStr] = parts
+  
+  // 解析秒
+  if (secondStr === '*') {
+    cronConfig.secondType = 'every'
+  } else if (secondStr.includes('/')) {
+    cronConfig.secondType = 'interval'
+    cronConfig.secondInterval = parseInt(secondStr.split('/')[1])
+  } else {
+    cronConfig.secondType = 'specific'
+    cronConfig.secondValues = secondStr.split(',').map(v => parseInt(v))
+  }
+  
+  // 解析分钟
+  if (minuteStr === '*') {
+    cronConfig.minuteType = 'every'
+  } else if (minuteStr.includes('/')) {
+    cronConfig.minuteType = 'interval'
+    cronConfig.minuteInterval = parseInt(minuteStr.split('/')[1])
+  } else {
+    cronConfig.minuteType = 'specific'
+    cronConfig.minuteValues = minuteStr.split(',').map(v => parseInt(v))
+  }
+  
+  // 解析小时
+  if (hourStr === '*') {
+    cronConfig.hourType = 'every'
+  } else if (hourStr.includes('/')) {
+    cronConfig.hourType = 'interval'
+    cronConfig.hourInterval = parseInt(hourStr.split('/')[1])
+  } else {
+    cronConfig.hourType = 'specific'
+    cronConfig.hourValues = hourStr.split(',').map(v => parseInt(v))
+  }
+  
+  // 解析日
+  if (dayStr === '*') {
+    cronConfig.dayType = 'every'
+  } else if (dayStr === '?') {
+    cronConfig.dayType = 'none'
+  } else if (dayStr === 'L') {
+    cronConfig.dayType = 'last'
+  } else {
+    cronConfig.dayType = 'specific'
+    cronConfig.dayValues = dayStr.split(',').map(v => parseInt(v))
+  }
+  
+  // 解析月
+  if (monthStr === '*') {
+    cronConfig.monthType = 'every'
+  } else {
+    cronConfig.monthType = 'specific'
+    cronConfig.monthValues = monthStr.split(',').map(v => parseInt(v))
+  }
+  
+  // 解析周
+  if (weekStr === '?') {
+    cronConfig.weekType = 'none'
+  } else if (weekStr === '*') {
+    cronConfig.weekType = 'every'
+  } else {
+    cronConfig.weekType = 'specific'
+    cronConfig.weekValues = weekStr.split(',')
+  }
+  
+  // 解析年
+  if (yearStr) {
+    if (yearStr === '*') {
+      cronConfig.yearType = 'every'
+    } else {
+      cronConfig.yearType = 'specific'
+      cronConfig.yearValues = yearStr.split(',').map(v => parseInt(v))
+    }
+  }
+}
+
+// 打开Cron选择器
+const openCronPicker = (target) => {
+  cronPickerTarget.value = target
+  
+  // 获取现有的cron表达式
+  const existingExpr = target === 'create' ? createForm.cronExpr : editForm.cronExpr
+  
+  // 先重置为默认值
+  cronConfig.activeTab = 'second'
+  cronConfig.secondType = 'every'
+  cronConfig.secondInterval = 5
+  cronConfig.secondValues = []
+  cronConfig.minuteType = 'specific'
+  cronConfig.minuteInterval = 5
+  cronConfig.minuteValues = [0]
+  cronConfig.hourType = 'specific'
+  cronConfig.hourInterval = 2
+  cronConfig.hourValues = [0]
+  cronConfig.dayType = 'every'
+  cronConfig.dayValues = []
+  cronConfig.monthType = 'every'
+  cronConfig.monthValues = []
+  cronConfig.weekType = 'none'
+  cronConfig.weekValues = []
+  cronConfig.yearType = 'every'
+  cronConfig.yearValues = []
+  
+  // 如果有现有表达式，解析并回显
+  if (existingExpr && existingExpr.trim()) {
+    parseCronExpression(existingExpr)
+  }
+  showCronPicker.value = true
+}
+
+// 应用Cron表达式
+const applyCronExpression = () => {
+  const expr = generatedCronExpression.value
+  if (cronPickerTarget.value === 'create') {
+    createForm.cronExpr = expr
+  } else {
+    editForm.cronExpr = expr
+  }
+  showCronPicker.value = false
+}
 
 // 弹窗拖拽 - 创建弹窗
 const modalPosition = reactive({ x: 0, y: 0 })
@@ -559,6 +1265,9 @@ const createForm = reactive({
   alarmEmail: '',
   scheduleType: 'cron',
   cronExpr: '',
+  intervalValue: 5,
+  intervalUnit: 'minutes',
+  onceTime: null,
   runMode: 'BEAN',
   handler: '',
   params: '',
@@ -578,6 +1287,9 @@ const editForm = reactive({
   owner: '',
   scheduleType: 'cron',
   cronExpr: '',
+  intervalValue: 5,
+  intervalUnit: 'minutes',
+  onceTime: null,
   runMode: 'BEAN',
   handler: '',
   routeStrategy: 'FIRST',
@@ -667,6 +1379,12 @@ const scheduleTypeOptions = [
   { label: '固定频率', value: 'fixed_rate' },
   { label: '固定延迟', value: 'fixed_delay' },
   { label: '一次性', value: 'once' }
+]
+
+const intervalUnitOptions = [
+  { label: '秒', value: 'seconds' },
+  { label: '分钟', value: 'minutes' },
+  { label: '小时', value: 'hours' },
 ]
 
 const runModeOptions = [
@@ -1040,6 +1758,9 @@ const handleCreate = () => {
   createForm.alarmEmail = ''
   createForm.scheduleType = 'cron'
   createForm.cronExpr = ''
+  createForm.intervalValue = 5
+  createForm.intervalUnit = 'minutes'
+  createForm.onceTime = null
   createForm.runMode = 'BEAN'
   createForm.handler = ''
   createForm.params = ''
@@ -1061,12 +1782,23 @@ const handleSubmitCreate = () => {
     return
   }
   // 添加到列表
+  // 根据调度类型生成表达式
+  let scheduleExpr = ''
+  if (createForm.scheduleType === 'cron') {
+    scheduleExpr = createForm.cronExpr
+  } else if (createForm.scheduleType === 'fixed_rate' || createForm.scheduleType === 'fixed_delay') {
+    const unitMap = { seconds: '秒', minutes: '分钟', hours: '小时' }
+    scheduleExpr = `每${createForm.intervalValue}${unitMap[createForm.intervalUnit]}`
+  } else if (createForm.scheduleType === 'once') {
+    scheduleExpr = createForm.onceTime ? new Date(createForm.onceTime).toLocaleString() : '手动触发'
+  }
+  
   tasks.value.unshift({
     id: 'JOB-' + String(tasks.value.length + 1).padStart(3, '0'),
     handler: createForm.handler,
     description: createForm.description,
     scheduleType: createForm.scheduleType,
-    scheduleExpr: createForm.cronExpr || '手动触发',
+    scheduleExpr: scheduleExpr || '手动触发',
     runMode: createForm.routeStrategy === 'SHARDING_BROADCAST' ? 'sharding' : 'standalone',
     owner: createForm.owner,
     status: 'stopped'
@@ -1122,7 +1854,19 @@ const handleEdit = (row) => {
   editForm.description = row.description
   editForm.owner = row.owner
   editForm.scheduleType = row.scheduleType
-  editForm.cronExpr = row.scheduleExpr
+  
+  // 根据调度类型设置对应字段
+  if (row.scheduleType === 'cron') {
+    editForm.cronExpr = row.scheduleExpr
+  } else if (row.scheduleType === 'fixed_rate' || row.scheduleType === 'fixed_delay') {
+    // 解析 "每30分钟" 这样的格式
+    const match = row.scheduleExpr.match(/每(\d+)(秒|分钟|小时)/)
+    if (match) {
+      editForm.intervalValue = parseInt(match[1])
+      editForm.intervalUnit = match[2] === '秒' ? 'seconds' : match[2] === '分钟' ? 'minutes' : 'hours'
+    }
+  }
+  
   editForm.runMode = row.runMode === 'standalone' ? 'BEAN' : 'GLUE_SHELL'
   editForm.handler = row.handler
   editForm.routeStrategy = 'FIRST'
@@ -1147,12 +1891,23 @@ const handleSubmitEdit = () => {
   // 更新列表中的数据
   const index = tasks.value.findIndex(t => t.id === editForm.id)
   if (index > -1) {
+    // 根据调度类型生成表达式
+    let scheduleExpr = ''
+    if (editForm.scheduleType === 'cron') {
+      scheduleExpr = editForm.cronExpr
+    } else if (editForm.scheduleType === 'fixed_rate' || editForm.scheduleType === 'fixed_delay') {
+      const unitMap = { seconds: '秒', minutes: '分钟', hours: '小时' }
+      scheduleExpr = `每${editForm.intervalValue}${unitMap[editForm.intervalUnit]}`
+    } else if (editForm.scheduleType === 'once') {
+      scheduleExpr = editForm.onceTime ? new Date(editForm.onceTime).toLocaleString() : '手动触发'
+    }
+    
     tasks.value[index] = {
       ...tasks.value[index],
       handler: editForm.handler,
       description: editForm.description,
       scheduleType: editForm.scheduleType,
-      scheduleExpr: editForm.cronExpr || '手动触发',
+      scheduleExpr: scheduleExpr || '手动触发',
       runMode: editForm.routeStrategy === 'SHARDING_BROADCAST' ? 'sharding' : 'standalone',
       owner: editForm.owner
     }
@@ -1721,7 +2476,7 @@ const handleRowMoreAction = (key, row) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 12px 24px;
   background: linear-gradient(to bottom, #fafbfc, #fff);
   border-bottom: 1px solid #f0f0f0;
 }
@@ -1891,33 +2646,11 @@ const handleRowMoreAction = (key, row) => {
 }
 
 /* ==================== 详情弹窗样式 ==================== */
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+.detail-modal {
+  width: 720px;
 }
 
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.detail-item label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.detail-item span {
-  font-size: 0.875rem;
-  color: var(--text-primary);
-  line-height: 1.5;
-}
-
-.detail-item .code-text {
+.code-text {
   font-family: 'Consolas', 'Monaco', monospace;
   background: var(--bg-secondary);
   padding: 4px 8px;
@@ -1925,10 +2658,322 @@ const handleRowMoreAction = (key, row) => {
   font-size: 0.8125rem;
 }
 
-@media (max-width: 640px) {
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
+/* ==================== Cron输入框样式 ==================== */
+.cron-input-wrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.cron-input-wrapper .n-input {
+  flex: 1;
+}
+
+.interval-input-wrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.cron-picker-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #5E81F4;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cron-picker-btn:hover {
+  border-color: #5E81F4;
+  background: rgba(94, 129, 244, 0.05);
+}
+
+.cron-picker-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ==================== Cron选择器弹窗样式 ==================== */
+.cron-picker-modal {
+  width: 620px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.12), 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  max-width: 90vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cron-picker-body {
+  padding: 20px 24px 24px;
+}
+
+/* Tab 导航 */
+.cron-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.cron-tab {
+  flex: 1;
+  padding: 10px 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.cron-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cron-tab.active {
+  color: #5E81F4;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cron-tab .tab-value {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cron-tab.active .tab-value {
+  background: linear-gradient(135deg, rgba(94, 129, 244, 0.15), rgba(94, 129, 244, 0.08));
+  color: #5E81F4;
+}
+
+/* Tab 内容 */
+.cron-tab-content {
+  min-height: 200px;
+  padding: 4px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 0 -12px;
+  transition: background 0.15s ease;
+}
+
+.radio-item:hover {
+  background: #f8fafc;
+}
+
+.radio-item input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #5E81F4;
+  cursor: pointer;
+}
+
+/* 数值选择网格 */
+.value-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  padding: 16px;
+  background: linear-gradient(to bottom, #fafbfc, #f5f7f9);
+  border-radius: 10px;
+  border: 1px solid #eef0f5;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.value-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.value-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.value-grid::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 3px;
+}
+
+.value-grid.cols-12 {
+  grid-template-columns: repeat(12, 1fr);
+}
+
+.value-grid.cols-10 {
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.value-grid.cols-7 {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.value-grid.cols-6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.value-grid.cols-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.checkbox-item:hover {
+  border-color: #5E81F4;
+  color: #5E81F4;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(94, 129, 244, 0.15);
+}
+
+.checkbox-item:has(input:checked) {
+  background: linear-gradient(135deg, #5E81F4, #4F6CE5);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(94, 129, 244, 0.3);
+}
+
+.checkbox-item input[type="checkbox"] {
+  display: none;
+}
+
+/* 预览 */
+.cron-preview {
+  background: linear-gradient(to bottom, #f8fafc, #f3f5f9);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #eef0f5;
+  margin-top: 20px;
+}
+
+.cron-preview .preview-fields {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.cron-preview .field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 50px;
+  transition: all 0.2s ease;
+}
+
+.cron-preview .field em {
+  font-style: normal;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cron-preview .field.active {
+  border-color: #5E81F4;
+  background: linear-gradient(to bottom, rgba(94, 129, 244, 0.08), rgba(94, 129, 244, 0.03));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(94, 129, 244, 0.15);
+}
+
+.cron-preview .field.active em {
+  color: #5E81F4;
+}
+
+.cron-preview .preview-expression {
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #5E81F4;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+  padding: 8px 16px;
+  background: #fff;
+  border-radius: 8px;
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cron-preview .preview-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
 }
 
 /* ==================== 状态开关样式 ==================== */
