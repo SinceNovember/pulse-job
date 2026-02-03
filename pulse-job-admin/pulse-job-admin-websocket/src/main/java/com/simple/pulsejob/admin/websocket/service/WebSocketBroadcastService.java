@@ -90,13 +90,13 @@ public class WebSocketBroadcastService {
      * 推送执行器下线通知
      */
     @Async
-    public void pushExecutorOffline(String executorId, String reason) {
+    public void pushExecutorOffline(String executorId, String address, String reason) {
         try {
-            Map<String, String> data = Map.of(
-                    "executorId", executorId,
-                    "reason", reason != null ? reason : "unknown",
-                    "event", "offline"
-            );
+            Map<String, String> data = new java.util.HashMap<>();
+            data.put("executorId", executorId);
+            data.put("address", address != null ? address : "");
+            data.put("reason", reason != null ? reason : "unknown");
+            data.put("event", "offline");
 
             WebSocketMessage<Map<String, String>> message = WebSocketMessage.<Map<String, String>>builder()
                     .type(WebSocketMessage.MessageType.EXECUTOR_OFFLINE)
@@ -107,7 +107,7 @@ public class WebSocketBroadcastService {
             String json = objectMapper.writeValueAsString(message);
             sessionManager.broadcastToType("browser", json);
             
-            log.info("Executor offline notification pushed: executorId={}, reason={}", executorId, reason);
+            log.info("Executor offline notification pushed: executorId={}, address={}, reason={}", executorId, address, reason);
         } catch (Exception e) {
             log.error("Failed to push executor offline: {}", e.getMessage(), e);
         }

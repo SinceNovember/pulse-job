@@ -214,7 +214,7 @@ public class HeartbeatService {
     public void refreshHeartbeat(String sessionId) {
         WebSocketSessionWrapper wrapper = sessionManager.getSession(sessionId);
         if (wrapper != null) {
-            wrapper.updateHeartbeat();
+            wrapper.updateHeartbeat();  
         }
     }
 

@@ -118,29 +118,14 @@ public class AdminServerProcessor implements AcceptorProcessor {
 
     @Override
     public void handleInactive(JChannel channel) {
-        log.info("Executor disconnected: {}", channel.remoteAddress());
+        String remoteAddress = channel.remoteAddress() != null ? channel.remoteAddress().toString() : "unknown";
+        log.info("Executor disconnected: {}", remoteAddress);
         
         // ✅ 清理该 Channel 上所有未完成的 Future（比等超时更快响应）
         List<Long> affectedInstanceIds = DefaultInvokeFuture.onChannelInactive(channel);
         
-//        // ✅ 双重保障：直接更新数据库状态（防止 whenComplete 回调执行失败）
-//        if (!affectedInstanceIds.isEmpty()) {
-//            String errorMessage = "Executor disconnected: " + channel.remoteAddress();
-//            for (Long instanceId : affectedInstanceIds) {
-//                try {
-//                    jobInstanceMapper.updateStatusWithError(
-//                            instanceId,
-//                            JobInstanceStatus.FAILED.getValue(),
-//                            errorMessage
-//                    );
-//                    log.debug("Instance marked failed due to channel disconnect: instanceId={}", instanceId);
-//                } catch (Exception e) {
-//                    log.error("Failed to update instance status: instanceId={}", instanceId, e);
-//                }
-//            }
-//        }
-//
-//        // Channel 关闭时会自动触发 preCloseProcessor 回调，完成清理
+        // 注意：执行器下线广播在 ExecutorRegistryService.deregister() 中处理
+        // 因为 preCloseProcessor 回调会在 handleInactive 之前执行
     }
 
     @Override

@@ -1,24 +1,16 @@
 package com.simple.pulsejob.admin.controller;
 
 import java.util.List;
-import java.util.Optional;
+
 import com.simple.pulsejob.admin.business.service.IJobInfoService;
 import com.simple.pulsejob.admin.common.model.base.ResponseResult;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
-import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/jobInfo")
@@ -26,53 +18,65 @@ public class JobInfoController {
 
     private final IJobInfoService jobInfoService;
 
-
-
     @PostMapping
-    public ResponseResult<JobInfo> addJobInfo(@RequestBody JobInfoParam jobInfoParam) {
-        jobInfoService.addJobInfo(jobInfoParam);
-        return ResponseResult.ok();
+    public ResponseResult<Void> addJobInfo(@RequestBody JobInfoParam jobInfoParam) {
+        try {
+            jobInfoService.addJobInfo(jobInfoParam);
+            return ResponseResult.created(null);
+        } catch (Exception e) {
+            log.error("添加任务失败", e);
+            return ResponseResult.error("添加任务失败: " + e.getMessage());
+        }
     }
 
     @PostMapping("/batch")
-    public ResponseResult<JobInfo> batchAddJobInfos(@RequestBody List<JobInfoParam> jobInfoParams) {
-        jobInfoService.batchAddJobInfos(jobInfoParams);
-        return ResponseResult.ok();
+    public ResponseResult<Void> batchAddJobInfos(@RequestBody List<JobInfoParam> jobInfoParams) {
+        try {
+            jobInfoService.batchAddJobInfos(jobInfoParams);
+            return ResponseResult.created(null);
+        } catch (Exception e) {
+            log.error("批量添加任务失败", e);
+            return ResponseResult.error("批量添加任务失败: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobInfo> getJobInfoById(@PathVariable("id")  Integer id) {
-        Optional<JobInfo> jobInfo = jobInfoService.getJobInfoById(id);
-        return jobInfo.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseResult<JobInfo> getJobInfoById(@PathVariable("id") Integer id) {
+        return ResponseResult.of(jobInfoService.getJobInfoById(id), "任务不存在");
     }
 
     @GetMapping
-    public ResponseEntity<List<JobInfo>> getAllJobInfos() {
-        List<JobInfo> jobInfos = jobInfoService.getAllJobInfos();
-        return new ResponseEntity<>(jobInfos, HttpStatus.OK);
+    public ResponseResult<List<JobInfo>> getAllJobInfos() {
+        return ResponseResult.ok(jobInfoService.getAllJobInfos());
     }
 
     @GetMapping("/handler/{jobHandler}")
-    public ResponseEntity<List<JobInfo>> getJobInfosByHandler(@PathVariable String jobHandler) {
-        List<JobInfo> jobInfos = jobInfoService.getJobInfosByHandler(jobHandler);
-        return new ResponseEntity<>(jobInfos, HttpStatus.OK);
+    public ResponseResult<List<JobInfo>> getJobInfosByHandler(@PathVariable String jobHandler) {
+        return ResponseResult.ok(jobInfoService.getJobInfosByHandler(jobHandler));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobInfo> updateJobInfo(@PathVariable Integer id, @RequestBody JobInfo jobInfo) {
+    public ResponseResult<JobInfo> updateJobInfo(@PathVariable Integer id, @RequestBody JobInfo jobInfo) {
         if (!id.equals(jobInfo.getId())) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseResult.badRequest("ID不匹配");
         }
-        JobInfo updatedJobInfo = jobInfoService.updateJobInfo(jobInfo);
-        return new ResponseEntity<>(updatedJobInfo, HttpStatus.OK);
+        try {
+            JobInfo updatedJobInfo = jobInfoService.updateJobInfo(jobInfo);
+            return ResponseResult.ok(updatedJobInfo);
+        } catch (Exception e) {
+            log.error("更新任务失败", e);
+            return ResponseResult.error("更新任务失败: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteJobInfo(@PathVariable Integer id) {
-        jobInfoService.deleteJobInfo(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseResult<Void> deleteJobInfo(@PathVariable Integer id) {
+        try {
+            jobInfoService.deleteJobInfo(id);
+            return ResponseResult.ok();
+        } catch (Exception e) {
+            log.error("删除任务失败", e);
+            return ResponseResult.error("删除任务失败: " + e.getMessage());
+        }
     }
-
-
 }

@@ -148,6 +148,24 @@
                 <span v-if="getAddresses(executor).length === 0" class="no-address">暂无节点</span>
               </div>
             </div>
+            <!-- 实时状态信息（来自 WebSocket） -->
+            <div v-if="getExecutorRealtimeStatus(executor)" class="info-item realtime-stats">
+              <span class="info-label">实时状态</span>
+              <div class="stats-row">
+                <span v-if="getExecutorRealtimeStatus(executor).cpuUsage !== undefined" class="stat-item">
+                  <span class="stat-label">CPU</span>
+                  <span class="stat-value">{{ (getExecutorRealtimeStatus(executor).cpuUsage * 100).toFixed(1) }}%</span>
+                </span>
+                <span v-if="getExecutorRealtimeStatus(executor).memoryUsage !== undefined" class="stat-item">
+                  <span class="stat-label">内存</span>
+                  <span class="stat-value">{{ (getExecutorRealtimeStatus(executor).memoryUsage * 100).toFixed(1) }}%</span>
+                </span>
+                <span v-if="getExecutorRealtimeStatus(executor).runningJobs !== undefined" class="stat-item">
+                  <span class="stat-label">运行中</span>
+                  <span class="stat-value">{{ getExecutorRealtimeStatus(executor).runningJobs }}</span>
+                </span>
+              </div>
+            </div>
           </div>
 
           <div class="executor-footer">
@@ -177,7 +195,9 @@
         :columns="tableColumns"
         :data="filteredExecutorList"
         :pagination="pagination"
+        :loading="loading"
         :row-key="row => row.id"
+        remote
         class="executor-table"
       />
     </div>
@@ -214,11 +234,14 @@
 </template>
 
 <script setup>
-import { ref, h, computed, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, h, computed, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { NTag, NButton, NDropdown, NTooltip, useMessage } from 'naive-ui'
 import { useWebSocket, useExecutorStatus, ConnectionState, MessageType } from '@/websocket'
 
 const message = useMessage()
+
+// API 基础地址
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 // WebSocket 连接
 const { state: wsState, connect: wsConnect, disconnect: wsDisconnect, isConnected, subscribe, on } = useWebSocket()
@@ -250,8 +273,14 @@ const realtimeExecutors = computed(() => {
   return executors.sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0))
 })
 
+// 离线检测定时器
+let offlineCheckTimer = null
+
 // 连接 WebSocket 并订阅执行器状态
 onMounted(() => {
+  // 加载执行器列表
+  fetchExecutors()
+  
   // 连接 WebSocket
   wsConnect()
   
@@ -266,7 +295,33 @@ onMounted(() => {
   on(MessageType.EXECUTOR_OFFLINE, handleExecutorOffline)
   on(MessageType.EXECUTOR_HEARTBEAT, handleExecutorHeartbeat)
   on(MessageType.STATS_UPDATE, handleConnectionStats)
+  
+  // 启动离线检测定时器（每30秒检查一次）
+  offlineCheckTimer = setInterval(checkOfflineExecutors, 30000)
 })
+
+// 组件卸载时清理
+onUnmounted(() => {
+  if (offlineCheckTimer) {
+    clearInterval(offlineCheckTimer)
+    offlineCheckTimer = null
+  }
+})
+
+// 检查离线执行器（超过90秒无心跳视为离线）
+function checkOfflineExecutors() {
+  const now = Date.now()
+  const timeout = 90000 // 90秒
+  
+  for (const [executorId, status] of executorStatusMap) {
+    if (status.status === 'online' && status.lastHeartbeat) {
+      if (now - status.lastHeartbeat > timeout) {
+        status.status = 'offline'
+        status.lastUpdate = now
+      }
+    }
+  }
+}
 
 // 处理执行器状态更新
 function handleExecutorStatus(msg) {
@@ -283,26 +338,55 @@ function handleExecutorStatus(msg) {
 
 // 处理执行器上线
 function handleExecutorOnline(msg) {
-  const { executorId, address } = msg.data
-  message.success(`执行器 ${executorId} 上线: ${address}`)
+  const { executorId, address } = msg.data || {}
+  if (!executorId) return
+  
+  message.success(`执行器 ${executorId} 上线: ${address || ''}`)
   executorStatusMap.set(executorId, {
     executorId,
     address,
     status: 'online',
     lastUpdate: Date.now()
   })
-  updateExecutorFromWs(msg.data)
+  
+  // 检查列表中是否存在此执行器，不存在则刷新列表
+  const exists = executorList.value.some(e => e.executorName === executorId)
+  if (!exists) {
+    fetchExecutors()
+  } else {
+    updateExecutorFromWs(msg.data)
+  }
 }
 
 // 处理执行器下线
 function handleExecutorOffline(msg) {
-  const { executorId, reason } = msg.data
-  message.warning(`执行器 ${executorId} 下线: ${reason || '未知原因'}`)
+  const { executorId, reason, address } = msg.data || {}
+  if (!executorId) return
+  
+  // 显示下线通知（包含地址信息）
+  const addressInfo = address ? ` (${address})` : ''
+  message.warning(`执行器 ${executorId}${addressInfo} 下线: ${reason || '连接断开'}`)
+  console.log('[WebSocket] 执行器下线:', { executorId, address, reason })
+  
   const existing = executorStatusMap.get(executorId)
   if (existing) {
     existing.status = 'offline'
     existing.lastUpdate = Date.now()
+    // 移除下线的地址
+    if (address && existing.addresses) {
+      existing.addresses = existing.addresses.filter(addr => addr !== address)
+    }
+  } else {
+    executorStatusMap.set(executorId, {
+      executorId,
+      address,
+      status: 'offline',
+      lastUpdate: Date.now()
+    })
   }
+  
+  // 从执行器列表中实时移除下线的地址
+  removeExecutorAddress(executorId, address)
 }
 
 // 处理执行器心跳
@@ -317,7 +401,7 @@ function handleExecutorHeartbeat(msg) {
       existing.lastUpdate = Date.now()
       existing.status = 'online'
     } else {
-      // 新增执行器
+      // 新增执行器状态
       executorStatusMap.set(data.executorId, {
         ...data,
         status: 'online',
@@ -326,6 +410,9 @@ function handleExecutorHeartbeat(msg) {
       })
     }
     lastUpdateTime.value = Date.now()
+    
+    // 更新执行器列表中的地址
+    updateExecutorFromWs(data)
   }
 }
 
@@ -363,16 +450,46 @@ function formatRealtimeTime(timestamp) {
 
 // 从 WebSocket 消息更新执行器列表
 function updateExecutorFromWs(data) {
-  if (!data.executorId) return
+  if (!data || !data.executorId) return
   
   const executor = executorList.value.find(e => e.executorName === data.executorId)
   if (executor) {
     executor.updateTime = new Date().toISOString()
-    if (data.address && !executor.executorAddress.includes(data.address)) {
-      executor.executorAddress = executor.executorAddress 
-        ? executor.executorAddress + ';' + data.address 
-        : data.address
+    // 如果有新地址且不在列表中，添加到地址列表
+    if (data.address && executor.executorAddress) {
+      const addresses = executor.executorAddress.split(';').filter(Boolean)
+      if (!addresses.includes(data.address)) {
+        addresses.push(data.address)
+        executor.executorAddress = addresses.join(';')
+      }
+    } else if (data.address && !executor.executorAddress) {
+      executor.executorAddress = data.address
     }
+  }
+}
+
+// 移除执行器地址（执行器下线时）
+function removeExecutorAddress(executorId, address) {
+  if (!executorId || !address) {
+    console.log('[WebSocket] 跳过地址移除: 缺少参数', { executorId, address })
+    return
+  }
+  
+  const executor = executorList.value.find(e => e.executorName === executorId)
+  if (executor && executor.executorAddress) {
+    const addresses = executor.executorAddress.split(';').filter(Boolean)
+    const newAddresses = addresses.filter(addr => addr !== address)
+    
+    // 只有地址确实被移除时才更新
+    if (newAddresses.length !== addresses.length) {
+      console.log('[WebSocket] 移除执行器地址:', { executorId, address, before: addresses, after: newAddresses })
+      executor.executorAddress = newAddresses.join(';')
+      executor.updateTime = new Date().toISOString()
+    } else {
+      console.log('[WebSocket] 地址未找到:', { executorId, address, addresses })
+    }
+  } else {
+    console.log('[WebSocket] 执行器未找到或无地址:', { executorId, hasExecutor: !!executor })
   }
 }
 
@@ -427,78 +544,100 @@ const formRules = {
 }
 
 // 执行器列表
-const executorList = ref([
-  {
-    id: 1,
-    executorName: 'executor-default',
-    executorDesc: '默认执行器',
-    registerType: 'AUTO',
-    executorAddress: '192.168.1.101:9999;192.168.1.102:9999;192.168.1.103:9999',
-    updateTime: '2026-01-26T11:23:45'
-  },
-  {
-    id: 2,
-    executorName: 'executor-report',
-    executorDesc: '报表专用执行器',
-    registerType: 'AUTO',
-    executorAddress: '192.168.1.110:9999',
-    updateTime: '2026-01-26T11:20:00'
-  },
-  {
-    id: 3,
-    executorName: 'executor-manual',
-    executorDesc: '手动注册执行器',
-    registerType: 'MANUAL',
-    executorAddress: '10.0.0.100:9999',
-    updateTime: '2026-01-25T10:15:00'
-  }
-])
+const executorList = ref([])
 
-// 筛选后的执行器列表
+// 加载状态
+const loading = ref(false)
+
+// 总记录数
+const total = ref(0)
+
+// 筛选后的执行器列表（状态筛选在前端做，因为状态是实时的）
 const filteredExecutorList = computed(() => {
-  return executorList.value.filter(executor => {
-    // 关键词搜索
-    if (searchKeyword.value) {
-      const keyword = searchKeyword.value.toLowerCase()
-      const matchKeyword = executor.executorName.toLowerCase().includes(keyword) ||
-             (executor.executorDesc && executor.executorDesc.toLowerCase().includes(keyword)) ||
-             (executor.executorAddress && executor.executorAddress.toLowerCase().includes(keyword))
-      if (!matchKeyword) return false
-    }
-    // 执行器名称筛选
-    if (filters.executorName && !executor.executorName.toLowerCase().includes(filters.executorName.toLowerCase())) {
-      return false
-    }
-    // 注册方式筛选
-    if (filters.registerType && executor.registerType !== filters.registerType) {
-      return false
-    }
-    // 状态筛选
-    if (filters.status) {
+  let list = executorList.value
+  
+  // 关键词搜索（前端过滤）
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase()
+    list = list.filter(executor => {
+      return executor.executorName?.toLowerCase().includes(keyword) ||
+             executor.executorDesc?.toLowerCase().includes(keyword) ||
+             executor.executorAddress?.toLowerCase().includes(keyword)
+    })
+  }
+  
+  // 状态筛选（前端过滤，因为状态是实时的）
+  if (filters.status) {
+    list = list.filter(executor => {
       const online = isOnline(executor)
-      if (filters.status === 'online' && !online) return false
-      if (filters.status === 'offline' && online) return false
-    }
-    return true
-  })
+      if (filters.status === 'online') return online
+      if (filters.status === 'offline') return !online
+      return true
+    })
+  }
+  
+  return list
 })
 
 // 分页配置
 const pagination = reactive({
   page: 1,
   pageSize: 10,
+  itemCount: 0,
   showSizePicker: true,
   showQuickJumper: true,
   pageSizes: [10, 20, 50, 100],
   prefix: ({ itemCount }) => `共 ${itemCount} 条`,
-  onChange: (page) => {
+  // n-data-table remote 模式使用 onUpdatePage
+  'onUpdate:page': (page) => {
     pagination.page = page
+    fetchExecutors()
   },
-  onUpdatePageSize: (pageSize) => {
+  'onUpdate:pageSize': (pageSize) => {
     pagination.pageSize = pageSize
     pagination.page = 1
+    fetchExecutors()
   }
 })
+
+/**
+ * 从后端获取执行器列表
+ */
+async function fetchExecutors() {
+  loading.value = true
+  try {
+    const params = new URLSearchParams()
+    params.append('page', String(pagination.page))
+    params.append('pageSize', String(pagination.pageSize))
+    
+    // 添加筛选条件
+    if (filters.executorName) {
+      params.append('executorName', filters.executorName)
+    }
+    if (filters.registerType) {
+      params.append('registerType', filters.registerType)
+    }
+    if (filters.status) {
+      params.append('status', filters.status)
+    }
+    
+    const response = await fetch(`${API_BASE}/api/jobExecutor/page?${params.toString()}`)
+    const result = await response.json()
+    
+    if (result.code === 200 && result.data) {
+      executorList.value = result.data.list || []
+      total.value = result.data.total || 0
+      pagination.itemCount = result.data.total || 0
+    } else {
+      message.error(result.message || '获取执行器列表失败')
+    }
+  } catch (error) {
+    console.error('获取执行器列表失败:', error)
+    message.error('获取执行器列表失败，请检查网络连接')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 操作菜单
 const actionOptions = [
@@ -679,22 +818,34 @@ const getAddresses = (executor) => {
   return executor.executorAddress.split(';').filter(Boolean)
 }
 
+// 获取执行器实时状态
+const getExecutorRealtimeStatus = (executor) => {
+  return executorStatusMap.get(executor.executorName)
+}
+
 const isOnline = (executor) => {
-  // 优先使用 WebSocket 实时状态
-  const wsStatus = executorStatusMap.get(executor.executorName)
-  if (wsStatus) {
-    // 如果有 WebSocket 状态，检查最后心跳时间
-    const heartbeatTimeout = 90000 // 90秒无心跳视为离线
-    if (wsStatus.lastHeartbeat && Date.now() - wsStatus.lastHeartbeat < heartbeatTimeout) {
-      return true
-    }
-    return wsStatus.status === 'online'
+  // 没有地址的执行器视为离线
+  const addresses = getAddresses(executor)
+  if (addresses.length === 0) {
+    return false
   }
   
-  // 降级：使用更新时间判断
-  const updateTime = new Date(executor.updateTime)
-  const now = new Date()
-  return (now - updateTime) < 5 * 60 * 1000
+  // 检查 WebSocket 实时状态
+  const wsStatus = executorStatusMap.get(executor.executorName)
+  if (wsStatus) {
+    // 如果明确收到下线消息，显示离线
+    if (wsStatus.status === 'offline') {
+      return false
+    }
+    // 如果有心跳且超时，显示离线
+    const heartbeatTimeout = 90000 // 90秒无心跳视为离线
+    if (wsStatus.lastHeartbeat && Date.now() - wsStatus.lastHeartbeat > heartbeatTimeout) {
+      return false
+    }
+  }
+  
+  // 有地址且没有明确下线消息，默认在线
+  return true
 }
 
 const isAddressOnline = (addr) => {
@@ -721,7 +872,7 @@ const formatTime = (time) => {
 // 筛选操作
 const handleSearch = () => {
   pagination.page = 1
-  message.success('查询完成')
+  fetchExecutors()
 }
 
 const handleReset = () => {
@@ -730,10 +881,12 @@ const handleReset = () => {
   filters.registerType = null
   filters.status = null
   pagination.page = 1
+  fetchExecutors()
 }
 
 // 操作处理
 const handleRefresh = () => {
+  fetchExecutors()
   message.success('刷新成功')
 }
 
@@ -743,7 +896,7 @@ const handleCreate = () => {
   showCreateModal.value = true
 }
 
-const handleAction = (key, executor) => {
+const handleAction = async (key, executor) => {
   switch (key) {
     case 'edit':
       editingExecutor.value = executor
@@ -751,35 +904,69 @@ const handleAction = (key, executor) => {
       showCreateModal.value = true
       break
     case 'refresh':
-      executor.updateTime = new Date().toISOString()
+      fetchExecutors()
       message.success('刷新成功')
       break
     case 'delete':
-      const idx = executorList.value.findIndex(e => e.id === executor.id)
-      if (idx > -1) {
-        executorList.value.splice(idx, 1)
-        message.success('删除成功')
+      try {
+        const response = await fetch(`${API_BASE}/api/jobExecutor/${executor.id}`, {
+          method: 'DELETE'
+        })
+        const result = await response.json()
+        if (result.code === 200) {
+          message.success('删除成功')
+          fetchExecutors()
+        } else {
+          message.error(result.message || '删除失败')
+        }
+      } catch (error) {
+        console.error('删除执行器失败:', error)
+        message.error('删除失败，请检查网络连接')
       }
       break
   }
 }
 
-const handleSubmit = () => {
-  if (editingExecutor.value) {
-    Object.assign(editingExecutor.value, formData.value)
-    message.success('更新成功')
-  } else {
-    const newExecutor = {
-      ...formData.value,
-      id: Date.now(),
-      updateTime: new Date().toISOString()
+const handleSubmit = async () => {
+  try {
+    if (editingExecutor.value) {
+      // 更新执行器
+      const response = await fetch(`${API_BASE}/api/jobExecutor/${editingExecutor.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData.value)
+      })
+      const result = await response.json()
+      if (result.code === 200) {
+        message.success('更新成功')
+        fetchExecutors()
+      } else {
+        message.error(result.message || '更新失败')
+        return
+      }
+    } else {
+      // 创建执行器
+      const response = await fetch(`${API_BASE}/api/jobExecutor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData.value)
+      })
+      const result = await response.json()
+      if (result.code === 200 || result.code === 201) {
+        message.success('创建成功')
+        fetchExecutors()
+      } else {
+        message.error(result.message || '创建失败')
+        return
+      }
     }
-    executorList.value.unshift(newExecutor)
-    message.success('创建成功')
+    showCreateModal.value = false
+    editingExecutor.value = null
+    formData.value = { executorName: '', executorDesc: '', registerType: 'AUTO', executorAddress: '' }
+  } catch (error) {
+    console.error('保存执行器失败:', error)
+    message.error('保存失败，请检查网络连接')
   }
-  showCreateModal.value = false
-  editingExecutor.value = null
-  formData.value = { executorName: '', executorDesc: '', registerType: 'AUTO', executorAddress: '' }
 }
 </script>
 
@@ -1168,6 +1355,36 @@ const handleSubmit = () => {
 .no-address {
   font-size: 0.8125rem;
   color: var(--text-muted);
+}
+
+/* 实时状态样式 */
+.realtime-stats {
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  margin-top: 4px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+}
+
+.stat-label {
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .executor-footer {

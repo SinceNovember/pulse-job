@@ -1,8 +1,10 @@
 package com.simple.pulsejob.admin.business.service;
 
+import com.simple.pulsejob.admin.common.model.base.PageResult;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorParam;
+import com.simple.pulsejob.admin.common.model.param.JobExecutorQuery;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
 
@@ -10,6 +12,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IJobExecutorService {
+    
+    /**
+     * 分页查询执行器
+     * @param query 查询参数
+     * @return 分页结果
+     */
+    PageResult<JobExecutor> pageJobExecutors(JobExecutorQuery query);
     
     /**
      * 添加执行器信息

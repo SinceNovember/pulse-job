@@ -1,17 +1,19 @@
 package com.simple.pulsejob.admin.controller;
 
 import com.simple.pulsejob.admin.business.service.IJobExecutorService;
+import com.simple.pulsejob.admin.common.model.base.PageResult;
+import com.simple.pulsejob.admin.common.model.base.ResponseResult;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorParam;
+import com.simple.pulsejob.admin.common.model.param.JobExecutorQuery;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/jobExecutor")
@@ -19,76 +21,88 @@ public class JobExecutorController {
 
     private final IJobExecutorService jobExecutorService;
 
+    /**
+     * 分页查询执行器列表
+     */
+    @GetMapping("/page")
+    public ResponseResult<PageResult<JobExecutor>> pageJobExecutors(JobExecutorQuery query) {
+        try {
+            PageResult<JobExecutor> result = jobExecutorService.pageJobExecutors(query);
+            return ResponseResult.ok(result);
+        } catch (Exception e) {
+            log.error("分页查询执行器失败", e);
+            return ResponseResult.error("分页查询执行器失败: " + e.getMessage());
+        }
+    }
+
     @PostMapping
-    public ResponseEntity<Void> createJobExecutor(@RequestBody JobExecutorParam jobExecutorParam) {
+    public ResponseResult<Void> createJobExecutor(@RequestBody JobExecutorParam jobExecutorParam) {
         try {
             jobExecutorService.addJobExecutor(jobExecutorParam);
-            return new ResponseEntity<>(HttpStatus.CREATED);
+            return ResponseResult.created(null);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("创建执行器失败", e);
+            return ResponseResult.error("创建执行器失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobExecutor> getJobExecutorById(@PathVariable Integer id) {
-        Optional<JobExecutor> jobExecutor = jobExecutorService.getJobExecutorById(id);
-        return jobExecutor.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseResult<JobExecutor> getJobExecutorById(@PathVariable Integer id) {
+        return ResponseResult.of(jobExecutorService.getJobExecutorById(id), "执行器不存在");
     }
 
     @GetMapping("/name/{executorName}")
-    public ResponseEntity<JobExecutor> getJobExecutorByName(@PathVariable String executorName) {
-        Optional<JobExecutor> jobExecutor = jobExecutorService.getJobExecutorByName(executorName);
-        return jobExecutor.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseResult<JobExecutor> getJobExecutorByName(@PathVariable String executorName) {
+        return ResponseResult.of(jobExecutorService.getJobExecutorByName(executorName), "执行器不存在");
     }
 
     @GetMapping
-    public ResponseEntity<List<JobExecutor>> getAllJobExecutors() {
-        List<JobExecutor> jobExecutors = jobExecutorService.getAllJobExecutors();
-        return new ResponseEntity<>(jobExecutors, HttpStatus.OK);
+    public ResponseResult<List<JobExecutor>> getAllJobExecutors() {
+        return ResponseResult.ok(jobExecutorService.getAllJobExecutors());
     }
 
     @GetMapping("/register-type/{registerType}")
-    public ResponseEntity<List<JobExecutor>> getJobExecutorsByRegisterType(@PathVariable RegisterTypeEnum registerType) {
-        List<JobExecutor> jobExecutors = jobExecutorService.getJobExecutorsByRegisterType(registerType);
-        return new ResponseEntity<>(jobExecutors, HttpStatus.OK);
+    public ResponseResult<List<JobExecutor>> getJobExecutorsByRegisterType(@PathVariable RegisterTypeEnum registerType) {
+        return ResponseResult.ok(jobExecutorService.getJobExecutorsByRegisterType(registerType));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobExecutor> updateJobExecutor(@PathVariable Integer id, @RequestBody JobExecutor jobExecutor) {
+    public ResponseResult<JobExecutor> updateJobExecutor(@PathVariable Integer id, @RequestBody JobExecutor jobExecutor) {
         if (!id.equals(jobExecutor.getId())) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseResult.badRequest("ID不匹配");
         }
         try {
             JobExecutor updatedJobExecutor = jobExecutorService.updateJobExecutor(jobExecutor);
-            return new ResponseEntity<>(updatedJobExecutor, HttpStatus.OK);
+            return ResponseResult.ok(updatedJobExecutor);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseResult.badRequest(e.getMessage());
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("更新执行器失败", e);
+            return ResponseResult.error("更新执行器失败: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteJobExecutor(@PathVariable Integer id) {
+    public ResponseResult<Void> deleteJobExecutor(@PathVariable Integer id) {
         try {
             jobExecutorService.deleteJobExecutor(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return ResponseResult.ok();
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("删除执行器失败", e);
+            return ResponseResult.error("删除执行器失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/batch")
-    public ResponseEntity<Void> batchCreateJobExecutors(@RequestBody List<JobExecutorParam> jobExecutorParams) {
+    public ResponseResult<Void> batchCreateJobExecutors(@RequestBody List<JobExecutorParam> jobExecutorParams) {
         try {
             jobExecutorService.batchAddJobExecutors(jobExecutorParams);
-            return new ResponseEntity<>(HttpStatus.CREATED);
+            return ResponseResult.created(null);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseResult.badRequest(e.getMessage());
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("批量创建执行器失败", e);
+            return ResponseResult.error("批量创建执行器失败: " + e.getMessage());
         }
     }
-} 
+}

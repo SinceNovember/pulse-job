@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
+import com.simple.pulsejob.admin.websocket.service.WebSocketBroadcastService;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class ExecutorRegistryService {
 
     private final JobExecutorMapper jobExecutorMapper;
+    private final WebSocketBroadcastService broadcastService;
 
     /**
      * 注册执行器：将 channel 地址追加到 JobExecutor 的 address 列表（幂等）
@@ -85,6 +87,10 @@ public class ExecutorRegistryService {
                 exec.refreshUpdateTime();
                 jobExecutorMapper.save(exec);
                 log.info("Deregistered executor persistent info: {} - removed {}", executorName, ipPort);
+                
+                // 广播执行器下线消息给浏览器（包含地址信息，以便前端实时更新地址列表）
+                broadcastService.pushExecutorOffline(executorName, ipPort, "Connection closed");
+                log.info("Broadcast executor offline: executorName={}, address={}", executorName, ipPort);
             });
     }
 }

@@ -34,4 +34,29 @@ public class ExecutorChannelGroupManager {
         find(executorKey).remove(channel);
     }
 
+    /**
+     * 根据 Channel 获取执行器名称
+     * @param channel 连接通道
+     * @return 执行器名称，如果找不到返回 null
+     */
+    public String getExecutorNameByChannel(JChannel channel) {
+        if (channel == null) {
+            return null;
+        }
+        
+        for (var entry : groups.entrySet()) {
+            JChannelGroup group = entry.getValue();
+            if (group != null) {
+                List<JChannel> channels = group.channels();
+                if (channels != null) {
+                    for (JChannel ch : channels) {
+                        if (ch != null && ch.equals(channel)) {
+                            return entry.getKey();
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }
