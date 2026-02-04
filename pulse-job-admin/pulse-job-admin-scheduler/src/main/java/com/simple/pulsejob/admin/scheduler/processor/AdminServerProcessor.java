@@ -146,8 +146,12 @@ public class AdminServerProcessor implements AcceptorProcessor {
             return;
         }
 
-        log.info("Executor registering: name={}, address={}",
-                executorKey.getExecutorName(), channel.remoteAddress());
+        // 优先使用业务地址，没有则用 channel 地址
+        String address = executorKey.getExecutorAddress() != null 
+                ? executorKey.getExecutorAddress() 
+                : channel.remoteIpPort();
+
+        log.info("Executor registering: name={}, address={}", executorKey.getExecutorName(), address);
 
         // 注册到内存
         channelGroupManager.add(executorKey, channel,
@@ -155,7 +159,8 @@ public class AdminServerProcessor implements AcceptorProcessor {
 
         // 持久化
         executorRegistryService.register(executorKey, channel);
-        broadcastService.pushExecutorOnline(executorKey.getExecutorName(), channel.remoteAddress().toString());
+        // 广播上线事件
+        broadcastService.pushExecutorOnline(executorKey.getExecutorName(), address);
     }
 
     /**

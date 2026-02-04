@@ -308,6 +308,19 @@ onUnmounted(() => {
   }
 })
 
+// 监听 WebSocket 连接状态，断开时清理执行器状态和地址
+watch(() => wsState.state, (newState, oldState) => {
+  if (oldState === ConnectionState.CONNECTED && newState !== ConnectionState.CONNECTED) {
+    console.log('[WebSocket] 连接断开，清理执行器状态和地址')
+    // 清理状态 Map
+    executorStatusMap.clear()
+    // 清理执行器地址
+    for (const executor of executorList.value) {
+      executor.executorAddress = ''
+    }
+  }
+})
+
 // 检查离线执行器（超过90秒无心跳视为离线）
 function checkOfflineExecutors() {
   const now = Date.now()
@@ -368,25 +381,27 @@ function handleExecutorOffline(msg) {
   message.warning(`执行器 ${executorId}${addressInfo} 下线: ${reason || '连接断开'}`)
   console.log('[WebSocket] 执行器下线:', { executorId, address, reason })
   
-  const existing = executorStatusMap.get(executorId)
-  if (existing) {
-    existing.status = 'offline'
-    existing.lastUpdate = Date.now()
-    // 移除下线的地址
-    if (address && existing.addresses) {
-      existing.addresses = existing.addresses.filter(addr => addr !== address)
-    }
-  } else {
+  // 从执行器列表中实时移除下线的地址
+  removeExecutorAddress(executorId, address)
+  
+  // 检查是否还有其他地址在线
+  const executor = executorList.value.find(e => e.executorName === executorId)
+  const remainingAddresses = executor?.executorAddress?.split(';').filter(Boolean) || []
+  
+  // 只有当所有地址都下线了，才标记执行器为 offline
+  if (remainingAddresses.length === 0) {
     executorStatusMap.set(executorId, {
       executorId,
-      address,
       status: 'offline',
       lastUpdate: Date.now()
     })
+  } else {
+    // 还有其他节点在线，更新状态但保持 online
+    const existing = executorStatusMap.get(executorId)
+    if (existing) {
+      existing.lastUpdate = Date.now()
+    }
   }
-  
-  // 从执行器列表中实时移除下线的地址
-  removeExecutorAddress(executorId, address)
 }
 
 // 处理执行器心跳
@@ -448,48 +463,68 @@ function formatRealtimeTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString()
 }
 
-// 从 WebSocket 消息更新执行器列表
+// 清理执行器地址（去掉前缀斜杠）
+function normalizeAddress(address) {
+  if (!address || typeof address !== 'string') return null
+  // 去掉可能的 / 前缀
+  let cleaned = address.startsWith('/') ? address.substring(1) : address
+  return cleaned || null
+}
+
+// 从 WebSocket 消息更新执行器列表（按完整地址去重）
 function updateExecutorFromWs(data) {
   if (!data || !data.executorId) return
+  
+  const normalizedAddr = normalizeAddress(data.address)
+  console.log('[WebSocket] 更新执行器地址:', {
+    executorId: data.executorId,
+    rawAddress: data.address,
+    normalizedAddress: normalizedAddr
+  })
   
   const executor = executorList.value.find(e => e.executorName === data.executorId)
   if (executor) {
     executor.updateTime = new Date().toISOString()
-    // 如果有新地址且不在列表中，添加到地址列表
-    if (data.address && executor.executorAddress) {
-      const addresses = executor.executorAddress.split(';').filter(Boolean)
-      if (!addresses.includes(data.address)) {
-        addresses.push(data.address)
+    if (normalizedAddr) {
+      if (executor.executorAddress) {
+        // 按完整地址去重
+        const addresses = executor.executorAddress.split(';')
+          .filter(Boolean)
+          .filter(addr => addr !== normalizedAddr)
+        addresses.push(normalizedAddr)
         executor.executorAddress = addresses.join(';')
+      } else {
+        executor.executorAddress = normalizedAddr
       }
-    } else if (data.address && !executor.executorAddress) {
-      executor.executorAddress = data.address
+      console.log('[WebSocket] 地址已更新:', executor.executorAddress)
     }
+  } else {
+    console.log('[WebSocket] 未找到匹配的执行器:', data.executorId)
   }
 }
 
-// 移除执行器地址（执行器下线时）
+// 移除执行器地址（执行器下线时，按完整地址移除）
 function removeExecutorAddress(executorId, address) {
-  if (!executorId || !address) {
-    console.log('[WebSocket] 跳过地址移除: 缺少参数', { executorId, address })
+  if (!executorId) {
+    console.log('[WebSocket] 跳过地址移除: 缺少 executorId')
     return
   }
   
   const executor = executorList.value.find(e => e.executorName === executorId)
   if (executor && executor.executorAddress) {
-    const addresses = executor.executorAddress.split(';').filter(Boolean)
-    const newAddresses = addresses.filter(addr => addr !== address)
+    const normalizedAddr = normalizeAddress(address)
     
-    // 只有地址确实被移除时才更新
-    if (newAddresses.length !== addresses.length) {
-      console.log('[WebSocket] 移除执行器地址:', { executorId, address, before: addresses, after: newAddresses })
-      executor.executorAddress = newAddresses.join(';')
-      executor.updateTime = new Date().toISOString()
-    } else {
-      console.log('[WebSocket] 地址未找到:', { executorId, address, addresses })
+    if (normalizedAddr) {
+      // 按完整地址移除
+      const addresses = executor.executorAddress.split(';')
+        .filter(Boolean)
+        .filter(addr => addr !== normalizedAddr)
+      console.log('[WebSocket] 执行器下线，移除地址:', { executorId, removed: normalizedAddr, remaining: addresses })
+      executor.executorAddress = addresses.join(';')
     }
+    executor.updateTime = new Date().toISOString()
   } else {
-    console.log('[WebSocket] 执行器未找到或无地址:', { executorId, hasExecutor: !!executor })
+    console.log('[WebSocket] 执行器未找到或无地址:', executorId)
   }
 }
 
@@ -885,9 +920,8 @@ const handleReset = () => {
 }
 
 // 操作处理
-const handleRefresh = () => {
-  fetchExecutors()
-  message.success('刷新成功')
+const handleRefresh = async () => {
+  await fetchExecutors()
 }
 
 const handleCreate = () => {
@@ -904,8 +938,7 @@ const handleAction = async (key, executor) => {
       showCreateModal.value = true
       break
     case 'refresh':
-      fetchExecutors()
-      message.success('刷新成功')
+      await fetchExecutors()
       break
     case 'delete':
       try {
@@ -930,11 +963,12 @@ const handleAction = async (key, executor) => {
 const handleSubmit = async () => {
   try {
     if (editingExecutor.value) {
-      // 更新执行器
+      // 更新执行器 - 确保包含 id
+      const updateData = { ...formData.value, id: editingExecutor.value.id }
       const response = await fetch(`${API_BASE}/api/jobExecutor/${editingExecutor.value.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData.value)
+        body: JSON.stringify(updateData)
       })
       const result = await response.json()
       if (result.code === 200) {

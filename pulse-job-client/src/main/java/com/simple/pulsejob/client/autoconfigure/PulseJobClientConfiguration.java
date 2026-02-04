@@ -58,7 +58,7 @@ public class PulseJobClientConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public CloseableExecutor closeableExecutor() {
-        return ExecutorFactory.getExecutorFactory(properties.getExecutor())
+        return ExecutorFactory.getExecutorFactory(properties.getThreadPool())
                 .newExecutor(properties.getCorePoolSize(), properties.getMaxPoolSize(), properties.getWorkQueue());
     }
 

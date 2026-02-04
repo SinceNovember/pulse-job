@@ -67,7 +67,7 @@ public class JobExecutorController {
     }
 
     @PutMapping("/{id}")
-    public ResponseResult<JobExecutor> updateJobExecutor(@PathVariable Integer id, @RequestBody JobExecutor jobExecutor) {
+    public ResponseResult<JobExecutor> updateJobExecutor(@PathVariable("id") Integer id, @RequestBody JobExecutor jobExecutor) {
         if (!id.equals(jobExecutor.getId())) {
             return ResponseResult.badRequest("ID不匹配");
         }
@@ -83,7 +83,7 @@ public class JobExecutorController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseResult<Void> deleteJobExecutor(@PathVariable Integer id) {
+    public ResponseResult<Void> deleteJobExecutor(@PathVariable("id") Integer id) {
         try {
             jobExecutorService.deleteJobExecutor(id);
             return ResponseResult.ok();

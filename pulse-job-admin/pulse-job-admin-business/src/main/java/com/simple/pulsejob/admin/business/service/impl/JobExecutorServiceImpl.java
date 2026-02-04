@@ -80,11 +80,14 @@ public class JobExecutorServiceImpl implements IJobExecutorService {
     public void autoRegisterJobExecutor(JChannel channel, ExecutorKey executorWrapper) {
         log.info("auto register job executor channel : {}", channel);
         String executorName = executorWrapper.getExecutorName();
-        String channelAddress = channel.remoteIpPort();
+        // 优先使用执行器上报的业务地址，如果没有则回退到 channel 地址
+        String executorAddress = executorWrapper.getExecutorAddress() != null 
+                ? executorWrapper.getExecutorAddress() 
+                : channel.remoteIpPort();
 
         JobExecutor jobExecutor = jobExecutorMapper.findByExecutorName(executorName)
-            .map(existing -> existing.updateAddressIfAbsent(channelAddress))
-            .orElseGet(() -> JobExecutor.of(executorName, channelAddress));
+            .map(existing -> existing.updateAddressIfAbsent(executorAddress))
+            .orElseGet(() -> JobExecutor.of(executorName, executorAddress));
 
         jobExecutor.refreshUpdateTime();
         jobExecutorMapper.save(jobExecutor);

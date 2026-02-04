@@ -145,7 +145,9 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
      * 发送注册执行器请求
      */
     private void sendRegisterExecutorRequest(JChannel channel) {
-        ExecutorKey executorKey = new ExecutorKey(clientProperties.getExecutorName());
+        String executorName = clientProperties.getExecutor().getName();
+        String executorAddress = resolveExecutorAddress(channel);
+        ExecutorKey executorKey = new ExecutorKey(executorName, executorAddress);
 
         JRequestPayload payload = PayloadSerializer.request()
                 .channel(channel)
@@ -155,7 +157,32 @@ public class DefaultClientProcessor implements ConnectorProcessor, JobBeanDefini
                 .build();
 
         channel.write(payload, LoggingFutureListener.REGISTER);
-        logger.info("Sent executor register request: {}", executorKey.getExecutorName());
+        logger.info("Sent executor register request: name={}, address={}", 
+                executorKey.getExecutorName(), executorKey.getExecutorAddress());
+    }
+
+    /**
+     * 解析执行器业务地址
+     * IP 和 Port 都可以单独配置，不配置则自动获取
+     */
+    private String resolveExecutorAddress(JChannel channel) {
+        // 获取 channel 的本地地址（连接到服务端时的出站地址）
+        String channelLocalIpPort = channel.localIpPort();
+        String[] parts = channelLocalIpPort.split(":");
+        String channelIp = parts[0];
+        String channelPort = parts.length > 1 ? parts[1] : "0";
+
+        // IP：优先使用配置，否则使用 channel 的出站 IP
+        String ip = clientProperties.getExecutor().getIp();
+        if (ip == null || ip.trim().isEmpty()) {
+            ip = channelIp;
+        }
+
+        // Port：优先使用配置，否则使用 channel 的本地端口
+        Integer port = clientProperties.getExecutor().getPort();
+        String portStr = (port != null && port > 0) ? String.valueOf(port) : channelPort;
+
+        return ip + ":" + portStr;
     }
 
     /**

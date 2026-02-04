@@ -2,6 +2,8 @@ package com.simple.pulsejob.admin.scheduler;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
@@ -20,77 +22,91 @@ public class ExecutorRegistryService {
 
     private final JobExecutorMapper jobExecutorMapper;
     private final WebSocketBroadcastService broadcastService;
+    
+    // 按 executorName 加锁，避免并发注册问题
+    private final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
+
+    private Object getLock(String executorName) {
+        return locks.computeIfAbsent(executorName, k -> new Object());
+    }
 
     /**
-     * 注册执行器：将 channel 地址追加到 JobExecutor 的 address 列表（幂等）
+     * 注册执行器：更新执行器地址
+     * 按完整地址（IP:Port）去重，支持同一台机器运行多个实例
      */
     public void register(ExecutorKey executorKey, JChannel channel) {
         if (executorKey == null || channel == null) return;
 
         final String executorName = executorKey.getExecutorName();
-        final String ipPort = channel.remoteIpPort();
+        // 优先使用业务地址，没有则用 channel 地址
+        final String newAddress = executorKey.getExecutorAddress() != null 
+                ? executorKey.getExecutorAddress() 
+                : channel.remoteIpPort();
 
-        jobExecutorMapper.findByExecutorName(executorName)
-            .map(existing -> {
-                // 如果不存在该地址才追加
-                String addr = existing.getExecutorAddress(); // ; 分隔
-                if (addr == null || addr.trim().isEmpty()) {
-                    existing.setExecutorAddress(ipPort);
+        // 同一个 executorName 的注册操作需要同步
+        synchronized (getLock(executorName)) {
+            jobExecutorMapper.findByExecutorName(executorName)
+                .map(existing -> {
+                    String currentAddresses = existing.getExecutorAddress();
+                    if (currentAddresses == null || currentAddresses.trim().isEmpty()) {
+                        // 没有地址，直接设置
+                        existing.setExecutorAddress(newAddress);
+                    } else {
+                        // 按完整地址去重
+                        List<String> addresses = Arrays.stream(currentAddresses.split(Strings.SEMICOLON))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty() && !s.equals(newAddress))
+                            .collect(Collectors.toList());
+                        addresses.add(newAddress);  // 添加新地址
+                        existing.setExecutorAddress(String.join(Strings.SEMICOLON, addresses));
+                    }
                     existing.refreshUpdateTime();
                     jobExecutorMapper.save(existing);
-                } else {
-                    List<String> addresses = Arrays.stream(addr.split(Strings.SEMICOLON))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .collect(Collectors.toList());
-                    if (!addresses.contains(ipPort)) {
-                        addresses.add(ipPort);
-                        existing.setExecutorAddress(String.join(Strings.SEMICOLON, addresses));
-                        existing.refreshUpdateTime();
-                        jobExecutorMapper.save(existing);
-                    } else {
-                        // already present, just refresh timestamp
-                        existing.refreshUpdateTime();
-                        jobExecutorMapper.save(existing);
-                    }
-                }
-                return existing;
-            })
-            .orElseGet(() -> {
-                JobExecutor newOne = JobExecutor.of(executorName, ipPort);
-                newOne.refreshUpdateTime();
-                jobExecutorMapper.save(newOne);
-                return newOne;
-            });
+                    return existing;
+                })
+                .orElseGet(() -> {
+                    JobExecutor newOne = JobExecutor.of(executorName, newAddress);
+                    newOne.refreshUpdateTime();
+                    jobExecutorMapper.save(newOne);
+                    return newOne;
+                });
+        }
 
-        log.info("Registered executor persistent info: {} -> {}", executorName, ipPort);
+        log.info("Registered executor: name={}, address={}", executorName, newAddress);
     }
 
     /**
-     * 注销 channel：从 JobExecutor 的 address 列表中移除该 channel 的 address（幂等）
+     * 注销 channel：从地址列表中移除对应的完整地址（IP:Port）
      */
     public void deregister(ExecutorKey executorKey, JChannel channel) {
         if (executorKey == null || channel == null) return;
 
         final String executorName = executorKey.getExecutorName();
-        final String ipPort = channel.remoteIpPort();
+        final String address = executorKey.getExecutorAddress() != null 
+                ? executorKey.getExecutorAddress() 
+                : channel.remoteIpPort();
 
-        jobExecutorMapper.findByExecutorName(executorName)
-            .ifPresent(exec -> {
-                String address = exec.getExecutorAddress();
-                if (address == null || address.trim().isEmpty()) return;
-                List<String> addresses = Arrays.stream(address.split(Strings.SEMICOLON))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty() && !s.equals(ipPort))
-                    .collect(Collectors.toList());
-                exec.setExecutorAddress(String.join(Strings.SEMICOLON, addresses));
-                exec.refreshUpdateTime();
-                jobExecutorMapper.save(exec);
-                log.info("Deregistered executor persistent info: {} - removed {}", executorName, ipPort);
-                
-                // 广播执行器下线消息给浏览器（包含地址信息，以便前端实时更新地址列表）
-                broadcastService.pushExecutorOffline(executorName, ipPort, "Connection closed");
-                log.info("Broadcast executor offline: executorName={}, address={}", executorName, ipPort);
-            });
+        // 同一个 executorName 的操作需要同步
+        synchronized (getLock(executorName)) {
+            jobExecutorMapper.findByExecutorName(executorName)
+                .ifPresent(exec -> {
+                    String currentAddresses = exec.getExecutorAddress();
+                    if (currentAddresses != null && !currentAddresses.trim().isEmpty()) {
+                        // 按完整地址移除
+                        List<String> addresses = Arrays.stream(currentAddresses.split(Strings.SEMICOLON))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty() && !s.equals(address))
+                            .collect(Collectors.toList());
+                        exec.setExecutorAddress(addresses.isEmpty() ? null : String.join(Strings.SEMICOLON, addresses));
+                        exec.refreshUpdateTime();
+                        jobExecutorMapper.save(exec);
+                        log.info("Deregistered executor: {} - removed {}", executorName, address);
+                    }
+                    
+                    // 广播执行器下线消息给浏览器
+                    broadcastService.pushExecutorOffline(executorName, address, "Connection closed");
+                });
+        }
     }
 }
+
