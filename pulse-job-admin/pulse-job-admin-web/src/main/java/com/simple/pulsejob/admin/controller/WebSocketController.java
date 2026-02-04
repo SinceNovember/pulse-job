@@ -74,7 +74,7 @@ public class WebSocketController {
      * 检查会话是否有效
      */
     @GetMapping("/sessions/{sessionId}/valid")
-    public ResponseResult<Map<String, Boolean>> checkSessionValid(@PathVariable String sessionId) {
+    public ResponseResult<Map<String, Boolean>> checkSessionValid(@PathVariable("sessionId") String sessionId) {
         boolean valid = sessionManager.isSessionValid(sessionId);
         return ResponseResult.ok(Map.of("valid", valid));
     }
@@ -83,7 +83,7 @@ public class WebSocketController {
      * 关闭指定会话
      */
     @DeleteMapping("/sessions/{sessionId}")
-    public ResponseResult<Void> closeSession(@PathVariable String sessionId) {
+    public ResponseResult<Void> closeSession(@PathVariable("sessionId") String sessionId) {
         try {
             var wrapper = sessionManager.getSession(sessionId);
             if (wrapper != null && wrapper.getSession().isOpen()) {

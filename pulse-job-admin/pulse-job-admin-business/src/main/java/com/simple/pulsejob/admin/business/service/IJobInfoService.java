@@ -1,9 +1,11 @@
 package com.simple.pulsejob.admin.business.service;
 
 
+import com.simple.pulsejob.admin.common.model.base.PageResult;
 import com.simple.pulsejob.admin.common.model.dto.JobInfoWithExecutorDTO;
 import com.simple.pulsejob.admin.common.model.entity.JobInfo;
 import com.simple.pulsejob.admin.common.model.param.JobInfoParam;
+import com.simple.pulsejob.admin.common.model.param.JobInfoQuery;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -97,4 +99,18 @@ public interface IJobInfoService {
      * 根据 jobId 获取 JobInfo 及其执行器名称
      */
     Optional<JobInfoWithExecutorDTO> getJobInfoWithExecutorNameById(Integer jobId);
+
+    /**
+     * 分页查询任务信息
+     * @param query 查询参数
+     * @return 分页结果
+     */
+    PageResult<JobInfo> pageJobInfos(JobInfoQuery query);
+
+    /**
+     * 启用/禁用任务
+     * @param id 任务ID
+     * @param enabled 是否启用
+     */
+    void setJobEnabled(Integer id, boolean enabled);
 } 

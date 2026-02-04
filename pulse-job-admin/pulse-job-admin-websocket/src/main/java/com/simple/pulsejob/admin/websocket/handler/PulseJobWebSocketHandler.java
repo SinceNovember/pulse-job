@@ -15,8 +15,11 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * WebSocket 消息处理器
@@ -34,11 +37,20 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PulseJobWebSocketHandler extends TextWebSocketHandler {
+public class PulseJobWebSocketHandler extends TextWebSocketHandler implements org.springframework.beans.factory.DisposableBean {
 
     private final WebSocketSessionManager sessionManager;
     private final HeartbeatService heartbeatService;
     private final ObjectMapper objectMapper;
+    
+    // 应用关闭标志，避免关闭期间的错误日志
+    private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
+    
+    @Override
+    public void destroy() {
+        shuttingDown.set(true);
+        log.info("WebSocket handler shutting down, suppressing transport errors");
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -82,9 +94,12 @@ public class PulseJobWebSocketHandler extends TextWebSocketHandler {
         String clientId = wrapper != null ? wrapper.getClientId() : "unknown";
         String clientType = wrapper != null ? wrapper.getClientType() : "unknown";
         
-        // 如果是执行器客户端断开，广播给所有浏览器客户端
-        if (wrapper != null && "executor".equals(wrapper.getClientType())) {
-            broadcastExecutorOffline(wrapper, status.getReason());
+        // 应用关闭期间跳过广播，避免向已关闭的连接发送消息
+        if (!shuttingDown.get()) {
+            // 如果是执行器客户端断开，广播给所有浏览器客户端
+            if (wrapper != null && "executor".equals(wrapper.getClientType())) {
+                broadcastExecutorOffline(wrapper, status.getReason());
+            }
         }
         
         sessionManager.unregister(sessionId);
@@ -92,8 +107,11 @@ public class PulseJobWebSocketHandler extends TextWebSocketHandler {
         log.info("WebSocket connection closed: sessionId={}, clientId={}, clientType={}, status={}", 
                 sessionId, clientId, clientType, status);
         
-        // 广播当前连接统计给所有浏览器
-        broadcastConnectionStats();
+        // 应用关闭期间跳过广播
+        if (!shuttingDown.get()) {
+            // 广播当前连接统计给所有浏览器
+            broadcastConnectionStats();
+        }
     }
     
     /**
@@ -393,8 +411,33 @@ public class PulseJobWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("WebSocket transport error: sessionId={}, error={}", 
-                session.getId(), exception.getMessage(), exception);
-        sessionManager.unregister(session.getId());
+        String sessionId = session.getId();
+        
+        // 判断是否是预期的关闭错误（应用关闭或连接已关闭）
+        boolean isExpectedCloseError = shuttingDown.get() 
+                || isClosedChannelException(exception);
+        
+        if (isExpectedCloseError) {
+            // 降级为 DEBUG 级别日志，避免关闭时的错误日志噪音
+            log.debug("WebSocket transport closed: sessionId={}, reason={}", sessionId, exception.getMessage());
+        } else {
+            log.error("WebSocket transport error: sessionId={}, error={}", sessionId, exception.getMessage(), exception);
+        }
+        
+        sessionManager.unregister(sessionId);
+    }
+    
+    /**
+     * 判断是否是 ClosedChannelException（可能被包装在 IOException 中）
+     */
+    private boolean isClosedChannelException(Throwable exception) {
+        if (exception instanceof ClosedChannelException) {
+            return true;
+        }
+        if (exception instanceof IOException) {
+            Throwable cause = exception.getCause();
+            return cause instanceof ClosedChannelException;
+        }
+        return false;
     }
 }

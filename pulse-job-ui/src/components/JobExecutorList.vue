@@ -1501,7 +1501,7 @@ const handleSubmit = async () => {
 /* 执行器名称 */
 .executor-table :deep(.executor-name-cell) {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   font-size: 0.8125rem;
 }

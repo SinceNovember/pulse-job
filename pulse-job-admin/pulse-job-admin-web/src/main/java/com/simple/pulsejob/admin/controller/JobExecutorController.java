@@ -47,12 +47,12 @@ public class JobExecutorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseResult<JobExecutor> getJobExecutorById(@PathVariable Integer id) {
+    public ResponseResult<JobExecutor> getJobExecutorById(@PathVariable("id") Integer id) {
         return ResponseResult.of(jobExecutorService.getJobExecutorById(id), "执行器不存在");
     }
 
     @GetMapping("/name/{executorName}")
-    public ResponseResult<JobExecutor> getJobExecutorByName(@PathVariable String executorName) {
+    public ResponseResult<JobExecutor> getJobExecutorByName(@PathVariable("executorName") String executorName) {
         return ResponseResult.of(jobExecutorService.getJobExecutorByName(executorName), "执行器不存在");
     }
 
@@ -62,7 +62,7 @@ public class JobExecutorController {
     }
 
     @GetMapping("/register-type/{registerType}")
-    public ResponseResult<List<JobExecutor>> getJobExecutorsByRegisterType(@PathVariable RegisterTypeEnum registerType) {
+    public ResponseResult<List<JobExecutor>> getJobExecutorsByRegisterType(@PathVariable("registerType") RegisterTypeEnum registerType) {
         return ResponseResult.ok(jobExecutorService.getJobExecutorsByRegisterType(registerType));
     }
 

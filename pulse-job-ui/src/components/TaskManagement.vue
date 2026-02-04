@@ -396,8 +396,14 @@
                 <n-input v-model:value="editForm.description" placeholder="请输入任务描述" />
               </div>
               <div class="form-item">
-                <label class="form-label required">负责人</label>
+                <label class="form-label">负责人</label>
                 <n-input v-model:value="editForm.owner" placeholder="请输入负责人" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-item full">
+                <label class="form-label">报警邮件</label>
+                <n-input v-model:value="editForm.alarmEmail" placeholder="多个邮件用逗号分隔" />
               </div>
             </div>
           </div>
@@ -446,6 +452,12 @@
               <div class="form-item">
                 <label class="form-label required">JobHandler</label>
                 <n-input v-model:value="editForm.handler" placeholder="请输入Handler名称" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-item full">
+                <label class="form-label">任务参数</label>
+                <n-input v-model:value="editForm.params" placeholder="执行器任务参数" />
               </div>
             </div>
           </div>
@@ -723,13 +735,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, h } from 'vue'
+import { ref, reactive, computed, h, onMounted } from 'vue'
 import { 
   NInput, NInputNumber, NSelect, NButton, NDataTable, NTag, NPopconfirm, NTooltip, NDropdown,
   NDatePicker, useMessage
 } from 'naive-ui'
 
 const message = useMessage()
+
+// API 基础地址
+const API_BASE = 'http://localhost:8080'
+
+// 加载状态
+const loading = ref(false)
 
 // 状态
 const showAdvancedFilter = ref(false)
@@ -1285,6 +1303,7 @@ const editForm = reactive({
   executor: null,
   description: '',
   owner: '',
+  alarmEmail: '',       // 新增：报警邮件
   scheduleType: 'cron',
   cronExpr: '',
   intervalValue: 5,
@@ -1292,6 +1311,7 @@ const editForm = reactive({
   onceTime: null,
   runMode: 'BEAN',
   handler: '',
+  params: '',           // 新增：任务参数
   routeStrategy: 'FIRST',
   childJobId: '',
   misfireStrategy: 'DO_NOTHING',
@@ -1300,12 +1320,8 @@ const editForm = reactive({
   retryCount: 0
 })
 
-// 执行器选项
-const executorOptions = [
-  { label: '示例执行器', value: 'sample-executor' },
-  { label: '数据处理执行器', value: 'data-executor' },
-  { label: '报表执行器', value: 'report-executor' }
-]
+// 执行器选项（从后端加载）
+const executorOptions = reactive([])
 
 // 运行模式选项
 const glueTypeOptions = [
@@ -1412,19 +1428,11 @@ const statusConfig = {
 // 选中的行
 const checkedRowKeys = ref([])
 
-// 模拟数据
-const tasks = ref([
-  { id: 'JOB-001', handler: 'com.example.DataSyncHandler', description: '数据同步任务', scheduleType: 'cron', scheduleExpr: '0 0 * * * ?', runMode: 'standalone', owner: '张三', status: 'running', nextTime: '2026-01-29 15:00:00' },
-  { id: 'JOB-002', handler: 'com.example.LogCleanHandler', description: '日志清理任务', scheduleType: 'fixed_rate', scheduleExpr: '每30分钟', runMode: 'broadcast', owner: '李四', status: 'running', nextTime: '2026-01-29 14:30:00' },
-  { id: 'JOB-003', handler: 'com.example.ReportHandler', description: '报表生成任务', scheduleType: 'cron', scheduleExpr: '0 0 8 * * ?', runMode: 'standalone', owner: '王五', status: 'paused', nextTime: '-' },
-  { id: 'JOB-004', handler: 'com.example.CacheRefreshHandler', description: '缓存刷新任务', scheduleType: 'fixed_delay', scheduleExpr: '每5分钟', runMode: 'standalone', owner: '张三', status: 'running', nextTime: '2026-01-29 14:05:00' },
-  { id: 'JOB-005', handler: 'com.example.EmailSendHandler', description: '邮件发送任务', scheduleType: 'cron', scheduleExpr: '0 0 9 * * ?', runMode: 'standalone', owner: '赵六', status: 'error', nextTime: '-' },
-  { id: 'JOB-006', handler: 'com.example.BackupHandler', description: '数据备份任务', scheduleType: 'cron', scheduleExpr: '0 0 2 * * ?', runMode: 'standalone', owner: '李四', status: 'running', nextTime: '2026-01-30 02:00:00' },
-  { id: 'JOB-007', handler: 'com.example.OrderStatHandler', description: '订单统计任务', scheduleType: 'cron', scheduleExpr: '0 0 0 * * ?', runMode: 'sharding', owner: '王五', status: 'running', nextTime: '2026-01-30 00:00:00' },
-  { id: 'JOB-008', handler: 'com.example.UserProfileHandler', description: '用户画像计算', scheduleType: 'once', scheduleExpr: '手动触发', runMode: 'map_reduce', owner: '张三', status: 'stopped', nextTime: '-' },
-  { id: 'JOB-009', handler: 'com.example.StockSyncHandler', description: '库存同步任务', scheduleType: 'fixed_rate', scheduleExpr: '每10分钟', runMode: 'standalone', owner: '赵六', status: 'running', nextTime: '2026-01-29 14:10:00' },
-  { id: 'JOB-010', handler: 'com.example.PushHandler', description: '消息推送任务', scheduleType: 'cron', scheduleExpr: '0 */5 * * * ?', runMode: 'broadcast', owner: '李四', status: 'paused', nextTime: '-' }
-])
+// 总记录数
+const total = ref(0)
+
+// 任务列表数据（从后端加载）
+const tasks = ref([])
 
 // 筛选后的数据
 const filteredTasks = computed(() => {
@@ -1449,24 +1457,136 @@ const filteredTasks = computed(() => {
 const pagination = reactive({
   page: 1,
   pageSize: 10,
+  itemCount: 0,
   showSizePicker: true,
   showQuickJumper: true,
   pageSizes: [10, 20, 50, 100],
   prefix: ({ itemCount }) => `共 ${itemCount} 条`,
-  onChange: (page) => {
+  'onUpdate:page': (page) => {
     pagination.page = page
+    fetchTasks()
   },
-  onUpdatePageSize: (pageSize) => {
+  'onUpdate:pageSize': (pageSize) => {
     pagination.pageSize = pageSize
     pagination.page = 1
+    fetchTasks()
   }
 })
 
+// 从后端加载任务列表
+async function fetchTasks() {
+  loading.value = true
+  try {
+    const params = new URLSearchParams()
+    params.append('page', String(pagination.page))
+    params.append('pageSize', String(pagination.pageSize))
+    
+    // 添加筛选条件
+    if (filters.keyword) {
+      params.append('jobHandler', filters.keyword)
+    }
+    if (filters.taskId) {
+      params.append('jobHandler', filters.taskId)
+    }
+    if (filters.scheduleType) {
+      // 转换前端类型到后端枚举
+      const typeMap = {
+        'cron': 'CRON',
+        'fixed_rate': 'FIXED_RATE',
+        'fixed_delay': 'FIXED_DELAY',
+        'once': 'API'
+      }
+      params.append('scheduleType', typeMap[filters.scheduleType] || filters.scheduleType)
+    }
+    if (filters.status) {
+      // 转换前端状态到后端状态
+      const statusMap = {
+        'running': 1,
+        'paused': 0,
+        'stopped': 0,
+        'error': 0
+      }
+      params.append('status', String(statusMap[filters.status] ?? ''))
+    }
+    
+    const response = await fetch(`${API_BASE}/api/jobInfo/page?${params}`)
+    const result = await response.json()
+    
+    if (result.code === 200 && result.data) {
+      // 转换后端数据格式到前端显示格式
+      tasks.value = (result.data.list || []).map(job => ({
+        id: job.id,
+        handler: job.jobHandler || '',
+        description: job.description || '',
+        scheduleType: job.scheduleType?.toLowerCase() || 'cron',
+        scheduleExpr: job.scheduleRate || '',
+        runMode: job.dispatchType === 'BROADCAST' ? 'broadcast' : 'standalone',
+        owner: job.owner || '-',
+        status: job.status === 1 ? 'running' : 'stopped',
+        nextTime: job.nextExecuteTime || '-',
+        executorId: job.executorId,
+        // 保留原始数据用于编辑
+        _raw: job
+      }))
+      total.value = result.data.total || 0
+      pagination.itemCount = result.data.total || 0
+    } else {
+      message.error(result.message || '获取任务列表失败')
+    }
+  } catch (error) {
+    console.error('获取任务列表失败:', error)
+    message.error('获取任务列表失败，请检查网络连接')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载执行器列表
+async function fetchExecutors() {
+  try {
+    const response = await fetch(`${API_BASE}/api/jobExecutor`)
+    const result = await response.json()
+    if (result.code === 200 && result.data) {
+      executorOptions.splice(0, executorOptions.length)
+      result.data.forEach(exec => {
+        executorOptions.push({
+          label: exec.executorName + (exec.executorDesc ? ` (${exec.executorDesc})` : ''),
+          value: exec.id
+        })
+      })
+    }
+  } catch (error) {
+    console.error('获取执行器列表失败:', error)
+  }
+}
+
+// 组件挂载时加载数据
+onMounted(() => {
+  fetchTasks()
+  fetchExecutors()
+})
+
 // 状态切换处理
-const handleStatusSwitch = (row, value) => {
-  row.status = value ? 'running' : 'stopped'
-  const action = value ? '启动' : '停止'
-  message.success(`${action}任务: ${row.name}`)
+const handleStatusSwitch = async (row, value) => {
+  const action = value ? 'enable' : 'disable'
+  const actionText = value ? '启动' : '停止'
+  
+  try {
+    const response = await fetch(`${API_BASE}/api/jobInfo/${row.id}/${action}`, {
+      method: 'POST'
+    })
+    const result = await response.json()
+    
+    if (result.code === 200) {
+      message.success(`${actionText}任务: ${row.id}`)
+      fetchTasks()
+    } else {
+      message.error(result.message || `${actionText}任务失败`)
+    }
+  } catch (error) {
+    console.error(`${actionText}任务失败:`, error)
+    message.error(`${actionText}任务失败，请检查网络连接`)
+  }
 }
 
 // 表格列定义
@@ -1723,7 +1843,7 @@ const columns = [
 // 事件处理
 const handleSearch = () => {
   pagination.page = 1
-  message.success('搜索完成')
+  fetchTasks()
 }
 
 const handleReset = () => {
@@ -1734,9 +1854,11 @@ const handleReset = () => {
   filters.owner = ''
   filters.status = null
   pagination.page = 1
+  fetchTasks()
 }
 
-const handleRefresh = () => {
+const handleRefresh = async () => {
+  await fetchTasks()
   message.success('刷新成功')
 }
 
@@ -1776,35 +1898,91 @@ const handleCreate = () => {
   showCreateModal.value = true
 }
 
-const handleSubmitCreate = () => {
-  if (!createForm.executor || !createForm.description || !createForm.owner || !createForm.handler) {
+const handleSubmitCreate = async () => {
+  if (!createForm.executor || !createForm.description || !createForm.handler) {
     message.warning('请填写必填项')
     return
   }
-  // 添加到列表
-  // 根据调度类型生成表达式
-  let scheduleExpr = ''
+  
+  // 根据调度类型生成调度表达式
+  let scheduleRate = ''
   if (createForm.scheduleType === 'cron') {
-    scheduleExpr = createForm.cronExpr
+    scheduleRate = createForm.cronExpr
   } else if (createForm.scheduleType === 'fixed_rate' || createForm.scheduleType === 'fixed_delay') {
-    const unitMap = { seconds: '秒', minutes: '分钟', hours: '小时' }
-    scheduleExpr = `每${createForm.intervalValue}${unitMap[createForm.intervalUnit]}`
-  } else if (createForm.scheduleType === 'once') {
-    scheduleExpr = createForm.onceTime ? new Date(createForm.onceTime).toLocaleString() : '手动触发'
+    // 转换为毫秒
+    const unitToMs = { seconds: 1000, minutes: 60000, hours: 3600000 }
+    scheduleRate = String(createForm.intervalValue * unitToMs[createForm.intervalUnit])
   }
   
-  tasks.value.unshift({
-    id: 'JOB-' + String(tasks.value.length + 1).padStart(3, '0'),
-    handler: createForm.handler,
+  // 转换调度类型到后端枚举
+  const typeMap = {
+    'cron': 'CRON',
+    'fixed_rate': 'FIXED_RATE',
+    'fixed_delay': 'FIXED_DELAY',
+    'once': 'API'
+  }
+  
+  // 运行模式映射
+  const glueTypeMap = {
+    'BEAN': 'BEAN',
+    'GLUE_GROOVY': 'GLUE_GROOVY',
+    'GLUE_SHELL': 'GLUE_SHELL',
+    'GLUE_PYTHON': 'GLUE_PYTHON',
+    'GLUE_POWERSHELL': 'GLUE_POWERSHELL'
+  }
+  
+  // 路由策略映射到负载均衡类型
+  const routeStrategyMap = {
+    'FIRST': 'ROUND',
+    'LAST': 'ROUND',
+    'ROUND': 'ROUND',
+    'RANDOM': 'RANDOM',
+    'CONSISTENT_HASH': 'CONSISTENT_HASH',
+    'LEAST_FREQUENTLY_USED': 'LEAST_ACTIVE',
+    'LEAST_RECENTLY_USED': 'LEAST_ACTIVE',
+    'FAILOVER': 'ROUND',
+    'BUSYOVER': 'LEAST_ACTIVE',
+    'SHARDING_BROADCAST': 'ROUND'
+  }
+  
+  const jobParam = {
+    jobHandler: createForm.handler,
+    glueType: glueTypeMap[createForm.runMode] || 'BEAN',
+    scheduleRate: scheduleRate,
+    scheduleType: typeMap[createForm.scheduleType] || 'CRON',
+    executorId: createForm.executor,
     description: createForm.description,
-    scheduleType: createForm.scheduleType,
-    scheduleExpr: scheduleExpr || '手动触发',
-    runMode: createForm.routeStrategy === 'SHARDING_BROADCAST' ? 'sharding' : 'standalone',
-    owner: createForm.owner,
-    status: 'stopped'
-  })
-  showCreateModal.value = false
-  message.success('任务创建成功')
+    owner: createForm.owner || null,
+    alarmEmail: createForm.alarmEmail || null,
+    jobParams: createForm.params || null,
+    childJobId: createForm.childJobId || null,
+    dispatchType: createForm.runMode === 'GLUE_SHELL' ? 'BROADCAST' : 'ROUND',
+    loadBalanceType: routeStrategyMap[createForm.routeStrategy] || 'ROUND',
+    misfireStrategy: createForm.misfireStrategy || 'DO_NOTHING',
+    blockStrategy: createForm.blockStrategy || 'SERIAL_EXECUTION',
+    timeoutSeconds: createForm.timeout || 0,
+    maxRetryTimes: createForm.retryCount || 0
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/api/jobInfo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jobParam)
+    })
+    const result = await response.json()
+    
+    if (result.code === 201 || result.code === 200) {
+      showCreateModal.value = false
+      message.success('任务创建成功')
+      fetchTasks()
+    } else {
+      message.error(result.message || '创建任务失败')
+    }
+  } catch (error) {
+    console.error('创建任务失败:', error)
+    message.error('创建任务失败，请检查网络连接')
+  }
 }
 
 const handleCheck = (keys) => {
@@ -1848,33 +2026,61 @@ const getRunModeLabel = (mode) => {
 // 编辑任务
 const handleEdit = (row) => {
   currentTask.value = { ...row }
+  const rawJob = row._raw || {}
+  
   // 填充编辑表单
   editForm.id = row.id
-  editForm.executor = 'sample-executor'
-  editForm.description = row.description
-  editForm.owner = row.owner
+  editForm.executor = rawJob.executorId || row.executorId
+  editForm.description = row.description || rawJob.description || ''
+  editForm.owner = rawJob.owner || ''
+  editForm.alarmEmail = rawJob.alarmEmail || ''
   editForm.scheduleType = row.scheduleType
   
   // 根据调度类型设置对应字段
   if (row.scheduleType === 'cron') {
-    editForm.cronExpr = row.scheduleExpr
+    editForm.cronExpr = row.scheduleExpr || rawJob.scheduleRate || ''
   } else if (row.scheduleType === 'fixed_rate' || row.scheduleType === 'fixed_delay') {
-    // 解析 "每30分钟" 这样的格式
-    const match = row.scheduleExpr.match(/每(\d+)(秒|分钟|小时)/)
-    if (match) {
-      editForm.intervalValue = parseInt(match[1])
-      editForm.intervalUnit = match[2] === '秒' ? 'seconds' : match[2] === '分钟' ? 'minutes' : 'hours'
+    // 尝试解析毫秒值
+    const ms = parseInt(row.scheduleExpr || rawJob.scheduleRate)
+    if (!isNaN(ms)) {
+      if (ms >= 3600000) {
+        editForm.intervalValue = ms / 3600000
+        editForm.intervalUnit = 'hours'
+      } else if (ms >= 60000) {
+        editForm.intervalValue = ms / 60000
+        editForm.intervalUnit = 'minutes'
+      } else {
+        editForm.intervalValue = ms / 1000
+        editForm.intervalUnit = 'seconds'
+      }
+    } else {
+      // 解析 "每30分钟" 这样的格式
+      const match = (row.scheduleExpr || '').match(/每(\d+)(秒|分钟|小时)/)
+      if (match) {
+        editForm.intervalValue = parseInt(match[1])
+        editForm.intervalUnit = match[2] === '秒' ? 'seconds' : match[2] === '分钟' ? 'minutes' : 'hours'
+      }
     }
   }
   
-  editForm.runMode = row.runMode === 'standalone' ? 'BEAN' : 'GLUE_SHELL'
-  editForm.handler = row.handler
-  editForm.routeStrategy = 'FIRST'
-  editForm.childJobId = ''
-  editForm.misfireStrategy = 'DO_NOTHING'
-  editForm.blockStrategy = 'SERIAL_EXECUTION'
-  editForm.timeout = 0
-  editForm.retryCount = 0
+  // 运行模式映射：后端 glueType -> 前端 runMode
+  editForm.runMode = rawJob.glueType || 'BEAN'
+  editForm.handler = row.handler || rawJob.jobHandler || ''
+  editForm.params = rawJob.jobParams || ''
+  
+  // 路由策略映射：后端 loadBalanceType -> 前端 routeStrategy
+  const loadBalanceToRouteMap = {
+    'ROUND': 'ROUND',
+    'RANDOM': 'RANDOM',
+    'CONSISTENT_HASH': 'CONSISTENT_HASH',
+    'LEAST_ACTIVE': 'LEAST_FREQUENTLY_USED'
+  }
+  editForm.routeStrategy = loadBalanceToRouteMap[rawJob.loadBalanceType] || 'FIRST'
+  editForm.childJobId = rawJob.childJobId || ''
+  editForm.misfireStrategy = rawJob.misfireStrategy || 'DO_NOTHING'
+  editForm.blockStrategy = rawJob.blockStrategy || 'SERIAL_EXECUTION'
+  editForm.timeout = rawJob.timeoutSeconds || 0
+  editForm.retryCount = rawJob.maxRetryTimes || 0
   
   editModalPosition.x = 0
   editModalPosition.y = 0
@@ -1882,39 +2088,96 @@ const handleEdit = (row) => {
 }
 
 // 提交编辑
-const handleSubmitEdit = () => {
-  if (!editForm.executor || !editForm.description || !editForm.owner || !editForm.handler) {
+const handleSubmitEdit = async () => {
+  if (!editForm.executor || !editForm.description || !editForm.handler) {
     message.warning('请填写必填项')
     return
   }
   
-  // 更新列表中的数据
-  const index = tasks.value.findIndex(t => t.id === editForm.id)
-  if (index > -1) {
-    // 根据调度类型生成表达式
-    let scheduleExpr = ''
-    if (editForm.scheduleType === 'cron') {
-      scheduleExpr = editForm.cronExpr
-    } else if (editForm.scheduleType === 'fixed_rate' || editForm.scheduleType === 'fixed_delay') {
-      const unitMap = { seconds: '秒', minutes: '分钟', hours: '小时' }
-      scheduleExpr = `每${editForm.intervalValue}${unitMap[editForm.intervalUnit]}`
-    } else if (editForm.scheduleType === 'once') {
-      scheduleExpr = editForm.onceTime ? new Date(editForm.onceTime).toLocaleString() : '手动触发'
-    }
-    
-    tasks.value[index] = {
-      ...tasks.value[index],
-      handler: editForm.handler,
-      description: editForm.description,
-      scheduleType: editForm.scheduleType,
-      scheduleExpr: scheduleExpr || '手动触发',
-      runMode: editForm.routeStrategy === 'SHARDING_BROADCAST' ? 'sharding' : 'standalone',
-      owner: editForm.owner
-    }
+  // 根据调度类型生成调度表达式
+  let scheduleRate = ''
+  if (editForm.scheduleType === 'cron') {
+    scheduleRate = editForm.cronExpr
+  } else if (editForm.scheduleType === 'fixed_rate' || editForm.scheduleType === 'fixed_delay') {
+    const unitToMs = { seconds: 1000, minutes: 60000, hours: 3600000 }
+    scheduleRate = String(editForm.intervalValue * unitToMs[editForm.intervalUnit])
   }
   
-  showEditModal.value = false
-  message.success('任务更新成功')
+  // 转换调度类型到后端枚举
+  const typeMap = {
+    'cron': 'CRON',
+    'fixed_rate': 'FIXED_RATE',
+    'fixed_delay': 'FIXED_DELAY',
+    'once': 'API'
+  }
+  
+  // 获取原始任务数据并更新
+  const task = tasks.value.find(t => t.id === editForm.id)
+  const rawJob = task?._raw || {}
+  
+  // 运行模式映射
+  const glueTypeMap = {
+    'BEAN': 'BEAN',
+    'GLUE_GROOVY': 'GLUE_GROOVY',
+    'GLUE_SHELL': 'GLUE_SHELL',
+    'GLUE_PYTHON': 'GLUE_PYTHON',
+    'GLUE_POWERSHELL': 'GLUE_POWERSHELL'
+  }
+  
+  // 路由策略映射到负载均衡类型
+  const routeStrategyMap = {
+    'FIRST': 'ROUND',
+    'LAST': 'ROUND',
+    'ROUND': 'ROUND',
+    'RANDOM': 'RANDOM',
+    'CONSISTENT_HASH': 'CONSISTENT_HASH',
+    'LEAST_FREQUENTLY_USED': 'LEAST_ACTIVE',
+    'LEAST_RECENTLY_USED': 'LEAST_ACTIVE',
+    'FAILOVER': 'ROUND',
+    'BUSYOVER': 'LEAST_ACTIVE',
+    'SHARDING_BROADCAST': 'ROUND'
+  }
+  
+  const jobInfo = {
+    ...rawJob,
+    id: editForm.id,
+    jobHandler: editForm.handler,
+    glueType: glueTypeMap[editForm.runMode] || rawJob.glueType || 'BEAN',
+    scheduleRate: scheduleRate,
+    scheduleType: typeMap[editForm.scheduleType] || 'CRON',
+    executorId: editForm.executor,
+    description: editForm.description,
+    owner: editForm.owner || null,
+    alarmEmail: editForm.alarmEmail || null,
+    jobParams: editForm.params || null,
+    childJobId: editForm.childJobId || null,
+    dispatchType: editForm.runMode === 'GLUE_SHELL' ? 'BROADCAST' : (rawJob.dispatchType || 'ROUND'),
+    loadBalanceType: routeStrategyMap[editForm.routeStrategy] || rawJob.loadBalanceType || 'ROUND',
+    misfireStrategy: editForm.misfireStrategy || 'DO_NOTHING',
+    blockStrategy: editForm.blockStrategy || 'SERIAL_EXECUTION',
+    timeoutSeconds: editForm.timeout ?? 0,
+    maxRetryTimes: editForm.retryCount ?? 0
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/api/jobInfo/${editForm.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jobInfo)
+    })
+    const result = await response.json()
+    
+    if (result.code === 200) {
+      showEditModal.value = false
+      message.success('任务更新成功')
+      fetchTasks()
+    } else {
+      message.error(result.message || '更新任务失败')
+    }
+  } catch (error) {
+    console.error('更新任务失败:', error)
+    message.error('更新任务失败，请检查网络连接')
+  }
 }
 
 const handleToggleStatus = (row) => {
@@ -1923,11 +2186,22 @@ const handleToggleStatus = (row) => {
 }
 
 
-const handleDelete = (row) => {
-  const index = tasks.value.findIndex(t => t.id === row.id)
-  if (index > -1) {
-    tasks.value.splice(index, 1)
-    message.success(`删除任务: ${row.id}`)
+const handleDelete = async (row) => {
+  try {
+    const response = await fetch(`${API_BASE}/api/jobInfo/${row.id}`, {
+      method: 'DELETE'
+    })
+    const result = await response.json()
+    
+    if (result.code === 200) {
+      message.success(`删除任务: ${row.id}`)
+      fetchTasks()
+    } else {
+      message.error(result.message || '删除任务失败')
+    }
+  } catch (error) {
+    console.error('删除任务失败:', error)
+    message.error('删除任务失败，请检查网络连接')
   }
 }
 
@@ -2220,6 +2494,52 @@ const handleRowMoreAction = (key, row) => {
 .task-table :deep(.schedule-type) {
   font-size: 0.8125rem;
   color: var(--text-secondary);
+}
+
+/* 调度类型标签 */
+.task-table :deep(.schedule-type-tag) {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* Cron/频率表达式 */
+.task-table :deep(.schedule-expr-cell) {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  background: transparent;
+}
+
+/* 路由策略 */
+.task-table :deep(.route-strategy-cell) {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+/* 超时时间 */
+.task-table :deep(.timeout-cell) {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+/* 重试次数 */
+.task-table :deep(.retry-cell) {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+/* 时间列 */
+.task-table :deep(.time-cell) {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.task-table :deep(.time-cell.empty) {
+  color: var(--text-muted);
 }
 
 .task-table :deep(.schedule-expr) {

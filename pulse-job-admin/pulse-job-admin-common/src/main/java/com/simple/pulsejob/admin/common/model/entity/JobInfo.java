@@ -1,7 +1,10 @@
 package com.simple.pulsejob.admin.common.model.entity;
 
+import com.simple.pulsejob.admin.common.model.enums.BlockStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.DispatchTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.GlueTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.LoadBalanceTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.MisfireStrategyEnum;
 import com.simple.pulsejob.admin.common.model.enums.ScheduleTypeEnum;
 import com.simple.pulsejob.admin.common.model.enums.SerializerTypeEnum;
 import jakarta.persistence.*;
@@ -41,6 +44,14 @@ public class JobInfo implements Serializable {
      */
     @Column(name = "job_handler", length = 100)
     private String jobHandler;
+
+    /**
+     * 运行模式
+     * BEAN-基于Spring Bean, GLUE_GROOVY-Groovy脚本, GLUE_SHELL-Shell脚本等
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "glue_type", length = 20)
+    private GlueTypeEnum glueType = GlueTypeEnum.BEAN;
 
     /**
      * 执行器ID
@@ -124,6 +135,19 @@ public class JobInfo implements Serializable {
     private String description;
 
     /**
+     * 负责人
+     */
+    @Column(name = "owner", length = 50)
+    private String owner;
+
+    /**
+     * 报警邮件
+     * 多个邮件地址用逗号分隔
+     */
+    @Column(name = "alarm_email", length = 500)
+    private String alarmEmail;
+
+    /**
      * 创建时间
      * 记录任务的创建时间
      * 用于任务生命周期管理
@@ -147,6 +171,30 @@ public class JobInfo implements Serializable {
      */
     @Column(name = "job_params", columnDefinition = "TEXT")
     private String jobParams;
+
+    /**
+     * 子任务ID
+     * 多个子任务ID用逗号分隔
+     * 当前任务执行完成后自动触发子任务
+     */
+    @Column(name = "child_job_id", length = 200)
+    private String childJobId;
+
+    /**
+     * 调度过期策略
+     * DO_NOTHING-忽略, FIRE_ONCE_NOW-立即执行一次
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "misfire_strategy", length = 20)
+    private MisfireStrategyEnum misfireStrategy = MisfireStrategyEnum.DO_NOTHING;
+
+    /**
+     * 阻塞处理策略
+     * SERIAL_EXECUTION-单机串行, DISCARD_LATER-丢弃后续调度, COVER_EARLY-覆盖之前调度
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "block_strategy", length = 20)
+    private BlockStrategyEnum blockStrategy = BlockStrategyEnum.SERIAL_EXECUTION;
 
     /**
      * 重试次数

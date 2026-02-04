@@ -110,7 +110,7 @@ public class JobSchedulerController {
      * 恢复任务
      */
     @PostMapping("/resume/{jobId}")
-    public ResponseResult<Boolean> resumeJob(@PathVariable Long jobId) {
+    public ResponseResult<Boolean> resumeJob(@PathVariable("jobId") Long jobId) {
         try {
             boolean result = jobScheduler.resume(jobId);
             return ResponseResult.ok(result);
@@ -138,7 +138,7 @@ public class JobSchedulerController {
      * 检查任务是否已调度
      */
     @GetMapping("/isScheduled/{jobId}")
-    public ResponseResult<Boolean> isScheduled(@PathVariable Long jobId) {
+    public ResponseResult<Boolean> isScheduled(@PathVariable("jobId") Long jobId) {
         try {
             boolean result = jobScheduler.isScheduled(jobId);
             return ResponseResult.ok(result);
