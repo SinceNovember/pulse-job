@@ -7,11 +7,11 @@
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input 
-            v-model="searchKeyword" 
-            type="text" 
-            class="search-input" 
-            placeholder="搜索执行器名称或描述..."
+          <input
+              v-model="searchKeyword"
+              type="text"
+              class="search-input"
+              placeholder="搜索执行器名称或描述..."
           />
         </div>
         <button class="filter-btn" :class="{ active: showAdvancedFilter }" @click="showAdvancedFilter = !showAdvancedFilter">
@@ -21,7 +21,7 @@
           <span v-if="activeFilterCount > 0" class="filter-badge">{{ activeFilterCount }}</span>
         </button>
       </div>
-      
+
       <div class="toolbar-right">
         <!-- WebSocket 连接状态 -->
         <div class="ws-status" :class="wsStatusClass" @click="toggleWsConnection">
@@ -103,12 +103,18 @@
 
     <!-- 执行器卡片视图 -->
     <div v-if="viewMode === 'card'" class="card-section">
+      <!-- 加载遮罩层 -->
+      <transition name="fade">
+        <div v-if="loading" class="loading-overlay">
+          <n-spin size="small" />
+        </div>
+      </transition>
       <div class="executor-grid">
-        <div 
-          v-for="executor in filteredExecutorList" 
-          :key="executor.id" 
-          class="executor-card"
-          :class="{ offline: !isOnline(executor) }"
+        <div
+            v-for="executor in filteredExecutorList"
+            :key="executor.id"
+            class="executor-card"
+            :class="{ offline: !isOnline(executor) }"
         >
           <div class="executor-header">
             <div class="executor-status" :class="isOnline(executor) ? 'online' : 'offline'"></div>
@@ -137,11 +143,11 @@
             <div class="info-item">
               <span class="info-label">地址列表</span>
               <div class="address-list">
-                <n-tag 
-                  v-for="(addr, idx) in getAddresses(executor)" 
-                  :key="idx" 
-                  size="small"
-                  :type="isAddressOnline(addr) ? 'success' : 'default'"
+                <n-tag
+                    v-for="addr in getAddresses(executor)"
+                    :key="addr"
+                    size="small"
+                    :type="isAddressOnline(addr) ? 'success' : 'default'"
                 >
                   {{ addr }}
                 </n-tag>
@@ -192,13 +198,13 @@
     <!-- 执行器列表视图 -->
     <div v-else class="table-section">
       <n-data-table
-        :columns="tableColumns"
-        :data="filteredExecutorList"
-        :pagination="pagination"
-        :loading="loading"
-        :row-key="row => row.id"
-        remote
-        class="executor-table"
+          :columns="tableColumns"
+          :data="filteredExecutorList"
+          :pagination="pagination"
+          :loading="loading"
+          :row-key="row => row.id"
+          remote
+          class="executor-table"
       />
     </div>
 
@@ -235,7 +241,7 @@
 
 <script setup>
 import { ref, h, computed, reactive, onMounted, onUnmounted, watch } from 'vue'
-import { NTag, NButton, NDropdown, NTooltip, useMessage } from 'naive-ui'
+import { NTag, NButton, NDropdown, NTooltip, NSpin, useMessage } from 'naive-ui'
 import { useWebSocket, useExecutorStatus, ConnectionState, MessageType } from '@/websocket'
 
 const message = useMessage()
@@ -280,22 +286,22 @@ let offlineCheckTimer = null
 onMounted(() => {
   // 加载执行器列表
   fetchExecutors()
-  
+
   // 连接 WebSocket
   wsConnect()
-  
+
   // 订阅执行器状态主题
   subscribe('executor.status', handleExecutorStatus)
-  
+
   // 订阅连接统计主题
   subscribe('connection.stats', handleConnectionStats)
-  
+
   // 监听执行器上线/下线事件
   on(MessageType.EXECUTOR_ONLINE, handleExecutorOnline)
   on(MessageType.EXECUTOR_OFFLINE, handleExecutorOffline)
   on(MessageType.EXECUTOR_HEARTBEAT, handleExecutorHeartbeat)
   on(MessageType.STATS_UPDATE, handleConnectionStats)
-  
+
   // 启动离线检测定时器（每30秒检查一次）
   offlineCheckTimer = setInterval(checkOfflineExecutors, 30000)
 })
@@ -325,7 +331,7 @@ watch(() => wsState.state, (newState, oldState) => {
 function checkOfflineExecutors() {
   const now = Date.now()
   const timeout = 90000 // 90秒
-  
+
   for (const [executorId, status] of executorStatusMap) {
     if (status.status === 'online' && status.lastHeartbeat) {
       if (now - status.lastHeartbeat > timeout) {
@@ -353,7 +359,7 @@ function handleExecutorStatus(msg) {
 function handleExecutorOnline(msg) {
   const { executorId, address } = msg.data || {}
   if (!executorId) return
-  
+
   message.success(`执行器 ${executorId} 上线: ${address || ''}`)
   executorStatusMap.set(executorId, {
     executorId,
@@ -361,7 +367,7 @@ function handleExecutorOnline(msg) {
     status: 'online',
     lastUpdate: Date.now()
   })
-  
+
   // 检查列表中是否存在此执行器，不存在则刷新列表
   const exists = executorList.value.some(e => e.executorName === executorId)
   if (!exists) {
@@ -375,19 +381,19 @@ function handleExecutorOnline(msg) {
 function handleExecutorOffline(msg) {
   const { executorId, reason, address } = msg.data || {}
   if (!executorId) return
-  
+
   // 显示下线通知（包含地址信息）
   const addressInfo = address ? ` (${address})` : ''
   message.warning(`执行器 ${executorId}${addressInfo} 下线: ${reason || '连接断开'}`)
   console.log('[WebSocket] 执行器下线:', { executorId, address, reason })
-  
+
   // 从执行器列表中实时移除下线的地址
   removeExecutorAddress(executorId, address)
-  
+
   // 检查是否还有其他地址在线
   const executor = executorList.value.find(e => e.executorName === executorId)
   const remainingAddresses = executor?.executorAddress?.split(';').filter(Boolean) || []
-  
+
   // 只有当所有地址都下线了，才标记执行器为 offline
   if (remainingAddresses.length === 0) {
     executorStatusMap.set(executorId, {
@@ -425,7 +431,7 @@ function handleExecutorHeartbeat(msg) {
       })
     }
     lastUpdateTime.value = Date.now()
-    
+
     // 更新执行器列表中的地址
     updateExecutorFromWs(data)
   }
@@ -474,14 +480,14 @@ function normalizeAddress(address) {
 // 从 WebSocket 消息更新执行器列表（按完整地址去重）
 function updateExecutorFromWs(data) {
   if (!data || !data.executorId) return
-  
+
   const normalizedAddr = normalizeAddress(data.address)
   console.log('[WebSocket] 更新执行器地址:', {
     executorId: data.executorId,
     rawAddress: data.address,
     normalizedAddress: normalizedAddr
   })
-  
+
   const executor = executorList.value.find(e => e.executorName === data.executorId)
   if (executor) {
     executor.updateTime = new Date().toISOString()
@@ -489,8 +495,8 @@ function updateExecutorFromWs(data) {
       if (executor.executorAddress) {
         // 按完整地址去重
         const addresses = executor.executorAddress.split(';')
-          .filter(Boolean)
-          .filter(addr => addr !== normalizedAddr)
+            .filter(Boolean)
+            .filter(addr => addr !== normalizedAddr)
         addresses.push(normalizedAddr)
         executor.executorAddress = addresses.join(';')
       } else {
@@ -509,16 +515,16 @@ function removeExecutorAddress(executorId, address) {
     console.log('[WebSocket] 跳过地址移除: 缺少 executorId')
     return
   }
-  
+
   const executor = executorList.value.find(e => e.executorName === executorId)
   if (executor && executor.executorAddress) {
     const normalizedAddr = normalizeAddress(address)
-    
+
     if (normalizedAddr) {
       // 按完整地址移除
       const addresses = executor.executorAddress.split(';')
-        .filter(Boolean)
-        .filter(addr => addr !== normalizedAddr)
+          .filter(Boolean)
+          .filter(addr => addr !== normalizedAddr)
       console.log('[WebSocket] 执行器下线，移除地址:', { executorId, removed: normalizedAddr, remaining: addresses })
       executor.executorAddress = addresses.join(';')
     }
@@ -590,17 +596,17 @@ const total = ref(0)
 // 筛选后的执行器列表（状态筛选在前端做，因为状态是实时的）
 const filteredExecutorList = computed(() => {
   let list = executorList.value
-  
+
   // 关键词搜索（前端过滤）
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     list = list.filter(executor => {
       return executor.executorName?.toLowerCase().includes(keyword) ||
-             executor.executorDesc?.toLowerCase().includes(keyword) ||
-             executor.executorAddress?.toLowerCase().includes(keyword)
+          executor.executorDesc?.toLowerCase().includes(keyword) ||
+          executor.executorAddress?.toLowerCase().includes(keyword)
     })
   }
-  
+
   // 状态筛选（前端过滤，因为状态是实时的）
   if (filters.status) {
     list = list.filter(executor => {
@@ -610,7 +616,7 @@ const filteredExecutorList = computed(() => {
       return true
     })
   }
-  
+
   return list
 })
 
@@ -644,7 +650,7 @@ async function fetchExecutors() {
     const params = new URLSearchParams()
     params.append('page', String(pagination.page))
     params.append('pageSize', String(pagination.pageSize))
-    
+
     // 添加筛选条件
     if (filters.executorName) {
       params.append('executorName', filters.executorName)
@@ -655,10 +661,10 @@ async function fetchExecutors() {
     if (filters.status) {
       params.append('status', filters.status)
     }
-    
+
     const response = await fetch(`${API_BASE}/api/jobExecutor/page?${params.toString()}`)
     const result = await response.json()
-    
+
     if (result.code === 200 && result.data) {
       executorList.value = result.data.list || []
       total.value = result.data.total || 0
@@ -677,7 +683,6 @@ async function fetchExecutors() {
 // 操作菜单
 const actionOptions = [
   { label: '编辑', key: 'edit' },
-  { label: '刷新', key: 'refresh' },
   { type: 'divider', key: 'd1' },
   { label: '删除', key: 'delete' }
 ]
@@ -733,16 +738,16 @@ const tableColumns = [
       if (addresses.length === 0) {
         return h('span', { class: 'no-address' }, '暂无节点')
       }
-      return h('div', { class: 'address-tags' }, 
-        addresses.slice(0, 2).map((addr, idx) => 
-          h(NTag, {
-            key: idx,
-            size: 'small',
-            type: isAddressOnline(addr) ? 'success' : 'default'
-          }, { default: () => addr })
-        ).concat(
-          addresses.length > 2 ? [h('span', { class: 'more-count' }, `+${addresses.length - 2}`)] : []
-        )
+      return h('div', { class: 'address-tags' },
+          addresses.slice(0, 2).map((addr, idx) =>
+              h(NTag, {
+                key: idx,
+                size: 'small',
+                type: isAddressOnline(addr) ? 'success' : 'default'
+              }, { default: () => addr })
+          ).concat(
+              addresses.length > 2 ? [h('span', { class: 'more-count' }, `+${addresses.length - 2}`)] : []
+          )
       )
     }
   },
@@ -765,7 +770,7 @@ const tableColumns = [
   {
     title: '操作',
     key: 'actions',
-    width: 130,
+    width: 100,
     render(row) {
       return h('div', { class: 'action-buttons' }, [
         h(NTooltip, { trigger: 'hover' }, {
@@ -779,19 +784,6 @@ const tableColumns = [
             ])
           ]),
           default: () => '编辑'
-        }),
-        h(NTooltip, { trigger: 'hover' }, {
-          trigger: () => h('button', {
-            class: 'action-btn action-btn-success',
-            onClick: () => handleAction('refresh', row)
-          }, [
-            h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-              h('path', { d: 'M23 4v6h-6' }),
-              h('path', { d: 'M1 20v-6h6' }),
-              h('path', { d: 'M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15' })
-            ])
-          ]),
-          default: () => '刷新'
         }),
         h(NTooltip, { trigger: 'hover' }, {
           trigger: () => h('button', {
@@ -864,7 +856,7 @@ const isOnline = (executor) => {
   if (addresses.length === 0) {
     return false
   }
-  
+
   // 检查 WebSocket 实时状态
   const wsStatus = executorStatusMap.get(executor.executorName)
   if (wsStatus) {
@@ -878,7 +870,7 @@ const isOnline = (executor) => {
       return false
     }
   }
-  
+
   // 有地址且没有明确下线消息，默认在线
   return true
 }
@@ -890,17 +882,17 @@ const isAddressOnline = (addr) => {
       return true
     }
   }
-  // 降级：随机模拟
-  return Math.random() > 0.1
+  // 地址存在于列表中，默认视为在线（已通过心跳/注册添加）
+  return true
 }
 
 const formatTime = (time) => {
   if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN', { 
-    month: '2-digit', 
-    day: '2-digit', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(time).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
@@ -936,9 +928,6 @@ const handleAction = async (key, executor) => {
       editingExecutor.value = executor
       Object.assign(formData.value, executor)
       showCreateModal.value = true
-      break
-    case 'refresh':
-      await fetchExecutors()
       break
     case 'delete':
       try {
@@ -1285,11 +1274,39 @@ const handleSubmit = async () => {
   background: #fff;
   border-radius: 0 0 10px 10px;
   padding: 20px;
+  position: relative;
+  min-height: 200px;
 }
 
 .advanced-filter + .card-section,
 .advanced-filter + .table-section {
   border-radius: 0 0 10px 10px;
+}
+
+/* 加载遮罩层 */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 0 0 10px 10px;
+}
+
+/* 遮罩层淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 .executor-grid {

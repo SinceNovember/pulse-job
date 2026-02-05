@@ -8,22 +8,23 @@ import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorParam;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorQuery;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.util.StringUtils;
 import com.simple.pulsejob.common.util.StringUtil;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.channel.JChannel;
 import com.simple.pulsejob.transport.metadata.ExecutorKey;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -39,33 +40,50 @@ public class JobExecutorServiceImpl implements IJobExecutorService {
     @Override
     @Transactional(readOnly = true)
     public PageResult<JobExecutor> pageJobExecutors(JobExecutorQuery query) {
-        // 构建分页参数
+        // 构建排序
         Sort sort = Sort.by(Sort.Direction.DESC, "updateTime");
-        if (StringUtil.isNotBlank(query.getSortField())) {
+        if (StringUtils.hasText(query.getSortField())) {
             Sort.Direction direction = "asc".equalsIgnoreCase(query.getSortOrder()) 
-                ? Sort.Direction.ASC : Sort.Direction.DESC;
+                    ? Sort.Direction.ASC : Sort.Direction.DESC;
             sort = Sort.by(direction, query.getSortField());
         }
-        PageRequest pageRequest = PageRequest.of(query.getPageIndex(), query.getPageSize(), sort);
-        
+
+        // 构建分页
+        Pageable pageable = PageRequest.of(query.getPageIndex(), query.getPageSize(), sort);
+
         // 构建查询条件
         Specification<JobExecutor> spec = (root, cq, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            // 执行器名称模糊查询
-            if (StringUtil.isNotBlank(query.getExecutorName())) {
+            java.util.List<Predicate> predicates = new java.util.ArrayList<>();
+
+            // 执行器名称模糊匹配
+            if (StringUtils.hasText(query.getExecutorName())) {
                 predicates.add(cb.like(root.get("executorName"), "%" + query.getExecutorName() + "%"));
             }
-            
-            // 注册方式筛选
+
+            // 注册类型精确匹配
             if (query.getRegisterType() != null) {
                 predicates.add(cb.equal(root.get("registerType"), query.getRegisterType()));
             }
-            
-            return predicates.isEmpty() ? null : cb.and(predicates.toArray(new Predicate[0]));
+
+            // 状态筛选（在线/离线）- 根据是否有地址判断
+            if (StringUtils.hasText(query.getStatus())) {
+                if ("online".equals(query.getStatus())) {
+                    predicates.add(cb.and(
+                        cb.isNotNull(root.get("executorAddress")),
+                        cb.notEqual(root.get("executorAddress"), "")
+                    ));
+                } else if ("offline".equals(query.getStatus())) {
+                    predicates.add(cb.or(
+                        cb.isNull(root.get("executorAddress")),
+                        cb.equal(root.get("executorAddress"), "")
+                    ));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
-        
-        Page<JobExecutor> page = jobExecutorMapper.findAll(spec, pageRequest);
+
+        Page<JobExecutor> page = jobExecutorMapper.findAll(spec, pageable);
         return PageResult.of(page);
     }
 
@@ -80,14 +98,11 @@ public class JobExecutorServiceImpl implements IJobExecutorService {
     public void autoRegisterJobExecutor(JChannel channel, ExecutorKey executorWrapper) {
         log.info("auto register job executor channel : {}", channel);
         String executorName = executorWrapper.getExecutorName();
-        // 优先使用执行器上报的业务地址，如果没有则回退到 channel 地址
-        String executorAddress = executorWrapper.getExecutorAddress() != null 
-                ? executorWrapper.getExecutorAddress() 
-                : channel.remoteIpPort();
+        String channelAddress = channel.remoteIpPort();
 
         JobExecutor jobExecutor = jobExecutorMapper.findByExecutorName(executorName)
-            .map(existing -> existing.updateAddressIfAbsent(executorAddress))
-            .orElseGet(() -> JobExecutor.of(executorName, executorAddress));
+            .map(existing -> existing.updateAddressIfAbsent(channelAddress))
+            .orElseGet(() -> JobExecutor.of(executorName, channelAddress));
 
         jobExecutor.refreshUpdateTime();
         jobExecutorMapper.save(jobExecutor);
