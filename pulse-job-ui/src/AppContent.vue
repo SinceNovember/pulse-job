@@ -28,6 +28,9 @@
         <JobInstanceList v-else-if="activeNav === 'job-instance'" />
         <JobLogList v-else-if="activeNav === 'job-log'" />
         
+        <!-- 系统配置页面 -->
+        <SystemConfig v-else-if="activeNav === 'system-config'" />
+        
         <!-- 任务页面 -->
         <template v-else-if="activeNav === 'tasks'">
           <FilterGroup 
@@ -89,6 +92,7 @@ import TaskManagement from './components/TaskManagement.vue'
 import JobExecutorList from './components/JobExecutorList.vue'
 import JobInstanceList from './components/JobInstanceList.vue'
 import JobLogList from './components/JobLogList.vue'
+import SystemConfig from './components/SystemConfig.vue'
 
 // Naive UI 消息
 const message = useMessage()
@@ -108,6 +112,7 @@ const pageTitles = {
   'job-executor': '执行器管理',
   'job-instance': '执行记录',
   'job-log': '执行日志',
+  'system-config': '系统配置',
   tasks: '任务',
   kanban: '看板',
   calendar: '日历',

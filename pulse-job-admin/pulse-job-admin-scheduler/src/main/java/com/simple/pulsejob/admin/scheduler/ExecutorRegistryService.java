@@ -2,9 +2,11 @@ package com.simple.pulsejob.admin.scheduler;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import com.simple.pulsejob.admin.business.service.ISystemConfigService;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
 import com.simple.pulsejob.admin.websocket.service.WebSocketBroadcastService;
@@ -22,6 +24,7 @@ public class ExecutorRegistryService {
 
     private final JobExecutorMapper jobExecutorMapper;
     private final WebSocketBroadcastService broadcastService;
+    private final ISystemConfigService systemConfigService;
     
     // 按 executorName 加锁，避免并发注册问题
     private final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
@@ -33,6 +36,9 @@ public class ExecutorRegistryService {
     /**
      * 注册执行器：更新执行器地址
      * 按完整地址（IP:Port）去重，支持同一台机器运行多个实例
+     * 
+     * 注意：如果系统配置禁用了执行器自动注册，则不会创建新的执行器记录，
+     * 但会更新已存在的执行器地址。
      */
     public void register(ExecutorKey executorKey, JChannel channel) {
         if (executorKey == null || channel == null) return;
@@ -45,34 +51,40 @@ public class ExecutorRegistryService {
 
         // 同一个 executorName 的注册操作需要同步
         synchronized (getLock(executorName)) {
-            jobExecutorMapper.findByExecutorName(executorName)
-                .map(existing -> {
-                    String currentAddresses = existing.getExecutorAddress();
-                    if (currentAddresses == null || currentAddresses.trim().isEmpty()) {
-                        // 没有地址，直接设置
-                        existing.setExecutorAddress(newAddress);
-                    } else {
-                        // 按完整地址去重
-                        List<String> addresses = Arrays.stream(currentAddresses.split(Strings.SEMICOLON))
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty() && !s.equals(newAddress))
-                            .collect(Collectors.toList());
-                        addresses.add(newAddress);  // 添加新地址
-                        existing.setExecutorAddress(String.join(Strings.SEMICOLON, addresses));
-                    }
-                    existing.refreshUpdateTime();
-                    jobExecutorMapper.save(existing);
-                    return existing;
-                })
-                .orElseGet(() -> {
+            Optional<JobExecutor> existingOpt = jobExecutorMapper.findByExecutorName(executorName);
+            
+            if (existingOpt.isPresent()) {
+                // 执行器已存在，更新地址
+                JobExecutor existing = existingOpt.get();
+                String currentAddresses = existing.getExecutorAddress();
+                if (currentAddresses == null || currentAddresses.trim().isEmpty()) {
+                    // 没有地址，直接设置
+                    existing.setExecutorAddress(newAddress);
+                } else {
+                    // 按完整地址去重
+                    List<String> addresses = Arrays.stream(currentAddresses.split(Strings.SEMICOLON))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty() && !s.equals(newAddress))
+                        .collect(Collectors.toList());
+                    addresses.add(newAddress);  // 添加新地址
+                    existing.setExecutorAddress(String.join(Strings.SEMICOLON, addresses));
+                }
+                existing.refreshUpdateTime();
+                jobExecutorMapper.save(existing);
+                log.info("Updated executor address: name={}, address={}", executorName, newAddress);
+            } else {
+                // 执行器不存在，检查是否允许自动注册
+                if (systemConfigService.isAutoRegisterExecutorEnabled()) {
                     JobExecutor newOne = JobExecutor.of(executorName, newAddress);
                     newOne.refreshUpdateTime();
                     jobExecutorMapper.save(newOne);
-                    return newOne;
-                });
+                    log.info("Auto-registered new executor: name={}, address={}", executorName, newAddress);
+                } else {
+                    log.warn("Executor auto-registration disabled, ignoring new executor: name={}, address={}", 
+                            executorName, newAddress);
+                }
+            }
         }
-
-        log.info("Registered executor: name={}, address={}", executorName, newAddress);
     }
 
     /**

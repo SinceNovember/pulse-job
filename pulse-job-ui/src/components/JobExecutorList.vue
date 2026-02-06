@@ -360,7 +360,7 @@ function handleExecutorOnline(msg) {
   const { executorId, address } = msg.data || {}
   if (!executorId) return
 
-  message.success(`执行器 ${executorId} 上线: ${address || ''}`)
+  console.log('[WebSocket] 执行器上线:', { executorId, address })
   executorStatusMap.set(executorId, {
     executorId,
     address,
@@ -382,9 +382,6 @@ function handleExecutorOffline(msg) {
   const { executorId, reason, address } = msg.data || {}
   if (!executorId) return
 
-  // 显示下线通知（包含地址信息）
-  const addressInfo = address ? ` (${address})` : ''
-  message.warning(`执行器 ${executorId}${addressInfo} 下线: ${reason || '连接断开'}`)
   console.log('[WebSocket] 执行器下线:', { executorId, address, reason })
 
   // 从执行器列表中实时移除下线的地址
@@ -926,7 +923,12 @@ const handleAction = async (key, executor) => {
   switch (key) {
     case 'edit':
       editingExecutor.value = executor
-      Object.assign(formData.value, executor)
+      formData.value = {
+        executorName: executor.executorName || '',
+        executorDesc: executor.executorDesc || '',
+        registerType: executor.registerType || 'AUTO',
+        executorAddress: executor.executorAddress || ''
+      }
       showCreateModal.value = true
       break
     case 'delete':
@@ -954,12 +956,18 @@ const handleSubmit = async () => {
     if (editingExecutor.value) {
       // 更新执行器 - 确保包含 id
       const updateData = { ...formData.value, id: editingExecutor.value.id }
+      // AUTO 模式不提交地址字段，由后端保留自动注册的地址
+      if (updateData.registerType === 'AUTO') {
+        delete updateData.executorAddress
+      }
+      console.log('[DEBUG] 更新执行器请求数据:', JSON.stringify(updateData, null, 2))
       const response = await fetch(`${API_BASE}/api/jobExecutor/${editingExecutor.value.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
       })
       const result = await response.json()
+      console.log('[DEBUG] 更新执行器响应:', JSON.stringify(result, null, 2))
       if (result.code === 200) {
         message.success('更新成功')
         fetchExecutors()

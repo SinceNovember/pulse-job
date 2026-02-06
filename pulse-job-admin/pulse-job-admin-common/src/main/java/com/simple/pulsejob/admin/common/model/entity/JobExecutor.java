@@ -1,6 +1,7 @@
 package com.simple.pulsejob.admin.common.model.entity;
 
 import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
+import com.simple.pulsejob.admin.common.model.enums.converter.RegisterTypeConverter;
 import com.simple.pulsejob.common.util.StringUtil;
 import lombok.Data;
 
@@ -29,6 +30,7 @@ public class JobExecutor implements Serializable {
     private String executorDesc;
 
     @Column(name = "register_type", nullable = false)
+    @Convert(converter = RegisterTypeConverter.class)
     private RegisterTypeEnum registerType;
 
     @Column(name = "executor_address", columnDefinition = "TEXT")

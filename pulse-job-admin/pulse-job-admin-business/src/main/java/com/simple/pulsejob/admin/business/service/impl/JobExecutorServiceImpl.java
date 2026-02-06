@@ -8,6 +8,8 @@ import com.simple.pulsejob.admin.common.model.enums.RegisterTypeEnum;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorParam;
 import com.simple.pulsejob.admin.common.model.param.JobExecutorQuery;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
+import com.simple.pulsejob.admin.scheduler.channel.ExecutorChannelGroupManager;
+import com.simple.pulsejob.admin.websocket.service.WebSocketBroadcastService;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +38,8 @@ import java.util.stream.Collectors;
 public class JobExecutorServiceImpl implements IJobExecutorService {
 
     private final JobExecutorMapper jobExecutorMapper;
+    private final ExecutorChannelGroupManager channelGroupManager;
+    private final WebSocketBroadcastService broadcastService;
 
     @Override
     @Transactional(readOnly = true)
@@ -132,13 +136,82 @@ public class JobExecutorServiceImpl implements IJobExecutorService {
         return jobExecutorMapper.findByRegisterType(registerType);
     }
 
+    /**
+     * 精细化更新执行器信息
+     * - 修改名称：清除注册地址（名称是注册标识，客户端需以新名称重新注册）
+     * - 注册方式变更：清除地址（AUTO→MANUAL 清除自动注册地址；MANUAL→AUTO 清除手动地址等客户端重新注册）
+     * - 仅修改描述：保留现有注册地址
+     * - MANUAL 模式：使用用户提交的地址
+     *
+     * AI Generated
+     */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public JobExecutor updateJobExecutor(JobExecutor jobExecutor) {
         if (jobExecutor.getId() == null) {
             throw new IllegalArgumentException("更新执行器信息时ID不能为空");
         }
-        jobExecutor.setUpdateTime(LocalDateTime.now());
-        return jobExecutorMapper.save(jobExecutor);
+
+        // 查出数据库中的原记录
+        JobExecutor existing = jobExecutorMapper.findById(jobExecutor.getId())
+                .orElseThrow(() -> new IllegalArgumentException("执行器不存在, id=" + jobExecutor.getId()));
+
+        // 保存旧值，用于判断变更和发布事件
+        String oldName = existing.getExecutorName();
+        RegisterTypeEnum oldRegisterType = existing.getRegisterType();
+
+        boolean nameChanged = !oldName.equals(jobExecutor.getExecutorName());
+        boolean registerTypeChanged = oldRegisterType != jobExecutor.getRegisterType();
+        boolean shouldClearAddress = nameChanged || registerTypeChanged;
+
+        if (nameChanged) {
+            log.info("执行器名称变更: {} -> {}, 将清除注册地址并断开连接",
+                    oldName, jobExecutor.getExecutorName());
+        }
+        if (registerTypeChanged) {
+            log.info("执行器注册方式变更: {} -> {}, 将清除注册地址并断开连接",
+                    oldRegisterType, jobExecutor.getRegisterType());
+        }
+
+        // 更新基础字段
+        existing.setExecutorName(jobExecutor.getExecutorName());
+        existing.setExecutorDesc(jobExecutor.getExecutorDesc());
+        existing.setRegisterType(jobExecutor.getRegisterType());
+
+        // 处理地址
+        if (shouldClearAddress) {
+            if (jobExecutor.getRegisterType() == RegisterTypeEnum.MANUAL) {
+                // 切到 MANUAL 模式，使用用户提交的地址
+                existing.setExecutorAddress(jobExecutor.getExecutorAddress());
+            } else {
+                // 切到 AUTO 模式，清空地址等待客户端重新注册
+                existing.setExecutorAddress(null);
+            }
+        } else if (jobExecutor.getRegisterType() == RegisterTypeEnum.MANUAL) {
+            // 未变更名称/注册方式，MANUAL 模式下用户可能修改了手动地址
+            existing.setExecutorAddress(jobExecutor.getExecutorAddress());
+        }
+
+        // AUTO 模式且未变更名称/注册方式 → 保留原有自动注册的地址
+        existing.setUpdateTime(LocalDateTime.now());
+        // 使用 saveAndFlush 确保立即持久化到数据库
+        JobExecutor saved = jobExecutorMapper.save(existing);
+        log.info("执行器更新已保存: id={}, name={}", saved.getId(), saved.getExecutorName());
+
+        // 清理旧名称下的 Channel 连接并广播下线通知（放在 try-catch 中避免影响主事务）
+//        if (shouldClearAddress) {
+//            try {
+//                int closedCount = channelGroupManager.closeAndRemoveByName(oldName);
+//                if (closedCount > 0) {
+//                    broadcastService.pushExecutorOffline(oldName, null, "管理员修改执行器配置");
+//                    log.info("已关闭 {} 个 Channel 并广播下线通知, executor={}", closedCount, oldName);
+//                }
+//            } catch (Exception e) {
+//                log.warn("清理执行器连接时出错（不影响更新）: {}", e.getMessage());
+//            }
+//        }
+
+        return saved;
     }
 
     @Override

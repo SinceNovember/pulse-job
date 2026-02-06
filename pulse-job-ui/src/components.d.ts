@@ -50,6 +50,7 @@ declare module 'vue' {
     RecentTasksTable: typeof import('./components/dashboard/RecentTasksTable.vue')['default']
     Sidebar: typeof import('./components/Sidebar.vue')['default']
     StatsCard: typeof import('./components/dashboard/StatsCard.vue')['default']
+    SystemConfig: typeof import('./components/SystemConfig.vue')['default']
     TaskInput: typeof import('./components/TaskInput.vue')['default']
     TaskItem: typeof import('./components/TaskItem.vue')['default']
     TaskList: typeof import('./components/TaskList.vue')['default']
