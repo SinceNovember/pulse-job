@@ -6,9 +6,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import com.simple.pulsejob.admin.business.service.ISystemConfigService;
 import com.simple.pulsejob.admin.common.model.entity.JobExecutor;
+import com.simple.pulsejob.admin.common.model.entity.SystemConfig;
 import com.simple.pulsejob.admin.persistence.mapper.JobExecutorMapper;
+import com.simple.pulsejob.admin.persistence.mapper.SystemConfigMapper;
 import com.simple.pulsejob.admin.websocket.service.WebSocketBroadcastService;
 import com.simple.pulsejob.common.util.Strings;
 import com.simple.pulsejob.transport.channel.JChannel;
@@ -24,7 +25,7 @@ public class ExecutorRegistryService {
 
     private final JobExecutorMapper jobExecutorMapper;
     private final WebSocketBroadcastService broadcastService;
-    private final ISystemConfigService systemConfigService;
+    private final SystemConfigMapper systemConfigMapper;
     
     // 按 executorName 加锁，避免并发注册问题
     private final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
@@ -74,7 +75,7 @@ public class ExecutorRegistryService {
                 log.info("Updated executor address: name={}, address={}", executorName, newAddress);
             } else {
                 // 执行器不存在，检查是否允许自动注册
-                if (systemConfigService.isAutoRegisterExecutorEnabled()) {
+                if (isAutoRegisterExecutorEnabled()) {
                     JobExecutor newOne = JobExecutor.of(executorName, newAddress);
                     newOne.refreshUpdateTime();
                     jobExecutorMapper.save(newOne);
@@ -119,6 +120,19 @@ public class ExecutorRegistryService {
                     broadcastService.pushExecutorOffline(executorName, address, "Connection closed");
                 });
         }
+    }
+
+    /**
+     * 检查是否启用执行器自动注册
+     * 直接从 persistence 层读取配置，避免依赖 business 层
+     */
+    private boolean isAutoRegisterExecutorEnabled() {
+        return systemConfigMapper.findByConfigKey(SystemConfig.KEY_AUTO_REGISTER_EXECUTOR)
+                .map(config -> {
+                    String value = config.getConfigValue();
+                    return "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
+                })
+                .orElse(true); // 默认启用
     }
 }
 

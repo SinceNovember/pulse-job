@@ -25,43 +25,64 @@
         </div>
 
         <div class="card-body">
-          <!-- 执行器自动注册 -->
-          <div class="config-item">
-            <div class="config-info">
-              <div class="config-label">执行器自动注册</div>
-              <div class="config-desc">
-                启用后，当执行器连接到调度中心时，如果执行器不存在会自动创建执行器记录。
-                禁用后，需要先在管理界面手动创建执行器。
+          <!-- 加载中状态 -->
+          <template v-if="loading">
+            <div class="config-item">
+              <div class="config-info">
+                <n-skeleton text style="width: 120px" />
+                <n-skeleton text :repeat="2" style="margin-top: 8px" />
               </div>
+              <n-skeleton style="width: 50px; height: 22px; border-radius: 11px" />
             </div>
-            <n-switch 
-              v-model:value="registerConfig.autoRegisterExecutor" 
-              :loading="saving"
-              @update:value="handleConfigChange"
-            >
-              <template #checked>开启</template>
-              <template #unchecked>关闭</template>
-            </n-switch>
-          </div>
+            <div class="config-item">
+              <div class="config-info">
+                <n-skeleton text style="width: 100px" />
+                <n-skeleton text :repeat="2" style="margin-top: 8px" />
+              </div>
+              <n-skeleton style="width: 50px; height: 22px; border-radius: 11px" />
+            </div>
+          </template>
+          
+          <!-- 配置项 -->
+          <template v-else>
+            <!-- 执行器自动注册 -->
+            <div class="config-item">
+              <div class="config-info">
+                <div class="config-label">执行器自动注册</div>
+                <div class="config-desc">
+                  启用后，当执行器连接到调度中心时，如果执行器不存在会自动创建执行器记录。
+                  禁用后，需要先在管理界面手动创建执行器。
+                </div>
+              </div>
+              <n-switch 
+                v-model:value="registerConfig.autoRegisterExecutor" 
+                :loading="saving"
+                @update:value="handleConfigChange"
+              >
+                <template #checked>开启</template>
+                <template #unchecked>关闭</template>
+              </n-switch>
+            </div>
 
-          <!-- 任务自动注册 -->
-          <div class="config-item">
-            <div class="config-info">
-              <div class="config-label">任务自动注册</div>
-              <div class="config-desc">
-                启用后，执行器上报的 JobHandler 会自动注册为可调度的任务。
-                禁用后，需要在任务管理中手动创建任务。
+            <!-- 任务自动注册 -->
+            <div class="config-item">
+              <div class="config-info">
+                <div class="config-label">任务自动注册</div>
+                <div class="config-desc">
+                  启用后，执行器上报的 JobHandler 会自动注册为可调度的任务。
+                  禁用后，需要在任务管理中手动创建任务。
+                </div>
               </div>
+              <n-switch 
+                v-model:value="registerConfig.autoRegisterJob" 
+                :loading="saving"
+                @update:value="handleConfigChange"
+              >
+                <template #checked>开启</template>
+                <template #unchecked>关闭</template>
+              </n-switch>
             </div>
-            <n-switch 
-              v-model:value="registerConfig.autoRegisterJob" 
-              :loading="saving"
-              @update:value="handleConfigChange"
-            >
-              <template #checked>开启</template>
-              <template #unchecked>关闭</template>
-            </n-switch>
-          </div>
+          </template>
         </div>
 
         <div class="card-footer">
